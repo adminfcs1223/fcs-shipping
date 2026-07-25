@@ -1,0 +1,58 @@
+{
+  "_readme": "EDIT THIS FILE to change prices, schedule, contact info, FAQ, and hero text. All prices in US dollars. DEMO PRICES BELOW ARE PLACEHOLDERS — set your real rates before launch.",
+  "company": {
+    "name": "FCS Shipping LLC.",
+    "locationLine": "Brooklyn · New York",
+    "address": "9502 Ditmas Ave, Building 4, Brooklyn NY 11236",
+    "addressShort": "9502 Ditmas Ave, Bldg 4, Brooklyn NY",
+    "phones": ["(718) 483-8006", "(646) 606-8320"],
+    "phoneLinks": ["+17184838006", "+16466068320"],
+    "email": "admin@fcsshipping.com",
+    "hours": "Mon–Fri 9am–5pm",
+    "hoursLong": "Monday–Friday, 9am–5pm",
+    "founder": "Felix Harrison"
+  },
+  "hero": {
+    "kicker": "Ship with the fastest growing Caribbean shipping firm in NYC!",
+    "title": "Make Ship Happen!",
+    "lede": "For all your freight shipping services to St. Lucia and all islands of the Caribbean. Barrels, boxes, packages, cars, containers & all personal effects."
+  },
+  "cargo": [
+    { "id": "barrel", "label": "Barrel (55 gal)", "price": 120 },
+    { "id": "box", "label": "Box (med)", "price": 65 },
+    { "id": "crate", "label": "Crate", "price": 180 },
+    { "id": "vehicle", "label": "Vehicle", "price": 1450 },
+    { "id": "container", "label": "20ft Container", "price": 3900 }
+  ],
+  "destinations": [
+    { "name": "Port Castries", "fee": 0 },
+    { "name": "Vieux-Fort", "fee": 15 },
+    { "name": "Cul-de-Sac", "fee": 10 },
+    { "name": "Other Caribbean island", "fee": 45 }
+  ],
+  "extras": [
+    { "id": "pickup", "label": "Brooklyn pickup", "buttonText": "Home pickup +$35", "price": 35 },
+    { "id": "delivery", "label": "Door delivery", "buttonText": "Door delivery +$40", "price": 40 },
+    { "id": "insurance", "label": "Insurance", "buttonText": "Insurance +$25", "price": 25 }
+  ],
+  "defaultVessel": "M/V Caribbean Star",
+  "transitDays": 12,
+  "cutoffDaysBefore": 2,
+  "sailings": [
+    { "vessel": "M/V Caribbean Star", "departs": "2026-07-28", "arrives": "2026-08-09", "cutoff": "2026-07-26", "status": "closing" },
+    { "vessel": "M/V Island Trader", "departs": "2026-08-06", "arrives": "2026-08-18", "cutoff": "2026-08-04", "status": "open" },
+    { "vessel": "M/V Windward Belle", "departs": "2026-08-15", "arrives": "2026-08-27", "cutoff": "2026-08-13", "status": "open" },
+    { "vessel": "M/V Caribbean Star", "departs": "2026-08-24", "arrives": "2026-09-05", "cutoff": "2026-08-22", "status": "open" }
+  ],
+  "faq": [
+    { "q": "How long does shipping to St. Lucia take?", "a": "Most sailings arrive in 10–14 days, plus 1–2 days for customs clearance at the port. Check the schedule above for exact cut-off and arrival dates." },
+    { "q": "What can I pack in a barrel?", "a": "Non-perishable food, clothing, household goods, toiletries, small electronics. No aerosols, flammables, or restricted items — call us if you're unsure and we'll tell you straight." },
+    { "q": "Do you pick up from my home?", "a": "Yes — anywhere in the five boroughs. Add home pickup when you get your quote or call (718) 483-8006 to schedule." },
+    { "q": "Which ports do you serve?", "a": "Port Castries, Vieux-Fort, and Cul-de-Sac in St. Lucia, plus connections to other Caribbean islands through our West-Indies Shipping partners." },
+    { "q": "How do I pay?", "a": "Cash, card, or Zelle at drop-off or pickup — or lock in your quote online with a card deposit. Your estimate is confirmed when we weigh and manifest your cargo." }
+  ],
+  "payments": {
+    "testMode": true,
+    "_note": "testMode true shows the TEST MODE banner on checkout. Set to false only after real Stripe keys are configured in Netlify."
+  }
+}

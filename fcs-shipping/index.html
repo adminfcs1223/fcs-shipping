@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCS Shipping LLC. — Brooklyn to St. Lucia Freight</title>
+<meta name="description" content="FCS Shipping LLC — freight shipping from Brooklyn NY to St. Lucia and the Caribbean. Barrels, boxes, vehicles, containers. Make Ship Happen!">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span id="tbPhone">☎ (718) 483-8006</span>
+  <span id="tbEmail">✉ admin@fcsshipping.com</span>
+  <span id="tbAddr">📍 9502 Ditmas Ave, Bldg 4, Brooklyn NY</span>
+  <span id="tbHours">Mon–Fri 9am–5pm</span>
+</div>
+
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="#top">
+      <div class="l1">FCS Shipping LLC.</div>
+      <div class="l2">Brooklyn · New York</div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#quote">Get a quote</a></li>
+      <li><a href="#track">Track</a></li>
+      <li><a href="#schedule">Sailings</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="nav-cta" href="#quote">Start Shipping!</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <img class="hero-img" src="/assets/hero-ship.jpg"
+       onerror="this.onerror=null;this.src='https://images.squarespace-cdn.com/content/v1/616b4d41e2976800d6464843/1634424319096-P4E4TGE0QYU0Z5NG8ANX/cameron-venti-1cqIcrWFQBI-unsplash.jpg'"
+       alt="Container ship at sea">
+  <div>
+    <div class="kicker" id="heroKicker">Ship with the fastest growing Caribbean shipping firm in NYC!</div>
+    <h1 id="heroTitle">Make Ship Happen!</h1>
+    <p class="lede" id="heroLede">For all your freight shipping services to St. Lucia and all islands of the Caribbean. Barrels, boxes, packages, cars, containers &amp; all personal effects.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-white" href="#quote">Start Shipping!</a>
+      <a class="btn btn-dark" href="#track">Track a shipment</a>
+    </div>
+    <div class="next-sail">
+      <span class="pulse" aria-hidden="true"></span>
+      <div>
+        <div class="lbl">Next vessel departs Brooklyn in</div>
+        <div class="val" id="countdown">—</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="strip" aria-hidden="true">
+  <div class="strip-track">
+    <span>Port Castries <em>●</em> Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> Agents for West-Indies Shipping <em>●</em> Professional, Reliable, Rapid Service <em>●</em> You Name It, We Ship It <em>●</em></span>
+    <span>Port Castries <em>●</em> Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> Agents for West-Indies Shipping <em>●</em> Professional, Reliable, Rapid Service <em>●</em> You Name It, We Ship It <em>●</em></span>
+  </div>
+</div>
+
+<!-- ============ QUOTE ============ -->
+<section id="quote">
+  <div class="sec-head reveal">
+    <div class="eyebrow">Instant estimate</div>
+    <h2>Build your quote, watch the waybill fill in</h2>
+    <p>Pick what you're shipping and where it's going. Your estimate updates live — no phone call needed (though we love to talk: <span id="quotePhone">(718) 483-8006</span>).</p>
+  </div>
+  <div class="quote-grid">
+    <form class="reveal" id="quoteForm" aria-label="Quote builder">
+      <div class="field">
+        <label>What are you shipping?</label>
+        <div class="chip-row" id="itemChips"></div>
+      </div>
+      <div class="field">
+        <label for="dest">Destination port</label>
+        <select id="dest"></select>
+      </div>
+      <div class="field">
+        <label>Quantity</label>
+        <div class="qty-row">
+          <button type="button" class="qty-btn" id="qtyMinus" aria-label="Decrease quantity">−</button>
+          <span id="qtyVal">1</span>
+          <button type="button" class="qty-btn" id="qtyPlus" aria-label="Increase quantity">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Extras</label>
+        <div class="chip-row" id="extraChips"></div>
+      </div>
+      <button type="button" class="btn btn-dark" id="lockBtn">Lock in this rate →</button>
+
+      <!-- Phase 2: quote request panel -->
+      <div class="lockin-panel" id="lockPanel">
+        <div class="field">
+          <label for="qName">Your name</label>
+          <input type="text" id="qName" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="qPhone">Phone</label>
+          <input type="tel" id="qPhone" autocomplete="tel" required>
+        </div>
+        <div class="field">
+          <label for="qEmail">Email</label>
+          <input type="email" id="qEmail" autocomplete="email" required>
+        </div>
+        <!-- honeypot: humans never see this -->
+        <div class="hp" aria-hidden="true">
+          <label for="qWebsite">Website</label>
+          <input type="text" id="qWebsite" tabindex="-1" autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-dark" id="sendQuoteBtn">Send quote request</button>
+        <p class="form-msg" id="quoteMsg" role="status"></p>
+        <!-- Phase 3: pay deposit -->
+        <div class="pay-panel" id="payPanel">
+          <button type="button" class="btn btn-dark" id="payBtn">Pay deposit by card →</button>
+          <div class="testmode" id="testModeBadge" hidden>Test mode — no real charge</div>
+        </div>
+      </div>
+    </form>
+
+    <div class="waybill reveal" aria-live="polite">
+      <div class="wb-head">
+        <div class="co">FCS Shipping LLC.<small>BROOKLYN · NEW YORK · USA</small></div>
+        <div class="wb-no">WAYBILL Nº<b id="wbNo">FCS-2026-0000</b></div>
+      </div>
+      <div class="wb-row"><span>Shipper</span><span>You, Brooklyn NY</span></div>
+      <div class="wb-row"><span>Cargo</span><span id="wbItem">—</span></div>
+      <div class="wb-row"><span>Destination</span><span id="wbDest">—</span></div>
+      <div class="wb-row"><span>Vessel</span><span id="wbVessel">M/V Caribbean Star</span></div>
+      <div class="wb-row"><span>Base rate</span><span id="wbBase">—</span></div>
+      <div class="wb-row"><span>Port fee</span><span id="wbFee">—</span></div>
+      <div class="wb-row"><span>Extras</span><span id="wbExtras">—</span></div>
+      <div class="wb-total"><span>ESTIMATED TOTAL</span><span class="amt" id="wbTotal">—</span></div>
+      <div class="wb-stamp">Ship It!</div>
+      <p class="wb-note">Estimate only. Final rate confirmed at drop-off or pickup when cargo is weighed and manifested.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRACK ============ -->
+<section id="track">
+  <div class="track-wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Shipment tracking</div>
+      <h2>Where's my barrel?</h2>
+      <p>Enter your waybill number and follow your cargo from our Brooklyn warehouse to the island.</p>
+    </div>
+    <div class="track-box reveal">
+      <div class="track-form">
+        <input id="trackInput" type="text" placeholder="e.g. FCS-2026-4471" aria-label="Waybill number">
+        <button class="btn btn-dark" id="trackBtn">Track shipment</button>
+      </div>
+      <p class="hint">Lost your waybill number? Call us — <span id="trackPhone">(718) 483-8006</span>. Demo: try <button id="demoNo" type="button">FCS-2026-4471</button></p>
+      <p class="track-err" id="trackErr" role="alert"></p>
+      <div class="timeline" id="timeline">
+        <div class="tl-head">
+          <div><span style="color:var(--grey);font-size:.7rem;letter-spacing:.16em">WAYBILL</span><br><b id="tlNo">—</b></div>
+          <div class="status" id="tlStatus">—</div>
+        </div>
+        <div id="tlSteps"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCHEDULE ============ -->
+<section id="schedule">
+  <div class="sec-head reveal">
+    <div class="eyebrow">Sailing schedule</div>
+    <h2>Upcoming departures</h2>
+    <p>Cargo cut-off is two days before each sailing. Drop off at the warehouse or book a pickup.</p>
+  </div>
+  <div class="sched-wrap reveal">
+    <table class="sched">
+      <thead><tr><th>Vessel</th><th>Departs Brooklyn</th><th>Arrives Castries</th><th>Cut-off</th><th>Status</th></tr></thead>
+      <tbody id="schedBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ SERVICES ============ -->
+<section id="services">
+  <div class="sec-head reveal">
+    <div class="eyebrow">What we ship</div>
+    <h2>You name it, we ship it!</h2>
+  </div>
+  <div class="svc-grid">
+    <div class="svc reveal"><span class="ico">🛢️</span><h3>Barrels</h3><p>The Caribbean classic. Pack it tight, we handle the rest — food, clothes, care packages for family back home.</p><div class="from" data-price-from="barrel">from $120</div></div>
+    <div class="svc reveal"><span class="ico">📦</span><h3>Boxes &amp; packages</h3><p>Any size, professionally palletized and secured for the crossing.</p><div class="from" data-price-from="box">from $65</div></div>
+    <div class="svc reveal"><span class="ico">🚗</span><h3>Vehicles</h3><p>Cars, trucks, and bikes shipped roll-on or containerized, with paperwork handled end to end.</p><div class="from" data-price-from="vehicle">from $1,450</div></div>
+    <div class="svc reveal"><span class="ico">🚢</span><h3>Full containers</h3><p>20ft and 40ft containers for movers, builders, and businesses. Exclusive use, sealed at our yard.</p><div class="from" data-price-from="container">from $3,900</div></div>
+    <div class="svc reveal"><span class="ico">🚚</span><h3>Home pickup</h3><p>Can't make it to Ditmas Ave? We'll come collect anywhere in the five boroughs.</p><div class="from" data-price-from="extra:pickup">from $35</div></div>
+    <div class="svc reveal"><span class="ico">🤝</span><h3>West-Indies agents</h3><p>Official agents for West-Indies Shipping, with trusted partners at every port we serve.</p><div class="from">ask us</div></div>
+  </div>
+</section>
+
+<!-- ============ FOUNDER BAND ============ -->
+<section style="padding-top:0">
+  <div class="band reveal">
+    <img src="/assets/operations.jpg"
+         onerror="this.onerror=null;this.src='https://images.squarespace-cdn.com/content/v1/616b4d41e2976800d6464843/1634509851821-WLOO5WTH6YO3I0LYEAH3/IMG_3454.jpg'"
+         alt="FCS Shipping operations">
+    <div class="txt">
+      <div class="eyebrow" style="color:#BCD3E2">Our promise</div>
+      <h2>Professional, Reliable, Rapid Service!</h2>
+      <p>Family-run from Brooklyn, trusted across the islands. We treat every barrel, box, and vehicle like it's headed to our own family — because for a lot of our customers, it is.</p>
+      <div class="sig">— Felix Harrison, Founder &amp; CEO</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq" style="padding-top:0">
+  <div class="sec-head reveal">
+    <div class="eyebrow">Good to know</div>
+    <h2>Questions, answered</h2>
+  </div>
+  <div class="faq reveal" id="faqList"></div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section id="contact" style="padding-top:0">
+  <div class="contact reveal">
+    <div>
+      <div class="eyebrow">Get Shippin'!</div>
+      <h2>Visit us or give us a call</h2>
+      <p style="color:var(--grey);max-width:44ch">Feel free to contact us and we will get in touch to arrange a pick-up!</p>
+    </div>
+    <div>
+      <div class="c-item"><div class="ci">📍</div><div><b>Warehouse</b><span id="cAddr">9502 Ditmas Ave, Building 4, Brooklyn NY</span></div></div>
+      <div class="c-item"><div class="ci">☎</div><div><b>Phone</b><span id="cPhones"><a href="tel:+17184838006">(718) 483-8006</a> · <a href="tel:+16466068320">(646) 606-8320</a></span></div></div>
+      <div class="c-item"><div class="ci">✉</div><div><b>Email</b><span id="cEmail"><a href="mailto:admin@fcsshipping.com">admin@fcsshipping.com</a></span></div></div>
+      <div class="c-item"><div class="ci">🕘</div><div><b>Hours</b><span id="cHours">Monday–Friday, 9am–5pm</span></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="big">Make Ship Happen!</div>
+  <p id="footLine">© 2026 FCS Shipping LLC. · 9502 Ditmas Ave Building 4, Brooklyn NY · (718) 483-8006 · admin@fcsshipping.com</p>
+</footer>
+
+<script src="/js/main.js"></script>
+</body>
+</html>

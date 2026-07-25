@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCS Admin — Staff Dashboard</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#111;--grey:#5C5C5C;--line:#E4E4E0;--sea:#1B4965;--sea-light:#EAF1F5;--bg-soft:#F6F6F4;
+--mono:'IBM Plex Mono',monospace;--body:'Archivo',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);color:var(--ink);background:var(--bg-soft);font-size:16px;line-height:1.5;padding-bottom:5.5rem}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit;font-size:1rem}
+header{background:var(--ink);color:#fff;padding:.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+header .t{font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+header .t small{display:block;font-family:var(--mono);font-weight:400;font-size:.6rem;letter-spacing:.2em;color:#BCD3E2}
+#logoutBtn{background:none;border:1px solid #444;color:#ccc;border-radius:6px;padding:.4rem .9rem;font-size:.8rem}
+main{max-width:760px;margin:0 auto;padding:1.2rem}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:1.2rem;margin-bottom:1rem}
+h2{font-size:1.05rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.9rem}
+label{display:block;font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);margin:.8rem 0 .3rem}
+input[type=text],input[type=tel],input[type=email],input[type=password],input[type=date],input[type=number],select{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:.8rem .9rem;background:#fff}
+input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
+.btn{display:inline-block;background:var(--ink);color:#fff;border:none;border-radius:8px;font-weight:700;padding:.85rem 1.4rem;font-size:.95rem;width:100%;margin-top:1rem}
+.btn:active{background:var(--sea)}
+.btn.sm{width:auto;padding:.55rem 1rem;font-size:.82rem;margin-top:.6rem}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.btn.sea{background:var(--sea)}
+.msg{font-family:var(--mono);font-size:.8rem;margin-top:.7rem}
+.msg.err{color:#B03A2E}.msg.ok{color:#1E6B3A}
+/* tabs */
+.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:10}
+.tabs button{flex:1;background:none;border:none;padding:.8rem .2rem 1.1rem;font-size:.72rem;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.03em}
+.tabs button .ico{display:block;font-size:1.25rem;margin-bottom:.15rem}
+.tabs button.on{color:var(--sea)}
+.view{display:none}.view.on{display:block}
+/* shipment / quote cards */
+.item{border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:.8rem;background:#fff}
+.item .top{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+.wb{font-family:var(--mono);font-weight:600}
+.pill{font-family:var(--mono);font-size:.68rem;font-weight:600;border-radius:999px;padding:.2rem .7rem;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.pill.received{background:#FFF3CD;color:#7A5C00}
+.pill.loaded{background:#E2E9F8;color:#28417A}
+.pill.at_sea{background:var(--sea-light);color:var(--sea)}
+.pill.arrived{background:#E7F2EA;color:#1E6B3A}
+.pill.ready{background:#1E6B3A;color:#fff}
+.pill.delivered{background:var(--bg-soft);color:var(--grey)}
+.pill.new{background:#FFF3CD;color:#7A5C00}
+.pill.handled{background:var(--bg-soft);color:var(--grey)}
+.pill.deposit_paid{background:#E7F2EA;color:#1E6B3A}
+.pill.open{background:#E7F2EA;color:#1E6B3A}
+.pill.closing{background:#FBEDE9;color:#B03A2E}
+.pill.closed{background:#FBEDE9;color:#B03A2E}
+.pill.sailed{background:var(--bg-soft);color:var(--grey)}
+.meta{font-family:var(--mono);font-size:.76rem;color:var(--grey);margin-top:.35rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.bigwb{font-family:var(--mono);font-size:1.6rem;font-weight:600;color:var(--sea);text-align:center;padding:1rem;background:var(--sea-light);border-radius:10px;margin-top:1rem}
+.price-row{display:flex;align-items:center;gap:.7rem;margin-bottom:.55rem}
+.price-row span{flex:1;font-size:.9rem}
+.price-row input{width:110px}
+#loginView{max-width:420px;margin:8vh auto 0;padding:1.2rem}
+.note{font-family:var(--mono);font-size:.72rem;color:var(--grey);margin-top:.8rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="t">FCS Admin<small>Staff dashboard</small></div>
+  <button id="logoutBtn" hidden>Log out</button>
+</header>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginView">
+  <div class="card">
+    <h2>Staff login</h2>
+    <div id="cfgWarn" class="msg err" hidden>Supabase isn't connected yet — edit <b>/admin/config.js</b> with your project URL and anon key.</div>
+    <label for="loginEmail">Email</label>
+    <input type="email" id="loginEmail" autocomplete="username">
+    <label for="loginPass">Password</label>
+    <input type="password" id="loginPass" autocomplete="current-password">
+    <button class="btn" id="loginBtn">Log in</button>
+    <p class="msg" id="loginMsg"></p>
+    <p class="note">Staff accounts are created in Supabase → Authentication → Users → "Add user".</p>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<main id="app" hidden>
+
+  <!-- Shipments -->
+  <div class="view on" id="view-ship">
+    <div class="card">
+      <h2>Find shipment</h2>
+      <input type="text" id="shipSearch" placeholder="Waybill, name, or phone…">
+    </div>
+    <div id="shipList"></div>
+  </div>
+
+  <!-- New shipment -->
+  <div class="view" id="view-new">
+    <div class="card">
+      <h2>New shipment</h2>
+      <label>Customer name</label><input type="text" id="nsName">
+      <label>Customer phone</label><input type="tel" id="nsPhone">
+      <label>Cargo (e.g. Barrel (55 gal) × 2)</label><input type="text" id="nsCargo">
+      <div class="row2">
+        <div><label>Destination</label>
+          <select id="nsDest"></select></div>
+        <div><label>Vessel</label><input type="text" id="nsVessel" value="M/V Caribbean Star"></div>
+      </div>
+      <label>ETA (optional)</label><input type="date" id="nsEta">
+      <button class="btn sea" id="nsCreate">Create shipment → get waybill Nº</button>
+      <div class="bigwb" id="nsResult" hidden></div>
+      <p class="msg" id="nsMsg"></p>
+    </div>
+  </div>
+
+  <!-- Quotes -->
+  <div class="view" id="view-quotes">
+    <div id="quoteList"></div>
+  </div>
+
+  <!-- Sailings -->
+  <div class="view" id="view-sail">
+    <div class="card">
+      <h2>Add sailing</h2>
+      <label>Vessel</label><input type="text" id="slVessel" value="M/V Caribbean Star">
+      <div class="row2">
+        <div><label>Departs Brooklyn</label><input type="date" id="slDeparts"></div>
+        <div><label>Arrives Castries</label><input type="date" id="slArrives"></div>
+      </div>
+      <label>Cargo cut-off</label><input type="date" id="slCutoff">
+      <button class="btn sm" id="slAdd">Add sailing</button>
+      <p class="msg" id="slMsg"></p>
+    </div>
+    <div id="sailList"></div>
+  </div>
+
+  <!-- Prices -->
+  <div class="view" id="view-prices">
+    <div class="card">
+      <h2>Prices &amp; fees</h2>
+      <p class="note" style="margin-top:0">These rates are used by the website's quote builder and card deposits the moment you save.</p>
+      <div id="priceFields"></div>
+      <button class="btn sea" id="savePrices">Save prices</button>
+      <p class="msg" id="priceMsg"></p>
+    </div>
+  </div>
+</main>
+
+<nav class="tabs" id="tabs" hidden>
+  <button data-view="ship" class="on"><span class="ico">📦</span>Shipments</button>
+  <button data-view="new"><span class="ico">➕</span>New</button>
+  <button data-view="quotes"><span class="ico">💬</span>Quotes</button>
+  <button data-view="sail"><span class="ico">🚢</span>Sailings</button>
+  <button data-view="prices"><span class="ico">💲</span>Prices</button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/admin/config.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const C = window.ADMIN_CONFIG || {};
+  const configured = C.SUPABASE_URL && !C.SUPABASE_URL.includes('YOUR-PROJECT') &&
+                     C.SUPABASE_ANON_KEY && !C.SUPABASE_ANON_KEY.includes('PASTE');
+  if (!configured) { $('cfgWarn').hidden = false; }
+  const db = configured ? window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY) : null;
+
+  const STATUS_CHAIN = ['received', 'loaded', 'at_sea', 'arrived', 'ready', 'delivered'];
+  const STATUS_LABEL = {
+    received: 'Received', loaded: 'Loaded', at_sea: 'At sea',
+    arrived: 'Arrived', ready: 'Ready', delivered: 'Delivered',
+  };
+  const DESTS = ['Port Castries', 'Vieux-Fort', 'Cul-de-Sac', 'Other Caribbean island'];
+  $('nsDest').innerHTML = DESTS.map((d) => `<option>${d}</option>`).join('');
+
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fd = (d) => d ? new Date(d + (d.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+
+  /* ---------- auth ---------- */
+  async function refreshAuth() {
+    if (!db) return;
+    const { data: { session } } = await db.auth.getSession();
+    const inApp = Boolean(session);
+    $('loginView').hidden = inApp;
+    $('app').hidden = !inApp;
+    $('tabs').hidden = !inApp;
+    $('logoutBtn').hidden = !inApp;
+    if (inApp) { loadShipments(); loadQuotes(); loadSailings(); loadPrices(); }
+  }
+  $('loginBtn').addEventListener('click', async () => {
+    if (!db) return;
+    $('loginMsg').className = 'msg';
+    const { error } = await db.auth.signInWithPassword({
+      email: $('loginEmail').value.trim(),
+      password: $('loginPass').value,
+    });
+    if (error) { $('loginMsg').textContent = error.message; $('loginMsg').className = 'msg err'; return; }
+    refreshAuth();
+  });
+  $('loginPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
+  $('logoutBtn').addEventListener('click', async () => { await db.auth.signOut(); refreshAuth(); });
+
+  /* ---------- tabs ---------- */
+  document.querySelectorAll('#tabs button').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#tabs button').forEach((x) => x.classList.remove('on'));
+      document.querySelectorAll('.view').forEach((v) => v.classList.remove('on'));
+      b.classList.add('on');
+      $('view-' + b.dataset.view).classList.add('on');
+    });
+  });
+
+  /* ---------- shipments ---------- */
+  async function loadShipments() {
+    let q = db.from('shipments').select('*').order('created_at', { ascending: false }).limit(30);
+    const term = $('shipSearch').value.trim();
+    if (term) q = q.or(`waybill_no.ilike.%${term}%,customer_name.ilike.%${term}%,customer_phone.ilike.%${term}%`);
+    const { data, error } = await q;
+    if (error) { $('shipList').innerHTML = `<p class="msg err">${esc(error.message)}</p>`; return; }
+    $('shipList').innerHTML = (data || []).map((s) => {
+      const idx = STATUS_CHAIN.indexOf(s.status);
+      const next = STATUS_CHAIN[idx + 1];
+      return `<div class="item">
+        <div class="top"><span class="wb">${esc(s.waybill_no)}</span><span class="pill ${esc(s.status)}">${STATUS_LABEL[s.status] || esc(s.status)}</span></div>
+        <div class="meta">${esc(s.customer_name)} · ${esc(s.customer_phone)}</div>
+        <div class="meta">${esc(s.cargo)} → ${esc(s.destination)} · ${esc(s.vessel || '')}${s.eta ? ' · ETA ' + fd(s.eta) : ''}</div>
+        ${next ? `<button class="btn sm sea" data-adv="${s.id}" data-next="${next}">Mark ${STATUS_LABEL[next]} →</button>` : ''}
+      </div>`;
+    }).join('') || '<p class="msg">No shipments yet — create one from the New tab.</p>';
+    document.querySelectorAll('[data-adv]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        const note = prompt(`Optional note for "${STATUS_LABEL[b.dataset.next]}" (container #, position, etc.)`) || null;
+        const { error: e1 } = await db.from('shipments').update({ status: b.dataset.next }).eq('id', b.dataset.adv);
+        if (!e1) await db.from('shipment_events').insert({ shipment_id: b.dataset.adv, status: b.dataset.next, note });
+        loadShipments();
+      });
+    });
+  }
+  let searchTimer;
+  $('shipSearch').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(loadShipments, 300); });
+
+  /* ---------- new shipment ---------- */
+  $('nsCreate').addEventListener('click', async () => {
+    const msg = $('nsMsg'); msg.className = 'msg';
+    const name = $('nsName').value.trim(), phone = $('nsPhone').value.trim(), cargo = $('nsCargo').value.trim();
+    if (!name || !phone || !cargo) { msg.textContent = 'Name, phone, and cargo are required.'; msg.className = 'msg err'; return; }
+    $('nsCreate').disabled = true;
+    try {
+      const { data: wb, error: eWb } = await db.rpc('generate_waybill');
+      if (eWb) throw eWb;
+      const { data, error } = await db.from('shipments').insert({
+        waybill_no: wb, customer_name: name, customer_phone: phone, cargo,
+        destination: $('nsDest').value, vessel: $('nsVessel').value.trim() || null,
+        eta: $('nsEta').value || null,
+      }).select().single();
+      if (error) throw error;
+      await db.from('shipment_events').insert({ shipment_id: data.id, status: 'received', note: '9502 Ditmas Ave warehouse' });
+      $('nsResult').textContent = wb; $('nsResult').hidden = false;
+      msg.textContent = 'Shipment created — write this waybill number on the cargo!'; msg.className = 'msg ok';
+      ['nsName', 'nsPhone', 'nsCargo', 'nsEta'].forEach((id) => ($(id).value = ''));
+      loadShipments();
+    } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
+    $('nsCreate').disabled = false;
+  });
+
+  /* ---------- quotes ---------- */
+  async function loadQuotes() {
+    const { data, error } = await db.from('quote_requests').select('*').order('created_at', { ascending: false }).limit(50);
+    if (error) { $('quoteList').innerHTML = `<p class="msg err">${esc(error.message)}</p>`; return; }
+    $('quoteList').innerHTML = (data || []).map((q) => `<div class="item">
+        <div class="top"><b>${esc(q.name)}</b><span class="pill ${esc(q.status)}">${esc(q.status.replace('_', ' '))}</span></div>
+        <div class="meta"><a href="tel:${esc(q.phone)}">${esc(q.phone)}</a> · ${esc(q.email)}</div>
+        <div class="meta">${esc(q.cargo)} × ${q.quantity} → ${esc(q.destination)} · $${(q.total_cents / 100).toLocaleString()}</div>
+        <div class="meta">${new Date(q.created_at).toLocaleString()}</div>
+        ${q.status === 'new' || q.status === 'deposit_paid' ? `<button class="btn sm ghost" data-handle="${q.id}">Mark handled ✓</button>` : ''}
+      </div>`).join('') || '<p class="msg">No quote requests yet.</p>';
+    document.querySelectorAll('[data-handle]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        await db.from('quote_requests').update({ status: 'handled' }).eq('id', b.dataset.handle);
+        loadQuotes();
+      });
+    });
+  }
+
+  /* ---------- sailings ---------- */
+  const SAIL_NEXT = { open: 'closing', closing: 'closed', closed: 'sailed', sailed: 'open' };
+  async function loadSailings() {
+    const { data, error } = await db.from('sailings').select('*').order('departs', { ascending: true }).limit(20);
+    if (error) { $('sailList').innerHTML = `<p class="msg err">${esc(error.message)}</p>`; return; }
+    $('sailList').innerHTML = (data || []).map((s) => `<div class="item">
+        <div class="top"><b>${esc(s.vessel)}</b><span class="pill ${esc(s.status)}">${esc(s.status)}</span></div>
+        <div class="meta">Departs ${fd(s.departs)} · Arrives ${fd(s.arrives)} · Cut-off ${fd(s.cutoff)}</div>
+        <button class="btn sm ghost" data-cycle="${s.id}" data-next="${SAIL_NEXT[s.status]}">Set ${SAIL_NEXT[s.status]}</button>
+        <button class="btn sm ghost" data-del="${s.id}">Delete</button>
+      </div>`).join('') || '<p class="msg">No sailings yet — add one above.</p>';
+    document.querySelectorAll('[data-cycle]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        await db.from('sailings').update({ status: b.dataset.next }).eq('id', b.dataset.cycle);
+        loadSailings();
+      }));
+    document.querySelectorAll('[data-del]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        if (confirm('Delete this sailing?')) {
+          await db.from('sailings').delete().eq('id', b.dataset.del);
+          loadSailings();
+        }
+      }));
+  }
+  $('slDeparts').addEventListener('change', () => {
+    const d = $('slDeparts').value;
+    if (!d) return;
+    const dep = new Date(d + 'T12:00:00');
+    if (!$('slArrives').value) $('slArrives').value = new Date(dep.getTime() + 12 * 86400000).toISOString().slice(0, 10);
+    if (!$('slCutoff').value) $('slCutoff').value = new Date(dep.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+  });
+  $('slAdd').addEventListener('click', async () => {
+    const msg = $('slMsg'); msg.className = 'msg';
+    if (!$('slVessel').value.trim() || !$('slDeparts').value || !$('slArrives').value || !$('slCutoff').value) {
+      msg.textContent = 'All fields are required.'; msg.className = 'msg err'; return;
+    }
+    const { error } = await db.from('sailings').insert({
+      vessel: $('slVessel').value.trim(), departs: $('slDeparts').value,
+      arrives: $('slArrives').value, cutoff: $('slCutoff').value, status: 'open',
+    });
+    if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
+    msg.textContent = 'Sailing added.'; msg.className = 'msg ok';
+    ['slDeparts', 'slArrives', 'slCutoff'].forEach((id) => ($(id).value = ''));
+    loadSailings();
+  });
+
+  /* ---------- prices ---------- */
+  let pricing = null;
+  async function loadPrices() {
+    const { data } = await db.from('settings').select('value').eq('key', 'pricing').maybeSingle();
+    if (data && data.value) pricing = data.value;
+    else pricing = await fetch('/site.config.json').then((r) => r.json())
+      .then((c) => ({ cargo: c.cargo, destinations: c.destinations, extras: c.extras }))
+      .catch(() => null);
+    if (!pricing) { $('priceFields').innerHTML = '<p class="msg err">Could not load prices.</p>'; return; }
+    $('priceFields').innerHTML =
+      '<label>Cargo rates ($)</label>' +
+      pricing.cargo.map((c, i) => `<div class="price-row"><span>${esc(c.label)}</span><input type="number" min="0" step="1" data-p="cargo.${i}" value="${c.price}"></div>`).join('') +
+      '<label>Port fees ($ per item)</label>' +
+      pricing.destinations.map((d, i) => `<div class="price-row"><span>${esc(d.name)}</span><input type="number" min="0" step="1" data-p="destinations.${i}" value="${d.fee}"></div>`).join('') +
+      '<label>Extras ($)</label>' +
+      pricing.extras.map((x, i) => `<div class="price-row"><span>${esc(x.label)}</span><input type="number" min="0" step="1" data-p="extras.${i}" value="${x.price}"></div>`).join('');
+  }
+  $('savePrices').addEventListener('click', async () => {
+    const msg = $('priceMsg'); msg.className = 'msg';
+    document.querySelectorAll('[data-p]').forEach((inp) => {
+      const [group, i] = inp.dataset.p.split('.');
+      const v = Math.max(0, Number(inp.value) || 0);
+      if (group === 'destinations') pricing.destinations[i].fee = v;
+      else pricing[group][i].price = v;
+      /* keep button text like "Home pickup +$35" in sync */
+      if (group === 'extras' && pricing.extras[i].buttonText)
+        pricing.extras[i].buttonText = pricing.extras[i].buttonText.replace(/\$\d+/, '$' + v);
+    });
+    const { error } = await db.from('settings').upsert({ key: 'pricing', value: pricing, updated_at: new Date().toISOString() });
+    if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
+    msg.textContent = 'Saved — the website is now quoting these rates.'; msg.className = 'msg ok';
+  });
+
+  if (db) { db.auth.onAuthStateChange(() => refreshAuth()); refreshAuth(); }
+})();
+</script>
+</body>
+</html>
