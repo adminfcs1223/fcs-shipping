@@ -45,12 +45,13 @@
     .map((f, i) => `<details${i === 0 ? ' open' : ''}><summary>${f.q}</summary><p>${f.a}</p></details>`)
     .join('');
 
-  /* ---------- signed-in nav: Welcome Back, Name! ---------- */
+  /* ---------- supabase client (session check + live testimonials) ---------- */
+  let sbClient = null;
   try {
     const AC = window.ADMIN_CONFIG || {};
     if (window.supabase && AC.SUPABASE_URL && !AC.SUPABASE_URL.includes('YOUR-PROJECT')) {
-      const sb = window.supabase.createClient(AC.SUPABASE_URL, AC.SUPABASE_ANON_KEY);
-      const { data: { session } } = await sb.auth.getSession();
+      sbClient = window.supabase.createClient(AC.SUPABASE_URL, AC.SUPABASE_ANON_KEY);
+      const { data: { session } } = await sbClient.auth.getSession();
       if (session) {
         const full = (session.user.user_metadata && session.user.user_metadata.full_name) || '';
         const first = full.split(' ')[0] || session.user.email.split('@')[0];
@@ -61,6 +62,27 @@
       }
     }
   } catch (e) { console.warn('session check skipped', e); }
+
+  /* ---------- testimonials (admin-editable via settings table) ---------- */
+  (async () => {
+    const grid = $('testimonialGrid');
+    if (!grid) return;
+    const escT = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let list = cfg.testimonials || [];
+    try {
+      if (sbClient) {
+        const { data } = await sbClient.from('settings').select('value').eq('key', 'testimonials').maybeSingle();
+        if (data && Array.isArray(data.value) && data.value.length) list = data.value;
+      }
+    } catch { /* config fallback */ }
+    grid.innerHTML = list.map((t) =>
+      `<div class="t-card">
+        <div class="t-stars" aria-label="5 out of 5 stars">★★★★★</div>
+        <p>“${escT(t.text)}”</p>
+        <div class="who"><b>${escT(t.name)}</b> · ${escT(t.location)}</div>
+      </div>`).join('');
+  })();
 
   /* ---------- next Thursday departure ---------- */
   function nextThursday(from) {
