@@ -51,6 +51,8 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 .pill.new{background:#FFF3CD;color:#7A5C00}
 .pill.handled{background:var(--bg-soft);color:var(--grey)}
 .pill.deposit_paid{background:#E7F2EA;color:#1E6B3A}
+.pill.paid{background:#1E6B3A;color:#fff}
+.pill.void{background:var(--bg-soft);color:var(--grey);text-decoration:line-through}
 .pill.open{background:#E7F2EA;color:#1E6B3A}
 .pill.closing{background:#FBEDE9;color:#B03A2E}
 .pill.closed{background:#FBEDE9;color:#B03A2E}
@@ -94,7 +96,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
   <div class="view on" id="view-ship">
     <div class="card">
       <h2>Find shipment</h2>
-      <input type="text" id="shipSearch" placeholder="Waybill, name, or phone…">
+      <input type="text" id="shipSearch" placeholder="B/L number, name, or phone…">
     </div>
     <div id="shipList"></div>
   </div>
@@ -113,10 +115,32 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
         <div><label>Vessel</label><input type="text" id="nsVessel" value="M/V Caribbean Star"></div>
       </div>
       <label>ETA (optional)</label><input type="date" id="nsEta">
-      <button class="btn sea" id="nsCreate">Create shipment → get waybill Nº</button>
+      <button class="btn sea" id="nsCreate">Create shipment → get B/L Nº</button>
       <div class="bigwb" id="nsResult" hidden></div>
       <p class="msg" id="nsMsg"></p>
     </div>
+  </div>
+
+  <!-- EB/L -->
+  <div class="view" id="view-ebl">
+    <div class="card">
+      <h2>Generate EB/L</h2>
+      <label>Real B/L number (optional)</label><input type="text" id="ebBl" placeholder="FCS-2026-1042">
+      <label>Cargo (e.g. Barrel (15 cu ft) or 3 barrels + 1 box)</label><input type="text" id="ebCargo">
+      <div class="row2">
+        <div><label>Quantity</label><input type="number" id="ebQty" value="1" min="1"></div>
+        <div><label>Size (cu ft, optional)</label><input type="number" id="ebCuft" min="0" step="0.1"></div>
+      </div>
+      <div class="row2">
+        <div><label>Destination</label><select id="ebDest"></select></div>
+        <div><label>Exact price ($)</label><input type="number" id="ebPrice" min="1" step="0.01"></div>
+      </div>
+      <button class="btn sea" id="ebCreate">Generate EB/L Nº</button>
+      <div class="bigwb" id="ebResult" hidden></div>
+      <p class="msg" id="ebMsg"></p>
+      <p class="note">Give the customer this EB/L number — they pick "Other (EB/L Number)" on the website, enter it, see this exact price, and pay online.</p>
+    </div>
+    <div id="eblList"></div>
   </div>
 
   <!-- Quotes -->
@@ -155,6 +179,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 <nav class="tabs" id="tabs" hidden>
   <button data-view="ship" class="on"><span class="ico">📦</span>Shipments</button>
   <button data-view="new"><span class="ico">➕</span>New</button>
+  <button data-view="ebl"><span class="ico">📄</span>EB/L</button>
   <button data-view="quotes"><span class="ico">💬</span>Quotes</button>
   <button data-view="sail"><span class="ico">🚢</span>Sailings</button>
   <button data-view="prices"><span class="ico">💲</span>Prices</button>
@@ -177,8 +202,9 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     received: 'Received', loaded: 'Loaded', at_sea: 'At sea',
     arrived: 'Arrived', ready: 'Ready', delivered: 'Delivered',
   };
-  const DESTS = ['Port Castries', 'Vieux-Fort', 'Cul-de-Sac', 'Other Caribbean island'];
+  const DESTS = ['Vieux-Fort', 'Cul-de-Sac', 'Other Caribbean island'];
   $('nsDest').innerHTML = DESTS.map((d) => `<option>${d}</option>`).join('');
+  $('ebDest').innerHTML = DESTS.map((d) => `<option>${d}</option>`).join('');
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -193,7 +219,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     $('app').hidden = !inApp;
     $('tabs').hidden = !inApp;
     $('logoutBtn').hidden = !inApp;
-    if (inApp) { loadShipments(); loadQuotes(); loadSailings(); loadPrices(); }
+    if (inApp) { loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); }
   }
   $('loginBtn').addEventListener('click', async () => {
     if (!db) return;
@@ -266,11 +292,58 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       if (error) throw error;
       await db.from('shipment_events').insert({ shipment_id: data.id, status: 'received', note: '9502 Ditmas Ave warehouse' });
       $('nsResult').textContent = wb; $('nsResult').hidden = false;
-      msg.textContent = 'Shipment created — write this waybill number on the cargo!'; msg.className = 'msg ok';
+      msg.textContent = 'Shipment created — write this B/L number on the cargo!'; msg.className = 'msg ok';
       ['nsName', 'nsPhone', 'nsEmail', 'nsCargo', 'nsEta'].forEach((id) => ($(id).value = ''));
       loadShipments();
     } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
     $('nsCreate').disabled = false;
+  });
+
+  /* ---------- EB/L ---------- */
+  async function loadEbls() {
+    const { data, error } = await db.from('ebl').select('*').order('created_at', { ascending: false }).limit(20);
+    if (error) { $('eblList').innerHTML = `<p class="msg err">${esc(error.message)} — run supabase/ebl.sql first.</p>`; return; }
+    $('eblList').innerHTML = (data || []).map((e) => `<div class="item">
+        <div class="top"><span class="wb">${esc(e.ebl_no)}</span><span class="pill ${esc(e.status)}">${esc(e.status)}</span></div>
+        <div class="meta">${esc(e.cargo)}${e.quantity > 1 ? ' × ' + e.quantity : ''}${e.cuft ? ' · ' + e.cuft + ' cu ft' : ''} → ${esc(e.destination || '—')}</div>
+        <div class="meta">$${(e.price_cents / 100).toLocaleString()} · B/L ${esc(e.bl_no || '—')} · ${new Date(e.created_at).toLocaleDateString()}</div>
+        ${e.status === 'open' ? `<button class="btn sm ghost" data-void="${e.id}">Void</button>` : ''}
+      </div>`).join('') || '<p class="msg">No EB/Ls yet — generate one above.</p>';
+    document.querySelectorAll('[data-void]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        if (confirm('Void this EB/L? The customer will no longer be able to pay it.')) {
+          await db.from('ebl').update({ status: 'void' }).eq('id', b.dataset.void);
+          loadEbls();
+        }
+      }));
+  }
+
+  $('ebCreate').addEventListener('click', async () => {
+    const msg = $('ebMsg'); msg.className = 'msg';
+    const cargo = $('ebCargo').value.trim();
+    const price = Number($('ebPrice').value);
+    if (!cargo || !(price > 0)) { msg.textContent = 'Cargo description and a price are required.'; msg.className = 'msg err'; return; }
+    $('ebCreate').disabled = true;
+    try {
+      const { data: no, error: eNo } = await db.rpc('generate_ebl');
+      if (eNo) throw eNo;
+      const { error } = await db.from('ebl').insert({
+        ebl_no: no,
+        bl_no: $('ebBl').value.trim() || null,
+        cargo,
+        quantity: Math.max(1, parseInt($('ebQty').value, 10) || 1),
+        cuft: Number($('ebCuft').value) || null,
+        destination: $('ebDest').value,
+        price_cents: Math.round(price * 100),
+      });
+      if (error) throw error;
+      $('ebResult').textContent = no; $('ebResult').hidden = false;
+      msg.textContent = 'EB/L created — give this number to the customer.'; msg.className = 'msg ok';
+      ['ebBl', 'ebCargo', 'ebCuft', 'ebPrice'].forEach((id) => ($(id).value = ''));
+      $('ebQty').value = 1;
+      loadEbls();
+    } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
+    $('ebCreate').disabled = false;
   });
 
   /* ---------- quotes ---------- */
@@ -338,37 +411,55 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     loadSailings();
   });
 
-  /* ---------- prices ---------- */
+  /* ---------- prices (v3: EVERY product name, size, and price is editable) ---------- */
   let pricing = null;
+  const rowLP = (group, i, label, num, step) =>
+    `<div class="price-row"><input type="text" data-pl="${group}.${i}" value="${esc(label)}" style="flex:1;min-width:0">` +
+    `<input type="number" min="0" step="${step || 1}" data-p="${group}.${i}" value="${num}"></div>`;
+
   async function loadPrices() {
-    const { data } = await db.from('settings').select('value').eq('key', 'pricing').maybeSingle();
-    if (data && data.value) pricing = data.value;
-    else pricing = await fetch('/site.config.json').then((r) => r.json())
-      .then((c) => ({ cargo: c.cargo, destinations: c.destinations, extras: c.extras }))
+    const base = await fetch('/site.config.json').then((r) => r.json())
+      .then((c) => ({ cargo: c.cargo, destinations: c.destinations, extras: c.extras, supplies: c.supplies, suppliesDeliveryFee: c.suppliesDeliveryFee || 5 }))
       .catch(() => null);
+    const { data } = await db.from('settings').select('value').eq('key', 'pricing').maybeSingle();
+    pricing = (data && data.value && data.value.supplies && data.value.cargo) ? data.value : base;
     if (!pricing) { $('priceFields').innerHTML = '<p class="msg err">Could not load prices.</p>'; return; }
     $('priceFields').innerHTML =
-      '<label>Cargo rates ($)</label>' +
-      pricing.cargo.map((c, i) => `<div class="price-row"><span>${esc(c.label)}</span><input type="number" min="0" step="1" data-p="cargo.${i}" value="${c.price}"></div>`).join('') +
-      '<label>Port fees ($ per item)</label>' +
-      pricing.destinations.map((d, i) => `<div class="price-row"><span>${esc(d.name)}</span><input type="number" min="0" step="1" data-p="destinations.${i}" value="${d.fee}"></div>`).join('') +
-      '<label>Extras ($)</label>' +
-      pricing.extras.map((x, i) => `<div class="price-row"><span>${esc(x.label)}</span><input type="number" min="0" step="1" data-p="extras.${i}" value="${x.price}"></div>`).join('');
+      '<label>Cargo types (name / cubic feet)</label>' +
+      pricing.cargo.map((c, i) => (c.custom || c.ebl) ? '' : rowLP('cargo', i, c.label, c.cuft, 0.5)).join('') +
+      '<label>Destination ports (name / $ per cu ft)</label>' +
+      pricing.destinations.map((d, i) => d.call ? '' : rowLP('destinations', i, d.name, d.rate, 0.5)).join('') +
+      '<label>Extras (name / $)</label>' +
+      pricing.extras.map((x, i) => rowLP('extras', i, x.label, x.price)).join('') +
+      '<label>Empty barrels &amp; bins (name / $)</label>' +
+      pricing.supplies.map((s, i) => rowLP('supplies', i, s.label, s.price)).join('') +
+      `<div class="price-row"><span>Supply home delivery fee</span><input type="number" min="0" step="1" data-p="fee.0" value="${pricing.suppliesDeliveryFee}"></div>`;
   }
   $('savePrices').addEventListener('click', async () => {
     const msg = $('priceMsg'); msg.className = 'msg';
+    document.querySelectorAll('[data-pl]').forEach((inp) => {
+      const [group, i] = inp.dataset.pl.split('.');
+      const v = inp.value.trim();
+      if (!v) return;
+      if (group === 'destinations') pricing.destinations[i].name = v;
+      else pricing[group][i].label = v;
+    });
     document.querySelectorAll('[data-p]').forEach((inp) => {
       const [group, i] = inp.dataset.p.split('.');
       const v = Math.max(0, Number(inp.value) || 0);
-      if (group === 'destinations') pricing.destinations[i].fee = v;
+      if (group === 'destinations') pricing.destinations[i].rate = v;
+      else if (group === 'fee') pricing.suppliesDeliveryFee = v;
+      else if (group === 'cargo') pricing.cargo[i].cuft = v;
       else pricing[group][i].price = v;
-      /* keep button text like "Home pickup +$35" in sync */
-      if (group === 'extras' && pricing.extras[i].buttonText)
-        pricing.extras[i].buttonText = pricing.extras[i].buttonText.replace(/\$\d+/, '$' + v);
+    });
+    /* regenerate the button text customers see from label + price */
+    pricing.extras.forEach((x) => {
+      x.buttonText = x.price > 0 ? `${x.label} +$${x.price}` : `${x.label} — FREE!`;
     });
     const { error } = await db.from('settings').upsert({ key: 'pricing', value: pricing, updated_at: new Date().toISOString() });
     if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
-    msg.textContent = 'Saved — the website is now quoting these rates.'; msg.className = 'msg ok';
+    msg.textContent = 'Saved — the website is now using these products and rates.'; msg.className = 'msg ok';
+    loadPrices();
   });
 
   if (db) { db.auth.onAuthStateChange(() => refreshAuth()); refreshAuth(); }
