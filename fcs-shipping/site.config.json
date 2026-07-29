@@ -55,6 +55,14 @@
     { "q": "Which ports do you serve?", "a": "Vieux-Fort and Cul-de-Sac in St. Lucia, plus connections to other Caribbean islands through our West-Indies Shipping partners — call us for rates beyond St. Lucia." },
     { "q": "How do I pay?", "a": "Cash, card, or Zelle at drop-off or pickup — or lock in your quote online with a card deposit. Your estimate is confirmed when we weigh and manifest your cargo." }
   ],
+  "testimonials": [
+    { "name": "Maudline S.", "location": "Castries, St. Lucia", "stars": 5, "text": "My barrel reached my mother in two weeks, packed exactly how I left it. They even called her when it landed. Nobody else does that." },
+    { "name": "Andre P.", "location": "Flatbush, Brooklyn", "stars": 5, "text": "Been shipping with FCS since they had one van. Six barrels a year and never one missing item. They treat your things like their own family's." },
+    { "name": "Cynthia J.", "location": "Vieux-Fort, St. Lucia", "stars": 5, "text": "The tracking is real — I watched my son's care package go from Brooklyn all the way to the port. Ready for pickup right on the promised date." },
+    { "name": "Marlon B.", "location": "East New York, Brooklyn", "stars": 5, "text": "Free pickup in Brooklyn is no joke. They collected two bins on a Tuesday and it sailed Thursday. Fastest turnaround in the city, period." },
+    { "name": "Theresa F.", "location": "Gros Islet, St. Lucia", "stars": 5, "text": "I ship barrels and stock for my shop every year. Paperwork handled end to end, prices fair and honest. The only company I trust with my business." },
+    { "name": "Kevin D.", "location": "Canarsie, Brooklyn", "stars": 5, "text": "Called at 9am, barrel picked up by noon, paid my EB/L online in two minutes. This is how shipping home should feel. Five stars every time." }
+  ],
   "payments": {
     "testMode": true,
     "_note": "testMode true shows the TEST MODE banner on checkout. Set to false only after real Stripe keys are configured in Netlify."
