@@ -339,6 +339,46 @@ table.list tbody tr:hover{background:#fafcfd}
               <strong style="font-variant-numeric:tabular-nums">Total <span id="orderTotal">$0.00</span></strong>
             </div>
           </div>
+          <!-- ===================== BILLING ===================== -->
+          <div class="card" id="billCard">
+            <h2>Billing &amp; payment</h2>
+            <p class="hint">Creates an EB/L the customer can pay online, and an invoice in QuickBooks for the books.</p>
+
+            <div id="billNone">
+              <p style="margin:0 0 14px;font-size:13px;color:var(--muted)">
+                Save the order first, then bill it from here.
+              </p>
+              <button class="btn" id="btnMakeEbl">Create EB/L + QuickBooks invoice</button>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:10px">
+                <input type="checkbox" id="fMarkPaid"> Customer already paid (mark paid immediately)
+              </label>
+              <p class="msg" id="billMsg" style="font-size:12.5px;margin-top:10px"></p>
+            </div>
+
+            <div id="billHas" hidden>
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">EB/L number</div>
+                  <div id="billEbl" style="font-size:19px;font-weight:600;font-variant-numeric:tabular-nums"></div>
+                </div>
+                <div>
+                  <div style="font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">QuickBooks</div>
+                  <div id="billQb" style="font-size:14px"></div>
+                </div>
+                <span class="grow" style="flex:1"></span>
+                <div style="text-align:right">
+                  <div style="font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">Status</div>
+                  <div id="billState" style="font-size:17px;font-weight:700"></div>
+                </div>
+              </div>
+              <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn" id="btnPaid">Mark PAID</button>
+                <button class="btn ghost" id="btnUnpaid">Mark NOT paid</button>
+                <button class="btn ghost" id="btnCopyEbl">Copy EB/L for customer</button>
+              </div>
+              <p class="msg" id="billMsg2" style="font-size:12.5px;margin-top:10px"></p>
+            </div>
+          </div>
         </div>
         <div class="stickywrap">
           <div class="pv-bar">
@@ -420,6 +460,13 @@ table.list tbody tr:hover{background:#fafcfd}
           <div><label class="f">Default price per unit</label><input class="f" id="sRate"></div>
         </div>
         <div style="margin-top:16px"><button class="btn" id="btnSaveSettings">Save settings</button></div>
+      </div>
+      <div class="card">
+        <h2>QuickBooks</h2>
+        <p class="hint">Connect once. After that, billing an order posts the invoice to your books automatically.</p>
+        <div id="qbState" style="font-size:13.5px;margin-bottom:14px;color:var(--muted)">Checking…</div>
+        <a class="btn" id="qbConnect" href="/.netlify/functions/qbo-connect">Connect QuickBooks</a>
+        <button class="btn ghost" id="qbRecheck">Re-check</button>
       </div>
       <div class="card">
         <h2>Data</h2>
@@ -526,7 +573,8 @@ function blankOrder(){
     customerId:'',
     sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
     co:{name:'',name2:'',title:'',org:'',city:'',phone:''},
-    items:[blankItem(),blankItem()], showTotal:true
+    items:[blankItem(),blankItem()], showTotal:true,
+    eblNo:'', qbInvoiceNo:'', paid:false
   };
 }
 function itemAmount(it){
@@ -551,6 +599,7 @@ function draftToForm(){
   renderItems();
   $('#orderTitle').textContent = draft.id ? 'Order '+draft.inv : 'New order';
   $('#orderSub').textContent = draft.id ? 'Editing a saved order.' : 'Fill the left side, print the right.';
+  renderBilling();
   renderPreview();
 }
 function formToDraft(){
@@ -674,6 +723,118 @@ function renderPreview(){
   }
 }
 /* ============================================================
+   4b. BILLING — EB/L + QuickBooks + paid status
+   ============================================================ */
+const FN = '/.netlify/functions';
+async function authHeaders(){
+  if(!SBC) return {};
+  const { data:{ session } } = await SBC.auth.getSession();
+  return session ? { Authorization:'Bearer '+session.access_token, 'Content-Type':'application/json' }
+                 : { 'Content-Type':'application/json' };
+}
+function renderBilling(){
+  const has = !!(draft && draft.eblNo);
+  $('#billHas').hidden = !has;
+  $('#billNone').hidden = has;
+  $('#btnMakeEbl').disabled = !(draft && draft.id);
+  $('#billMsg').textContent = (draft && !draft.id)
+    ? 'Save the order to enable billing.' : '';
+  if(has){
+    $('#billEbl').textContent = draft.eblNo;
+    $('#billQb').textContent = draft.qbInvoiceNo ? 'Invoice '+draft.qbInvoiceNo : 'not posted';
+    const st = $('#billState');
+    st.textContent = draft.paid ? 'PAID' : 'NOT PAID';
+    st.style.color = draft.paid ? '#177245' : '#B45309';
+  }
+}
+async function saveOrderQuiet(){
+  if(!draft.id) return;
+  orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
+  await persist(); renderOrders();
+}
+$('#btnMakeEbl').addEventListener('click', async()=>{
+  formToDraft();
+  const msg=$('#billMsg'); msg.className='msg';
+  const total = orderTotal(draft);
+  if(!draft.id) { msg.textContent='Save the order first.'; msg.className='msg err'; return; }
+  if(total<=0){ msg.textContent='Add a line item with an amount first.'; msg.className='msg err'; return; }
+  const btn=$('#btnMakeEbl'); btn.disabled=true; btn.textContent='Creating…';
+  try{
+    const lines = draft.items.filter(it=>itemAmount(it)>0).map(it=>({
+      desc: it.desc || 'Shipping services', qty: it.qty,
+      price: String(it.price).replace(/[^0-9.]/g,''), amount: itemAmount(it)
+    }));
+    const res = await fetch(FN+'/order-to-ebl', {
+      method:'POST', headers: await authHeaders(),
+      body: JSON.stringify({
+        orderInv: draft.inv, blNo: draft.container || '',
+        cargo: draft.items.map(i=>i.desc).filter(Boolean).join(', ') || 'Shipping services',
+        quantity: parseInt(draft.items[0] && draft.items[0].qty,10) || 1,
+        destination: draft.co.city || '',
+        priceCents: Math.round(total*100),
+        customerName: draft.sh.name,
+        customerExtra: { phone:draft.sh.phone, street:draft.sh.street, city:draft.sh.city, state:draft.sh.state,
+                         email:(customers.find(c=>c.id===draft.customerId)||{}).email || '' },
+        markPaid: $('#fMarkPaid').checked,
+        lines, txnDate: draft.invDate || null
+      })
+    });
+    const d = await res.json().catch(()=>({}));
+    if(!res.ok || !d.ok) throw new Error(d.error || 'Could not create the EB/L');
+    draft.eblNo = d.eblNo;
+    draft.paid = !!$('#fMarkPaid').checked;
+    draft.qbInvoiceNo = (d.quickbooks && d.quickbooks.ok) ? (d.quickbooks.docNumber || 'posted') : '';
+    await saveOrderQuiet();
+    renderBilling();
+    const qbNote = !d.quickbooks.attempted ? 'QuickBooks not connected — EB/L created.'
+      : d.quickbooks.ok ? 'QuickBooks invoice posted.'
+      : 'EB/L created, but QuickBooks said: '+d.quickbooks.error;
+    $('#billMsg2').textContent = qbNote;
+    $('#billMsg2').className = d.quickbooks.attempted && !d.quickbooks.ok ? 'msg err' : 'msg';
+    toast('EB/L '+d.eblNo+' created');
+  }catch(e){ msg.textContent=e.message; msg.className='msg err'; }
+  btn.disabled=false; btn.textContent='Create EB/L + QuickBooks invoice';
+});
+async function setPaid(paid){
+  const msg=$('#billMsg2'); msg.className='msg'; msg.textContent='Updating…';
+  try{
+    const res = await fetch(FN+'/ebl-status', {
+      method:'POST', headers: await authHeaders(),
+      body: JSON.stringify({ eblNo: draft.eblNo, status: paid?'paid':'open' })
+    });
+    const d = await res.json().catch(()=>({}));
+    if(!res.ok || !d.ok) throw new Error(d.error||'Update failed');
+    draft.paid = paid; await saveOrderQuiet(); renderBilling();
+    msg.textContent = paid
+      ? (d.quickbooks && d.quickbooks.ok ? 'Marked paid — payment recorded in QuickBooks too.'
+         : d.quickbooks && d.quickbooks.error ? 'Marked paid. QuickBooks: '+d.quickbooks.error
+         : 'Marked paid.')
+      : 'Set back to not paid.';
+    toast(paid?'Marked paid':'Marked not paid');
+  }catch(e){ msg.textContent=e.message; msg.className='msg err'; }
+}
+$('#btnPaid').addEventListener('click',()=>setPaid(true));
+$('#btnUnpaid').addEventListener('click',()=>setPaid(false));
+$('#btnCopyEbl').addEventListener('click',async()=>{
+  const txt = `Your FCS Shipping bill of lading: ${draft.eblNo}\nAmount due: ${money(orderTotal(draft))}\nPay online at ${location.origin}/#quote — choose "Other (EB/L Number)" and enter ${draft.eblNo}.`;
+  try{ await navigator.clipboard.writeText(txt); toast('Copied — paste into a text or email'); }
+  catch{ prompt('Copy this for the customer:', txt); }
+});
+/* QuickBooks connection state (Settings tab) */
+async function qbCheck(){
+  const el=$('#qbState');
+  try{
+    const res = await fetch(FN+'/ebl-status?qbstatus=1', { headers: await authHeaders() });
+    const d = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'unavailable');
+    if(!d.configured){ el.innerHTML='<b>Not set up.</b> Add QB_CLIENT_ID, QB_CLIENT_SECRET and QB_ENV in Netlify, then redeploy.'; $('#qbConnect').style.display='none'; }
+    else if(d.connected){ el.innerHTML='<b style="color:#177245">Connected</b> — company '+esc(d.realmId||'')+' ('+esc(d.env)+'). Invoices will post automatically.'; $('#qbConnect').textContent='Reconnect QuickBooks'; }
+    else { el.innerHTML='<b>Set up, not connected yet.</b> Click Connect and sign in to QuickBooks.'; }
+  }catch(e){ el.textContent='Could not check QuickBooks: '+e.message; }
+}
+$('#qbRecheck').addEventListener('click',qbCheck);
+
+/* ============================================================
    5. LISTS
    ============================================================ */
 function renderCustomerSelect(){
@@ -712,14 +873,14 @@ function renderOrders(){
   const rows = orders.filter(o=>!q || [o.inv,o.po,o.container,o.sh.name,o.co.name].join(' ').toLowerCase().includes(q));
   $('#ordersList').innerHTML = rows.length ? `
     <table class="list"><thead><tr>
-      <th>Invoice</th><th>Date</th><th>Shipper</th><th>Consignee</th><th>PO</th><th class="num">Total</th><th></th>
+      <th>Invoice</th><th>Date</th><th>Shipper</th><th>EB/L</th><th>Paid</th><th class="num">Total</th><th></th>
     </tr></thead><tbody>${rows.map(o=>`
       <tr>
-        <td><strong>${esc(o.inv)}</strong></td>
+        <td><strong>${esc(o.inv)}</strong>${o.po?`<div style="color:var(--muted);font-size:12px">PO ${esc(o.po)}</div>`:''}</td>
         <td>${esc(usDate(o.invDate))}</td>
-        <td>${esc(o.sh.name)}</td>
-        <td>${esc([o.co.name,o.co.name2].filter(Boolean).join(' '))}</td>
-        <td>${esc(o.po||'')}</td>
+        <td>${esc(o.sh.name)}<div style="color:var(--muted);font-size:12px">${esc([o.co.name,o.co.name2].filter(Boolean).join(' '))}</div></td>
+        <td>${o.eblNo?`<span style="font-variant-numeric:tabular-nums">${esc(o.eblNo)}</span>${o.qbInvoiceNo?`<div style="color:var(--muted);font-size:12px">QB ${esc(o.qbInvoiceNo)}</div>`:''}`:'<span style="color:var(--muted)">—</span>'}</td>
+        <td>${o.eblNo?(o.paid?'<b style="color:#177245">PAID</b>':'<b style="color:#B45309">NOT PAID</b>'):'<span style="color:var(--muted)">—</span>'}</td>
         <td class="num">${money(orderTotal(o))}</td>
         <td class="num" style="white-space:nowrap">
           <button class="btn ghost sm" data-openo="${o.id}">Open</button>
@@ -796,7 +957,7 @@ $('#btnSaveOrder').addEventListener('click',async()=>{
     if(String(draft.inv)===String(S.next)){ S.next = bumpInvoice(S.next); $('#sNext').value=S.next; }
     toast('Order '+draft.inv+' saved');
   }
-  await persist(); renderOrders();
+  await persist(); renderOrders(); renderBilling();
   $('#orderTitle').textContent='Order '+draft.inv;
 });
 $('#btnPrint').addEventListener('click',()=>{
@@ -815,6 +976,7 @@ $('#ordersList').addEventListener('click',async e=>{
     draft=JSON.parse(JSON.stringify(o));
     draft.id=null; draft.inv=S.next; draft.invDate=todayISO(); draft.pickup=todayISO(); draft.time=nowTime();
     draft.container=''; draft.code='';
+    draft.eblNo=''; draft.qbInvoiceNo=''; draft.paid=false;
     goTab('order'); draftToForm(); toast('Copied — new invoice number');
   }
   if(t.dataset.delo){
