@@ -173,6 +173,14 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       <button class="btn sea" id="savePrices">Save prices</button>
       <p class="msg" id="priceMsg"></p>
     </div>
+    <div class="card">
+      <h2>Customer testimonials</h2>
+      <p class="note" style="margin-top:0">Shown on the website under "You name it, we ship it!" — always displayed with 5 stars.</p>
+      <div id="tstList"></div>
+      <button class="btn sm ghost" id="tstAdd">+ Add testimonial</button>
+      <button class="btn sea" id="tstSave">Save testimonials</button>
+      <p class="msg" id="tstMsg"></p>
+    </div>
   </div>
 </main>
 
@@ -219,7 +227,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     $('app').hidden = !inApp;
     $('tabs').hidden = !inApp;
     $('logoutBtn').hidden = !inApp;
-    if (inApp) { loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); }
+    if (inApp) { loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); loadTestimonials(); }
   }
   $('loginBtn').addEventListener('click', async () => {
     if (!db) return;
@@ -460,6 +468,43 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
     msg.textContent = 'Saved — the website is now using these products and rates.'; msg.className = 'msg ok';
     loadPrices();
+  });
+
+  /* ---------- testimonials (settings key 'testimonials') ---------- */
+  let testimonials = [];
+  async function loadTestimonials() {
+    const { data } = await db.from('settings').select('value').eq('key', 'testimonials').maybeSingle();
+    if (data && Array.isArray(data.value)) testimonials = data.value;
+    else testimonials = await fetch('/site.config.json').then((r) => r.json())
+      .then((c) => c.testimonials || []).catch(() => []);
+    renderTst();
+  }
+  function renderTst() {
+    $('tstList').innerHTML = testimonials.map((t, i) => `<div class="item">
+        <label>Name</label><input type="text" data-tn="${i}" value="${esc(t.name)}" placeholder="e.g. Maudline S.">
+        <label>Location</label><input type="text" data-tl="${i}" value="${esc(t.location)}" placeholder="e.g. Castries, St. Lucia">
+        <label>Review</label><input type="text" data-tt="${i}" value="${esc(t.text)}">
+        <button class="btn sm ghost" data-tdel="${i}">Delete</button>
+      </div>`).join('') || '<p class="msg">No testimonials — add your first one.</p>';
+    document.querySelectorAll('[data-tdel]').forEach((b) =>
+      b.addEventListener('click', () => { collectTst(); testimonials.splice(+b.dataset.tdel, 1); renderTst(); }));
+  }
+  function collectTst() {
+    document.querySelectorAll('[data-tn]').forEach((i) => (testimonials[+i.dataset.tn].name = i.value.trim()));
+    document.querySelectorAll('[data-tl]').forEach((i) => (testimonials[+i.dataset.tl].location = i.value.trim()));
+    document.querySelectorAll('[data-tt]').forEach((i) => (testimonials[+i.dataset.tt].text = i.value.trim()));
+    testimonials.forEach((t) => (t.stars = 5));
+  }
+  $('tstAdd').addEventListener('click', () => { collectTst(); testimonials.push({ name: '', location: '', stars: 5, text: '' }); renderTst(); });
+  $('tstSave').addEventListener('click', async () => {
+    const msg = $('tstMsg'); msg.className = 'msg';
+    collectTst();
+    const clean = testimonials.filter((t) => t.name && t.text);
+    const { error } = await db.from('settings').upsert({ key: 'testimonials', value: clean, updated_at: new Date().toISOString() });
+    if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
+    testimonials = clean;
+    msg.textContent = 'Saved — the website is showing these reviews now.'; msg.className = 'msg ok';
+    renderTst();
   });
 
   if (db) { db.auth.onAuthStateChange(() => refreshAuth()); refreshAuth(); }
