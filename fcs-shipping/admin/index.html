@@ -18,6 +18,8 @@ header{background:var(--ink);color:#fff;padding:.9rem 1.2rem;display:flex;align-
 header .t{font-weight:900;text-transform:uppercase;letter-spacing:.04em}
 header .t small{display:block;font-family:var(--mono);font-weight:400;font-size:.6rem;letter-spacing:.2em;color:#BCD3E2}
 #logoutBtn{background:none;border:1px solid #444;color:#ccc;border-radius:6px;padding:.4rem .9rem;font-size:.8rem}
+#ordersLink{margin-left:auto;margin-right:.6rem;color:#BCD3E2;text-decoration:none;font-size:.82rem;font-weight:700;border:1px solid #2f6a8c;border-radius:6px;padding:.4rem .8rem}
+#ordersLink:hover{background:#0B5C8A;color:#fff}
 main{max-width:760px;margin:0 auto;padding:1.2rem}
 .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:1.2rem;margin-bottom:1rem}
 h2{font-size:1.05rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.9rem}
@@ -71,6 +73,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 
 <header>
   <div class="t">FCS Admin<small>Staff dashboard</small></div>
+  <a id="ordersLink" href="/admin/orders/" hidden>Order entry →</a>
   <button id="logoutBtn" hidden>Log out</button>
 </header>
 
@@ -227,6 +230,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     $('app').hidden = !inApp;
     $('tabs').hidden = !inApp;
     $('logoutBtn').hidden = !inApp;
+    $('ordersLink').hidden = !inApp;
     if (inApp) { loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); loadTestimonials(); }
   }
   $('loginBtn').addEventListener('click', async () => {
