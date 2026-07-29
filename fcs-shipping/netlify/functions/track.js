@@ -8,7 +8,7 @@ const DEMO = {
   waybill_no: 'FCS-2026-4471',
   status: 'at_sea',
   vessel: 'M/V Caribbean Star',
-  destination: 'Port Castries',
+  destination: 'Vieux-Fort',
   eta: '2026-07-28',
   events: [
     { status: 'received', note: '9502 Ditmas Ave', created_at: '2026-07-14T10:22:00-04:00' },

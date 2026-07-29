@@ -28,6 +28,19 @@ exports.handler = async (event) => {
 
   if (stripeEvent.type === 'checkout.session.completed') {
     const session = stripeEvent.data.object;
+    const eblNo = session.metadata && session.metadata.ebl_no;
+    if (eblNo && supabaseConfigured()) {
+      try {
+        await sb(`ebl?ebl_no=eq.${encodeURIComponent(eblNo)}`, {
+          method: 'PATCH',
+          body: { status: 'paid', stripe_session_id: session.id },
+        });
+        console.log(`EB/L ${eblNo} marked paid (${session.id})`);
+      } catch (e) {
+        console.error('Failed to update EB/L:', e.message);
+        return json(500, { error: 'DB update failed' });
+      }
+    }
     const quoteId = session.metadata && session.metadata.quote_id;
     if (quoteId && supabaseConfigured()) {
       try {
