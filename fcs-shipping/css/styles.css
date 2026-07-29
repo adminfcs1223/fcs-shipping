@@ -62,6 +62,33 @@ h1{font-weight:900;font-size:clamp(2.8rem,7vw,5.2rem);line-height:1.02;letter-sp
 .next-sail .lbl{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:#DCE9F2;text-align:left}
 .next-sail .val{font-family:var(--mono);font-weight:600;font-size:1rem;text-align:left}
 
+/* ---------- endorsement badge (hero) ---------- */
+.endorse{margin:1.7rem auto 0;display:inline-flex;align-items:center;gap:1rem;padding:.9rem 1.4rem;border:1px solid rgba(255,255,255,.28);border-radius:var(--radius);background:rgba(10,25,40,.35);backdrop-filter:blur(6px);opacity:0;animation:endorse-in 1.2s cubic-bezier(.22,1,.36,1) 1s forwards}
+.endorse-logo{height:56px;width:auto;filter:invert(1) brightness(1.4);opacity:.95;flex-shrink:0}
+.endorse-text{text-align:left;font-family:var(--mono);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:#DCE9F2}
+.endorse-text b{display:block;font-family:var(--body);font-weight:900;font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin-top:.25rem;position:relative;padding-bottom:.3rem}
+.endorse-text b::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:0;background:linear-gradient(90deg,#fff,rgba(255,255,255,.2));animation:endorse-line 1.1s ease 2s forwards}
+@keyframes endorse-in{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes endorse-line{to{width:100%}}
+@media(prefers-reduced-motion:reduce){.endorse{animation:none;opacity:1}.endorse-text b::after{animation:none;width:100%}}
+
+/* ---------- testimonials ---------- */
+.t-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}
+@media(max-width:900px){.t-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.t-grid{grid-template-columns:1fr}}
+.t-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:1.7rem;display:flex;flex-direction:column;gap:.7rem;transition:transform .2s,box-shadow .2s}
+.t-card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(17,17,17,.08)}
+.t-stars{color:#E8A93D;font-size:1.05rem;letter-spacing:.18em}
+.t-card p{font-size:.92rem;color:var(--ink)}
+.t-card .who{font-family:var(--mono);font-size:.74rem;color:var(--grey);margin-top:auto}
+.t-card .who b{color:var(--sea)}
+
+/* ---------- award badge (about band) ---------- */
+.award{margin-top:1.5rem;display:flex;align-items:center;gap:.9rem}
+.award img{height:48px;width:auto;filter:invert(1) brightness(1.8);opacity:.95}
+.award span{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:#BCD3E2}
+.award span b{display:block;color:#fff;font-family:var(--body);font-size:.9rem;letter-spacing:.05em;margin-top:.15rem}
+
 /* ---------- strip ---------- */
 .strip{background:var(--bg-soft);border-bottom:1px solid var(--line);overflow:hidden;padding:.9rem 0}
 .strip-track{display:flex;gap:3rem;width:max-content;animation:scroll 120s linear infinite;font-weight:800;font-size:.85rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grey)}
