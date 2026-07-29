@@ -44,7 +44,7 @@
 </nav>
 
 <header class="hero" id="top">
-  <img class="hero-img" src="/assets/fcs-background-test2.png"
+  <img class="hero-img" src="/assets/fcs-hero-background.jpg"
        onerror="this.onerror=null;this.src='/assets/hero-ship.jpg'"
        alt="FCS Shipping container ship at sea">
   <div>
@@ -67,8 +67,8 @@
 
 <div class="strip" aria-hidden="true">
   <div class="strip-track">
-    <span>Port Castries <em>●</em> Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> St. Lucia <em>●</em> Jamaica <em>●</em> Trinidad &amp; Tobago <em>●</em> Barbados <em>●</em> Grenada <em>●</em> St. Vincent &amp; the Grenadines <em>●</em> Dominica <em>●</em> Antigua &amp; Barbuda <em>●</em> St. Kitts &amp; Nevis <em>●</em> Montserrat <em>●</em> Anguilla <em>●</em> British Virgin Islands <em>●</em> U.S. Virgin Islands <em>●</em> Puerto Rico <em>●</em> Dominican Republic <em>●</em> Haiti <em>●</em> Cuba <em>●</em> The Bahamas <em>●</em> Turks &amp; Caicos <em>●</em> Cayman Islands <em>●</em> Aruba <em>●</em> Curaçao <em>●</em> Bonaire <em>●</em> Sint Maarten <em>●</em> St. Martin <em>●</em> St. Barthélemy <em>●</em> Guadeloupe <em>●</em> Martinique <em>●</em></span>
-    <span>Port Castries <em>●</em> Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> St. Lucia <em>●</em> Jamaica <em>●</em> Trinidad &amp; Tobago <em>●</em> Barbados <em>●</em> Grenada <em>●</em> St. Vincent &amp; the Grenadines <em>●</em> Dominica <em>●</em> Antigua &amp; Barbuda <em>●</em> St. Kitts &amp; Nevis <em>●</em> Montserrat <em>●</em> Anguilla <em>●</em> British Virgin Islands <em>●</em> U.S. Virgin Islands <em>●</em> Puerto Rico <em>●</em> Dominican Republic <em>●</em> Haiti <em>●</em> Cuba <em>●</em> The Bahamas <em>●</em> Turks &amp; Caicos <em>●</em> Cayman Islands <em>●</em> Aruba <em>●</em> Curaçao <em>●</em> Bonaire <em>●</em> Sint Maarten <em>●</em> St. Martin <em>●</em> St. Barthélemy <em>●</em> Guadeloupe <em>●</em> Martinique <em>●</em></span>
+    <span>Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> St. Lucia <em>●</em> Jamaica <em>●</em> Trinidad &amp; Tobago <em>●</em> Barbados <em>●</em> Grenada <em>●</em> St. Vincent &amp; the Grenadines <em>●</em> Dominica <em>●</em> Antigua &amp; Barbuda <em>●</em> St. Kitts &amp; Nevis <em>●</em> Montserrat <em>●</em> Anguilla <em>●</em> British Virgin Islands <em>●</em> U.S. Virgin Islands <em>●</em> Puerto Rico <em>●</em> Dominican Republic <em>●</em> Haiti <em>●</em> Cuba <em>●</em> The Bahamas <em>●</em> Turks &amp; Caicos <em>●</em> Cayman Islands <em>●</em> Aruba <em>●</em> Curaçao <em>●</em> Bonaire <em>●</em> Sint Maarten <em>●</em> St. Martin <em>●</em> St. Barthélemy <em>●</em> Guadeloupe <em>●</em> Martinique <em>●</em></span>
+    <span>Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> St. Lucia <em>●</em> Jamaica <em>●</em> Trinidad &amp; Tobago <em>●</em> Barbados <em>●</em> Grenada <em>●</em> St. Vincent &amp; the Grenadines <em>●</em> Dominica <em>●</em> Antigua &amp; Barbuda <em>●</em> St. Kitts &amp; Nevis <em>●</em> Montserrat <em>●</em> Anguilla <em>●</em> British Virgin Islands <em>●</em> U.S. Virgin Islands <em>●</em> Puerto Rico <em>●</em> Dominican Republic <em>●</em> Haiti <em>●</em> Cuba <em>●</em> The Bahamas <em>●</em> Turks &amp; Caicos <em>●</em> Cayman Islands <em>●</em> Aruba <em>●</em> Curaçao <em>●</em> Bonaire <em>●</em> Sint Maarten <em>●</em> St. Martin <em>●</em> St. Barthélemy <em>●</em> Guadeloupe <em>●</em> Martinique <em>●</em></span>
   </div>
 </div>
 
@@ -85,9 +85,29 @@
         <label>What are you shipping?</label>
         <div class="chip-row" id="itemChips"></div>
       </div>
+      <div class="field" id="dimsField" hidden>
+        <label>Box measurements (inches)</label>
+        <div class="dims-row">
+          <input type="number" id="dimL" min="1" placeholder="Length">
+          <span>×</span>
+          <input type="number" id="dimW" min="1" placeholder="Width">
+          <span>×</span>
+          <input type="number" id="dimH" min="1" placeholder="Height">
+        </div>
+        <p class="dims-note" id="dimsNote">= enter all three to calculate cubic feet</p>
+      </div>
+      <div class="field" id="eblField" hidden>
+        <label for="eblInput">Your EB/L number</label>
+        <div class="ebl-row">
+          <input type="text" id="eblInput" placeholder="EBL-2026-0000">
+          <button type="button" class="btn btn-dark" id="eblLoad">Load</button>
+        </div>
+        <p class="dims-note" id="eblMsg">Enter the EB/L number our team gave you — your exact price loads automatically.</p>
+      </div>
       <div class="field">
         <label for="dest">Destination port</label>
         <select id="dest"></select>
+        <p class="dims-note" id="destNote" hidden>Call <a href="tel:+17184838006">(718) 483-8006</a> for exact rates to other islands.</p>
       </div>
       <div class="field">
         <label>Quantity</label>
@@ -100,6 +120,13 @@
       <div class="field">
         <label>Extras</label>
         <div class="chip-row" id="extraChips"></div>
+      </div>
+      <div class="field">
+        <label>Need empty barrels or bins?</label>
+        <div id="suppliesList"></div>
+        <div class="chip-row" id="supplyDeliveryWrap" hidden>
+          <button type="button" class="chip" id="supplyDelivery" aria-pressed="false">Deliver supplies to my home +$5</button>
+        </div>
       </div>
       <button type="button" class="btn btn-dark" id="lockBtn">Lock in this rate →</button>
 
@@ -134,19 +161,23 @@
 
     <div class="waybill reveal" aria-live="polite">
       <div class="wb-head">
-        <div class="co">FCS Shipping LLC.<small>BROOKLYN · NEW YORK · USA</small></div>
-        <div class="wb-no">WAYBILL Nº<b id="wbNo">FCS-2026-0000</b></div>
+        <div class="wb-brand">
+          <img src="/assets/fcs-logo.png" alt="" class="wb-logo">
+          <div class="co">FCS Shipping LLC.<small>BROOKLYN · NEW YORK · THE WORLD</small></div>
+        </div>
+        <div class="wb-no"><span id="wbNoLabel">EB/L Nº</span><b id="wbNo">PENDING</b></div>
       </div>
       <div class="wb-row"><span>Shipper</span><span>You, Brooklyn NY</span></div>
       <div class="wb-row"><span>Cargo</span><span id="wbItem">—</span></div>
+      <div class="wb-row"><span>Volume</span><span id="wbVolume">—</span></div>
       <div class="wb-row"><span>Destination</span><span id="wbDest">—</span></div>
-      <div class="wb-row"><span>Vessel</span><span id="wbVessel">M/V Caribbean Star</span></div>
-      <div class="wb-row"><span>Base rate</span><span id="wbBase">—</span></div>
-      <div class="wb-row"><span>Port fee</span><span id="wbFee">—</span></div>
+      <div class="wb-row"><span>Departing</span><span id="wbDeparting">—</span></div>
+      <div class="wb-row"><span>Freight</span><span id="wbBase">—</span></div>
       <div class="wb-row"><span>Extras</span><span id="wbExtras">—</span></div>
-      <div class="wb-total"><span>ESTIMATED TOTAL</span><span class="amt" id="wbTotal">—</span></div>
+      <div class="wb-row"><span>Supplies</span><span id="wbSupplies">—</span></div>
+      <div class="wb-total"><span id="wbTotalLabel">ESTIMATED TOTAL</span><span class="amt" id="wbTotal">—</span></div>
       <div class="wb-stamp">Ship It!</div>
-      <p class="wb-note">Estimate only. Final rate confirmed at drop-off or pickup when cargo is weighed and manifested.</p>
+      <p class="wb-note" id="wbNote">Estimate only. Final rate confirmed at drop-off or pickup when cargo is weighed and manifested.</p>
     </div>
   </div>
 </section>
@@ -157,18 +188,18 @@
     <div class="sec-head reveal">
       <div class="eyebrow">Shipment tracking</div>
       <h2>Where's my barrel?</h2>
-      <p>Enter your waybill number and follow your cargo from our Brooklyn warehouse to the island.</p>
+      <p>Enter your B/L number and follow your cargo from our Brooklyn warehouse to the island.</p>
     </div>
     <div class="track-box reveal">
       <div class="track-form">
-        <input id="trackInput" type="text" placeholder="e.g. FCS-2026-4471" aria-label="Waybill number">
+        <input id="trackInput" type="text" placeholder="e.g. FCS-2026-4471" aria-label="B/L number">
         <button class="btn btn-dark" id="trackBtn">Track shipment</button>
       </div>
-      <p class="hint">Lost your waybill number? Call us — <span id="trackPhone">(718) 483-8006</span>. Demo: try <button id="demoNo" type="button">FCS-2026-4471</button></p>
+      <p class="hint">Lost your B/L number? Call us — <span id="trackPhone">(718) 483-8006</span>. Demo: try <button id="demoNo" type="button">FCS-2026-4471</button></p>
       <p class="track-err" id="trackErr" role="alert"></p>
       <div class="timeline" id="timeline">
         <div class="tl-head">
-          <div><span style="color:var(--grey);font-size:.7rem;letter-spacing:.16em">WAYBILL</span><br><b id="tlNo">—</b></div>
+          <div><span style="color:var(--grey);font-size:.7rem;letter-spacing:.16em">B/L Nº</span><br><b id="tlNo">—</b></div>
           <div class="status" id="tlStatus">—</div>
         </div>
         <div id="tlSteps"></div>
@@ -186,7 +217,7 @@
   </div>
   <div class="sched-wrap reveal">
     <table class="sched">
-      <thead><tr><th>Vessel</th><th>Departs Brooklyn</th><th>Arrives Castries</th><th>Cut-off</th><th>Status</th></tr></thead>
+      <thead><tr><th>Vessel</th><th>Departs Brooklyn</th><th>Arrives St. Lucia</th><th>Cut-off</th><th>Status</th></tr></thead>
       <tbody id="schedBody"></tbody>
     </table>
   </div>
@@ -199,11 +230,11 @@
     <h2>You name it, we ship it!</h2>
   </div>
   <div class="svc-grid">
-    <div class="svc reveal"><span class="ico">🛢️</span><h3>Barrels</h3><p>The Caribbean classic. Pack it tight, we handle the rest — food, clothes, care packages for family back home.</p><div class="from" data-price-from="barrel">from $120</div></div>
-    <div class="svc reveal"><span class="ico">📦</span><h3>Boxes &amp; packages</h3><p>Any size, professionally palletized and secured for the crossing.</p><div class="from" data-price-from="box">from $65</div></div>
-    <div class="svc reveal"><span class="ico">🚗</span><h3>Vehicles</h3><p>Cars, trucks, and bikes shipped roll-on or containerized, with paperwork handled end to end.</p><div class="from" data-price-from="vehicle">from $1,450</div></div>
-    <div class="svc reveal"><span class="ico">🚢</span><h3>Full containers</h3><p>20ft and 40ft containers for movers, builders, and businesses. Exclusive use, sealed at our yard.</p><div class="from" data-price-from="container">from $3,900</div></div>
-    <div class="svc reveal"><span class="ico">🚚</span><h3>Home pickup</h3><p>Can't make it to Ditmas Ave? We'll come collect anywhere in the five boroughs.</p><div class="from" data-price-from="extra:pickup">from $35</div></div>
+    <div class="svc reveal"><span class="ico">🛢️</span><h3>Barrels</h3><p>The Caribbean classic. Pack it tight, we handle the rest — food, clothes, care packages for family back home.</p><div class="from">from $150</div></div>
+    <div class="svc reveal"><span class="ico">📦</span><h3>Boxes &amp; packages</h3><p>Any size — priced by the cubic foot, professionally palletized and secured for the crossing.</p><div class="from">$10–11 per cu ft</div></div>
+    <div class="svc reveal"><span class="ico">🚗</span><h3>Vehicles</h3><p>Cars, trucks, and bikes shipped roll-on or containerized, with paperwork handled end to end.</p><div class="from">call us</div></div>
+    <div class="svc reveal"><span class="ico">🚢</span><h3>Full containers</h3><p>20ft and 40ft containers for movers, builders, and businesses. Exclusive use, sealed at our yard.</p><div class="from">call us</div></div>
+    <div class="svc reveal"><span class="ico">🚚</span><h3>Home pickup</h3><p>Can't make it to Ditmas Ave? We'll come collect — free in Brooklyn, $20 in the other boroughs.</p><div class="from">FREE in Brooklyn</div></div>
     <div class="svc reveal"><span class="ico">🤝</span><h3>West-Indies agents</h3><p>Official agents for West-Indies Shipping, with trusted partners at every port we serve.</p><div class="from">ask us</div></div>
   </div>
 </section>
@@ -254,6 +285,8 @@
   <p id="footLine">© 2026 FCS Shipping LLC. · 9502 Ditmas Ave Building 4, Brooklyn NY · (718) 483-8006 · admin@fcsshipping.com</p>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/admin/config.js"></script>
 <script src="/js/main.js"></script>
 </body>
 </html>

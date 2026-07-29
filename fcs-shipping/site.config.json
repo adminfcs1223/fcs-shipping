@@ -13,28 +13,32 @@
     "founder": "Felix Harrison"
   },
   "hero": {
-    "kicker": "Ship with the fastest growing shipping firm in NYC!",
-    "title": "We Make Ship Happen",
+    "kicker": "Ship with the fastest growing Caribbean shipping firm in NYC!",
+    "title": "Make Ship Happen!",
     "lede": "For all your freight shipping services to St. Lucia and all islands of the Caribbean. Barrels, boxes, packages, cars, containers & all personal effects."
   },
   "cargo": [
-    { "id": "barrel", "label": "Barrel (55 gal)", "price": 120 },
-    { "id": "box", "label": "Box (med)", "price": 65 },
-    { "id": "crate", "label": "Crate", "price": 180 },
-    { "id": "vehicle", "label": "Vehicle", "price": 1450 },
-    { "id": "container", "label": "20ft Container", "price": 3900 }
+    { "id": "barrel", "label": "Barrel (15 cu ft)", "cuft": 15 },
+    { "id": "bin", "label": "Commercial Bin (20 cu ft)", "cuft": 20 },
+    { "id": "box", "label": "Box — Enter Measurements", "custom": true },
+    { "id": "ebl", "label": "Other (EB/L Number)", "ebl": true }
   ],
   "destinations": [
-    { "name": "Port Castries", "fee": 0 },
-    { "name": "Vieux-Fort", "fee": 15 },
-    { "name": "Cul-de-Sac", "fee": 10 },
-    { "name": "Other Caribbean island", "fee": 45 }
+    { "name": "Vieux-Fort", "rate": 11 },
+    { "name": "Cul-de-Sac", "rate": 10 },
+    { "name": "Other — call (718) 483-8006", "call": true }
   ],
   "extras": [
-    { "id": "pickup", "label": "Brooklyn pickup", "buttonText": "Home pickup +$35", "price": 35 },
-    { "id": "delivery", "label": "Door delivery", "buttonText": "Door delivery +$40", "price": 40 },
+    { "id": "pickup_bk", "label": "Home Pickup in Brooklyn", "buttonText": "Home Pickup in Brooklyn — FREE!", "price": 0 },
+    { "id": "pickup_other", "label": "Home Pickup in other Borough", "buttonText": "Home Pickup in other Borough +$20", "price": 20 },
     { "id": "insurance", "label": "Insurance", "buttonText": "Insurance +$25", "price": 25 }
   ],
+  "supplies": [
+    { "id": "barrel_cardboard", "label": "Empty cardboard barrel", "price": 45 },
+    { "id": "barrel_plastic", "label": "Empty plastic barrel", "price": 65 },
+    { "id": "bin_empty", "label": "Empty commercial bin", "price": 65 }
+  ],
+  "suppliesDeliveryFee": 5,
   "defaultVessel": "M/V Caribbean Star",
   "transitDays": 12,
   "cutoffDaysBefore": 2,
@@ -48,7 +52,7 @@
     { "q": "How long does shipping to St. Lucia take?", "a": "Most sailings arrive in 10–14 days, plus 1–2 days for customs clearance at the port. Check the schedule above for exact cut-off and arrival dates." },
     { "q": "What can I pack in a barrel?", "a": "Non-perishable food, clothing, household goods, toiletries, small electronics. No aerosols, flammables, or restricted items — call us if you're unsure and we'll tell you straight." },
     { "q": "Do you pick up from my home?", "a": "Yes — anywhere in the five boroughs. Add home pickup when you get your quote or call (718) 483-8006 to schedule." },
-    { "q": "Which ports do you serve?", "a": "Port Castries, Vieux-Fort, and Cul-de-Sac in St. Lucia, plus connections to other Caribbean islands through our West-Indies Shipping partners." },
+    { "q": "Which ports do you serve?", "a": "Vieux-Fort and Cul-de-Sac in St. Lucia, plus connections to other Caribbean islands through our West-Indies Shipping partners — call us for rates beyond St. Lucia." },
     { "q": "How do I pay?", "a": "Cash, card, or Zelle at drop-off or pickup — or lock in your quote online with a card deposit. Your estimate is confirmed when we weigh and manifest your cargo." }
   ],
   "payments": {
