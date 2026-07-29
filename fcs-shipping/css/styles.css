@@ -28,7 +28,7 @@ button{font-family:inherit;cursor:pointer}
 nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .nav-inner{max-width:1180px;margin:0 auto;padding:1.1rem 1.5rem;display:flex;align-items:center;gap:2rem}
 .logo{text-decoration:none;line-height:1.15;display:flex;align-items:center;gap:.75rem}
-.logo-mark{width:38px;height:auto;flex-shrink:0}
+.logo-mark{height:46px;width:auto;flex-shrink:0}
 .logo .l1{font-weight:900;font-size:1.25rem;letter-spacing:.04em;text-transform:uppercase}
 .logo .l2{font-family:var(--mono);font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--grey)}
 .nav-links{display:flex;gap:1.7rem;margin-left:auto;list-style:none}
