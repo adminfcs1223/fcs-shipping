@@ -51,6 +51,11 @@ input:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 .track-mini{display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap}
 .track-mini input{flex:1;min-width:150px;font-family:var(--mono);font-size:.9rem}
 .track-mini button{background:var(--ink);color:#fff;border:none;border-radius:8px;font-weight:700;padding:.7rem 1.1rem}
+.mini-item{border-top:1px dashed var(--line);padding:.6rem 0;font-size:.85rem}
+.mini-item:first-child{border-top:none;padding-top:0}
+.mini-item b{font-family:var(--mono);font-size:.8rem}
+.mini-note{font-family:var(--mono);font-size:.72rem;color:var(--grey)}
+.st{display:inline-block;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;background:var(--sea-light);color:var(--sea);border-radius:999px;padding:.15rem .6rem;margin-left:.35rem}
 footer{max-width:980px;margin:0 auto;padding:2rem 1.25rem;font-family:var(--mono);font-size:.72rem;color:var(--grey);text-align:center}
 </style>
 </head>
@@ -58,12 +63,7 @@ footer{max-width:980px;margin:0 auto;padding:2rem 1.25rem;font-family:var(--mono
 
 <header>
   <div class="head-inner">
-    <svg viewBox="0 0 48 42" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect x="15" y="1" width="9" height="6" fill="#111"/><rect x="10" y="9" width="9" height="6" fill="#111"/>
-      <rect x="21" y="9" width="9" height="6" fill="#111"/><rect x="32" y="9" width="6" height="6" fill="#111"/>
-      <path d="M4 18h40l-6 12H10L4 18z" fill="#111"/>
-      <path d="M6 37c4 3 8 3 12 0s8-3 12 0 8 3 12 0" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    </svg>
+    <img src="/assets/fcs-logo.png" alt="FCS Shipping LLC logo" style="height:40px;width:auto">
     <div>
       <div class="l1">FCS Shipping LLC.</div>
       <div class="l2">Customer Portal</div>
@@ -130,14 +130,12 @@ footer{max-width:980px;margin:0 auto;padding:2rem 1.25rem;font-family:var(--mono
       <div class="tile">
         <span class="ico">🧾</span>
         <h3>My shipments</h3>
-        <p>All your past and current shipments in one place.</p>
-        <span class="soon">Coming soon</span>
+        <div id="myShipments"><p>Loading…</p></div>
       </div>
       <div class="tile">
         <span class="ico">💬</span>
         <h3>My quotes</h3>
-        <p>Quotes you've requested and their status.</p>
-        <span class="soon">Coming soon</span>
+        <div id="myQuotes"><p>Loading…</p></div>
       </div>
       <div class="tile">
         <span class="ico">🛢️</span>
@@ -183,6 +181,39 @@ footer{max-width:980px;margin:0 auto;padding:2rem 1.25rem;font-family:var(--mono
   $('toSignin').addEventListener('click', () => showSignup(false));
   if (location.hash === '#signup') showSignup(true);
 
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const STATUS = {
+    received: 'Received at warehouse', loaded: 'Loaded & manifested', at_sea: 'At sea',
+    arrived: 'Arrived — customs', ready: 'Ready for pickup', delivered: 'Delivered',
+    new: 'Received', handled: 'Handled', deposit_paid: 'Deposit paid',
+  };
+
+  async function loadMine() {
+    /* RLS only returns rows that belong to the signed-in customer */
+    const ships = await db.from('shipments')
+      .select('waybill_no,status,vessel,destination,eta,created_at')
+      .order('created_at', { ascending: false }).limit(10);
+    $('myShipments').innerHTML = ships.error
+      ? '<p class="mini-note">Could not load right now.</p>'
+      : (ships.data.length
+        ? ships.data.map((s) =>
+            `<div class="mini-item"><b>${esc(s.waybill_no)}</b><span class="st">${esc(STATUS[s.status] || s.status)}</span>
+             <div class="mini-note">${esc(s.destination)}${s.eta ? ' · ETA ' + esc(s.eta) : ''}</div></div>`).join('')
+        : '<p class="mini-note">Nothing yet — your shipments appear here automatically after drop-off (make sure we have this email on file).</p>');
+
+    const quotes = await db.from('quote_requests')
+      .select('cargo,quantity,destination,total_cents,status,created_at')
+      .order('created_at', { ascending: false }).limit(10);
+    $('myQuotes').innerHTML = quotes.error
+      ? '<p class="mini-note">Could not load right now.</p>'
+      : (quotes.data.length
+        ? quotes.data.map((q) =>
+            `<div class="mini-item"><b>$${(q.total_cents / 100).toLocaleString()}</b><span class="st">${esc(STATUS[q.status] || q.status)}</span>
+             <div class="mini-note">${esc(q.cargo)} × ${q.quantity} → ${esc(q.destination)} · ${new Date(q.created_at).toLocaleDateString()}</div></div>`).join('')
+        : '<p class="mini-note">No quotes yet — build one on the main page with this email and it shows up here.</p>');
+  }
+
   async function refresh() {
     if (!db) return;
     const { data: { session } } = await db.auth.getSession();
@@ -191,6 +222,7 @@ footer{max-width:980px;margin:0 auto;padding:2rem 1.25rem;font-family:var(--mono
     if (session) {
       const name = session.user.user_metadata && session.user.user_metadata.full_name;
       $('whoAmI').textContent = (name ? name + ' · ' : '') + session.user.email;
+      loadMine();
     }
   }
 
