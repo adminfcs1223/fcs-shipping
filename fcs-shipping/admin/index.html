@@ -105,6 +105,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       <h2>New shipment</h2>
       <label>Customer name</label><input type="text" id="nsName">
       <label>Customer phone</label><input type="tel" id="nsPhone">
+      <label>Customer email (shows shipment in their portal account)</label><input type="email" id="nsEmail">
       <label>Cargo (e.g. Barrel (55 gal) × 2)</label><input type="text" id="nsCargo">
       <div class="row2">
         <div><label>Destination</label>
@@ -258,6 +259,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       if (eWb) throw eWb;
       const { data, error } = await db.from('shipments').insert({
         waybill_no: wb, customer_name: name, customer_phone: phone, cargo,
+        customer_email: $('nsEmail').value.trim() || null,
         destination: $('nsDest').value, vessel: $('nsVessel').value.trim() || null,
         eta: $('nsEta').value || null,
       }).select().single();
@@ -265,7 +267,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       await db.from('shipment_events').insert({ shipment_id: data.id, status: 'received', note: '9502 Ditmas Ave warehouse' });
       $('nsResult').textContent = wb; $('nsResult').hidden = false;
       msg.textContent = 'Shipment created — write this waybill number on the cargo!'; msg.className = 'msg ok';
-      ['nsName', 'nsPhone', 'nsCargo', 'nsEta'].forEach((id) => ($(id).value = ''));
+      ['nsName', 'nsPhone', 'nsEmail', 'nsCargo', 'nsEta'].forEach((id) => ($(id).value = ''));
       loadShipments();
     } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
     $('nsCreate').disabled = false;
