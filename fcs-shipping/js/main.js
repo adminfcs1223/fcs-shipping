@@ -1,11 +1,12 @@
-/* FCS Shipping — front-end logic.
-   All editable content lives in /site.config.json. */
+/* FCS Shipping — front-end logic (v2: cu-ft pricing, EB/L, supplies).
+   Editable content lives in /site.config.json; live prices can be overridden
+   from the admin dashboard (settings table). */
 
 (async function () {
   'use strict';
 
   const $ = (id) => document.getElementById(id);
-  const fmt = (n) => '$' + n.toFixed(2);
+  const fmt = (c) => '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const FN = '/.netlify/functions';
 
   /* ---------- load config ---------- */
@@ -21,14 +22,10 @@
   /* live pricing (admin-edited, via settings table) overrides config prices */
   try {
     const pr = await fetch(`${FN}/pricing`).then((r) => (r.ok ? r.json() : null));
-    if (pr && pr.cargo) {
-      cfg.cargo = pr.cargo;
-      cfg.destinations = pr.destinations;
-      cfg.extras = pr.extras;
-    }
+    if (pr && pr.cargo) Object.assign(cfg, pr);
   } catch { /* static preview — config prices are fine */ }
 
-  /* ---------- populate static text from config ---------- */
+  /* ---------- populate static text ---------- */
   $('tbPhone').textContent = '☎ ' + co.phones[0];
   $('tbEmail').textContent = '✉ ' + co.email;
   $('tbAddr').textContent = '📍 ' + co.addressShort;
@@ -40,126 +37,283 @@
   $('trackPhone').textContent = co.phones[0];
   $('cAddr').textContent = co.address;
   $('cHours').textContent = co.hoursLong;
-  $('cPhones').innerHTML = co.phones
-    .map((p, i) => `<a href="tel:${co.phoneLinks[i]}">${p}</a>`)
-    .join(' · ');
+  $('cPhones').innerHTML = co.phones.map((p, i) => `<a href="tel:${co.phoneLinks[i]}">${p}</a>`).join(' · ');
   $('cEmail').innerHTML = `<a href="mailto:${co.email}">${co.email}</a>`;
   $('footLine').textContent =
     `© ${new Date().getFullYear()} ${co.name} · ${co.address} · ${co.phones[0]} · ${co.email}`;
-  $('wbVessel').textContent = cfg.defaultVessel;
-
-  /* FAQ */
   $('faqList').innerHTML = cfg.faq
-    .map(
-      (f, i) =>
-        `<details${i === 0 ? ' open' : ''}><summary>${f.q}</summary><p>${f.a}</p></details>`
-    )
+    .map((f, i) => `<details${i === 0 ? ' open' : ''}><summary>${f.q}</summary><p>${f.a}</p></details>`)
     .join('');
 
-  /* Service card "from $x" pulled from config prices */
-  document.querySelectorAll('[data-price-from]').forEach((el) => {
-    const key = el.dataset.priceFrom;
-    let price;
-    if (key.startsWith('extra:')) {
-      const x = cfg.extras.find((e) => e.id === key.slice(6));
-      price = x && x.price;
-    } else {
-      const c = cfg.cargo.find((c) => c.id === key);
-      price = c && c.price;
+  /* ---------- signed-in nav: Welcome Back, Name! ---------- */
+  try {
+    const AC = window.ADMIN_CONFIG || {};
+    if (window.supabase && AC.SUPABASE_URL && !AC.SUPABASE_URL.includes('YOUR-PROJECT')) {
+      const sb = window.supabase.createClient(AC.SUPABASE_URL, AC.SUPABASE_ANON_KEY);
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const full = (session.user.user_metadata && session.user.user_metadata.full_name) || '';
+        const first = full.split(' ')[0] || session.user.email.split('@')[0];
+        const signin = document.querySelector('.nav-signin');
+        const cta = document.querySelector('.nav-cta');
+        if (cta) { cta.textContent = `Welcome Back, ${first}!`; cta.href = '/account/'; }
+        if (signin) signin.remove();
+      }
     }
-    if (price != null) el.textContent = 'from $' + price.toLocaleString();
-  });
+  } catch (e) { console.warn('session check skipped', e); }
 
-  /* ---------- quote builder ---------- */
+  /* ---------- next Thursday departure ---------- */
+  function nextThursday(from) {
+    const d = new Date(from || Date.now());
+    d.setHours(0, 0, 0, 0);
+    const add = (4 - d.getDay() + 7) % 7; /* 4 = Thursday; today if Thursday */
+    d.setDate(d.getDate() + add);
+    return d;
+  }
+  const departDate = nextThursday();
+  const departStr = departDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  /* ---------- quote builder state ---------- */
   let qty = 1;
   const state = {
     cargoId: cfg.cargo[0].id,
-    itemLabel: cfg.cargo[0].label,
-    itemPrice: cfg.cargo[0].price,
-    dest: cfg.destinations[0].name,
-    fee: cfg.destinations[0].fee,
+    dest: cfg.destinations[0],
     extras: [],
+    dims: { l: 0, w: 0, h: 0 },
+    supplies: {},           /* id -> qty */
+    supplyDelivery: false,
+    ebl: null,              /* loaded EB/L record */
   };
+  cfg.supplies.forEach((s) => (state.supplies[s.id] = 0));
+
+  const cargoById = (id) => cfg.cargo.find((c) => c.id === id);
 
   $('itemChips').innerHTML = cfg.cargo
-    .map(
-      (c, i) =>
-        `<button type="button" class="chip" data-id="${c.id}" data-price="${c.price}" aria-pressed="${i === 0}">${c.label}</button>`
-    )
+    .map((c, i) => `<button type="button" class="chip" data-id="${c.id}" aria-pressed="${i === 0}">${c.label}</button>`)
     .join('');
   $('dest').innerHTML = cfg.destinations
-    .map(
-      (d) =>
-        `<option value="${d.name}" data-fee="${d.fee}">${d.name}${d.fee ? ` (+$${d.fee})` : ''}</option>`
-    )
+    .map((d) => `<option value="${d.name}">${d.name}${d.rate ? ` ($${d.rate}/cu ft)` : ''}</option>`)
     .join('');
   $('extraChips').innerHTML = cfg.extras
-    .map(
-      (x) =>
-        `<button type="button" class="chip extra" data-id="${x.id}" data-label="${x.label}" data-price="${x.price}" aria-pressed="false">${x.buttonText}</button>`
-    )
+    .map((x) => `<button type="button" class="chip extra" data-id="${x.id}" aria-pressed="false">${x.buttonText}</button>`)
+    .join('');
+  $('suppliesList').innerHTML = cfg.supplies
+    .map((s) => `<div class="supply-row">
+        <div class="sl">${s.label}<small>$${s.price} each</small></div>
+        <button type="button" class="qty-btn" data-sminus="${s.id}" aria-label="Fewer">−</button>
+        <span class="sqty" id="sqty-${s.id}">0</span>
+        <button type="button" class="qty-btn" data-splus="${s.id}" aria-label="More">+</button>
+      </div>`)
     .join('');
 
-  function renderWaybill() {
-    const extrasTotal = state.extras.reduce((s, e) => s + e.price, 0);
-    const total = state.itemPrice * qty + state.fee * qty + extrasTotal;
-    $('wbItem').textContent = `${state.itemLabel} × ${qty}`;
-    $('wbDest').textContent = `${state.dest}, St. Lucia`;
-    $('wbBase').textContent = fmt(state.itemPrice * qty);
-    $('wbFee').textContent = fmt(state.fee * qty);
-    $('wbExtras').textContent = state.extras.length
-      ? state.extras.map((e) => e.label).join(', ') + '  ' + fmt(extrasTotal)
-      : '—';
-    $('wbTotal').textContent = '$' + Math.round(total).toLocaleString();
+  /* ---------- pricing (mirrors the server; server always recomputes) ---------- */
+  function currentCuft() {
+    const c = cargoById(state.cargoId);
+    if (!c) return 0;
+    if (c.custom) {
+      const { l, w, h } = state.dims;
+      if (l > 0 && w > 0 && h > 0) return Math.max(1, Math.round((l * w * h) / 1728 * 10) / 10);
+      return 0;
+    }
+    return c.cuft || 0;
   }
 
+  function renderBill() {
+    const c = cargoById(state.cargoId);
+    $('wbDeparting').textContent = departStr + ' (every Thursday)';
+
+    /* EB/L mode: show the pre-priced bill from the office */
+    if (c.ebl && state.ebl) {
+      const e = state.ebl;
+      $('wbNoLabel').textContent = 'EB/L Nº';
+      $('wbNo').textContent = e.ebl_no;
+      $('wbItem').textContent = `${e.cargo}${e.quantity > 1 ? ' × ' + e.quantity : ''}`;
+      $('wbVolume').textContent = e.cuft ? e.cuft + ' cu ft' : '—';
+      $('wbDest').textContent = e.destination ? `${e.destination}, St. Lucia` : '—';
+      $('wbBase').textContent = fmt(e.price_cents);
+      $('wbExtras').textContent = '—';
+      $('wbSupplies').textContent = '—';
+      $('wbTotalLabel').textContent = 'TOTAL DUE';
+      $('wbTotal').textContent = fmt(e.price_cents);
+      $('wbNote').hidden = true;
+      $('lockBtn').textContent = 'Pay now →';
+      return;
+    }
+
+    $('wbNoLabel').textContent = 'EB/L Nº';
+    $('wbNo').textContent = 'PENDING';
+    $('wbTotalLabel').textContent = 'ESTIMATED TOTAL';
+    $('wbNote').hidden = false;
+    $('lockBtn').textContent = 'Lock in this rate →';
+
+    if (c.ebl) {
+      $('wbItem').textContent = 'Enter your EB/L number';
+      $('wbVolume').textContent = '—';
+      $('wbDest').textContent = '—';
+      $('wbBase').textContent = '—';
+      $('wbExtras').textContent = '—';
+      $('wbSupplies').textContent = '—';
+      $('wbTotal').textContent = '—';
+      return;
+    }
+
+    const cuft = currentCuft();
+    const rate = state.dest.rate || 0;
+    const callMode = Boolean(state.dest.call);
+    const freight = Math.round(cuft * rate * qty * 100);
+    const extrasC = state.extras.reduce((s, x) => s + x.price * 100, 0);
+    let suppliesC = 0, suppliesN = 0;
+    cfg.supplies.forEach((s) => {
+      suppliesC += s.price * 100 * state.supplies[s.id];
+      suppliesN += state.supplies[s.id];
+    });
+    if (suppliesN > 0 && state.supplyDelivery) suppliesC += (cfg.suppliesDeliveryFee || 5) * 100;
+
+    $('wbItem').textContent = `${c.label} × ${qty}`;
+    $('wbVolume').textContent = cuft ? `${(cuft * qty).toLocaleString()} cu ft` + (c.custom ? ` (${cuft}/box)` : '') : (c.custom ? 'enter measurements' : '—');
+    $('wbDest').textContent = callMode ? state.dest.name : `${state.dest.name}, St. Lucia`;
+    $('wbBase').textContent = callMode ? 'call us' : (cuft ? fmt(freight) + ` ($${rate}/cu ft)` : '—');
+    $('wbExtras').textContent = state.extras.length
+      ? state.extras.map((x) => x.label + (x.price ? '' : ' (FREE)')).join(', ') + (extrasC ? '  ' + fmt(extrasC) : '')
+      : '—';
+    $('wbSupplies').textContent = suppliesN
+      ? cfg.supplies.filter((s) => state.supplies[s.id]).map((s) => `${s.label} × ${state.supplies[s.id]}`).join(', ')
+        + (state.supplyDelivery ? ' + delivery' : '') + '  ' + fmt(suppliesC)
+      : '—';
+    $('wbTotal').textContent = callMode
+      ? 'Call us'
+      : (cuft || suppliesC ? '$' + Math.round((freight + extrasC + suppliesC) / 100).toLocaleString() : '—');
+  }
+
+  /* ---------- cargo chips ---------- */
   document.querySelectorAll('#itemChips .chip').forEach((chip) => {
     chip.addEventListener('click', () => {
-      document
-        .querySelectorAll('#itemChips .chip')
-        .forEach((c) => c.setAttribute('aria-pressed', 'false'));
+      document.querySelectorAll('#itemChips .chip').forEach((x) => x.setAttribute('aria-pressed', 'false'));
       chip.setAttribute('aria-pressed', 'true');
       state.cargoId = chip.dataset.id;
-      state.itemLabel = chip.textContent.trim();
-      state.itemPrice = +chip.dataset.price;
-      renderWaybill();
+      const c = cargoById(state.cargoId);
+      $('dimsField').hidden = !c.custom;
+      $('eblField').hidden = !c.ebl;
+      if (!c.ebl) state.ebl = null;
+      renderBill();
     });
   });
+
+  /* box measurements */
+  ['dimL', 'dimW', 'dimH'].forEach((id, i) => {
+    $(id).addEventListener('input', () => {
+      state.dims[['l', 'w', 'h'][i]] = Math.max(0, Number($(id).value) || 0);
+      const cuft = currentCuft();
+      $('dimsNote').textContent = cuft
+        ? `= ${cuft} cu ft per box`
+        : '= enter all three to calculate cubic feet';
+      renderBill();
+    });
+  });
+
+  /* EB/L lookup */
+  $('eblLoad').addEventListener('click', async () => {
+    const no = $('eblInput').value.trim().toUpperCase();
+    const msg = $('eblMsg');
+    if (!no) return;
+    msg.textContent = 'Looking up ' + no + '…';
+    try {
+      const res = await fetch(`${FN}/ebl?no=${encodeURIComponent(no)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Not found');
+      if (data.status === 'paid') { msg.textContent = 'This EB/L is already paid — thank you! Call us with any questions.'; return; }
+      state.ebl = data;
+      msg.textContent = 'Loaded! Review your bill of lading and hit Pay now.';
+      renderBill();
+    } catch (e) {
+      state.ebl = null;
+      msg.textContent = `Couldn't find that EB/L number. Double-check it or call ${co.phones[0]}.`;
+      renderBill();
+    }
+  });
+  $('eblInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('eblLoad').click(); } });
+
+  /* destination */
+  $('dest').addEventListener('change', (e) => {
+    state.dest = cfg.destinations.find((d) => d.name === e.target.value) || cfg.destinations[0];
+    $('destNote').hidden = !state.dest.call;
+    renderBill();
+  });
+
+  /* quantity */
+  $('qtyPlus').addEventListener('click', () => { qty = Math.min(qty + 1, 50); $('qtyVal').textContent = qty; renderBill(); });
+  $('qtyMinus').addEventListener('click', () => { qty = Math.max(qty - 1, 1); $('qtyVal').textContent = qty; renderBill(); });
+
+  /* extras */
   document.querySelectorAll('.chip.extra').forEach((chip) => {
     chip.addEventListener('click', () => {
       const on = chip.getAttribute('aria-pressed') === 'true';
       chip.setAttribute('aria-pressed', String(!on));
-      const { id, label } = chip.dataset;
-      const price = +chip.dataset.price;
-      if (on) state.extras = state.extras.filter((e) => e.id !== id);
-      else state.extras.push({ id, label, price });
-      renderWaybill();
+      const x = cfg.extras.find((e) => e.id === chip.dataset.id);
+      if (on) state.extras = state.extras.filter((e) => e.id !== x.id);
+      else state.extras.push(x);
+      renderBill();
     });
   });
-  $('dest').addEventListener('change', (e) => {
-    const opt = e.target.selectedOptions[0];
-    state.dest = opt.value;
-    state.fee = +opt.dataset.fee;
-    renderWaybill();
-  });
-  $('qtyPlus').addEventListener('click', () => {
-    qty = Math.min(qty + 1, 20);
-    $('qtyVal').textContent = qty;
-    renderWaybill();
-  });
-  $('qtyMinus').addEventListener('click', () => {
-    qty = Math.max(qty - 1, 1);
-    $('qtyVal').textContent = qty;
-    renderWaybill();
+
+  /* supplies steppers */
+  function bumpSupply(id, delta) {
+    state.supplies[id] = Math.min(50, Math.max(0, state.supplies[id] + delta));
+    $('sqty-' + id).textContent = state.supplies[id];
+    const any = Object.values(state.supplies).some((n) => n > 0);
+    $('supplyDeliveryWrap').hidden = !any;
+    if (!any) { state.supplyDelivery = false; $('supplyDelivery').setAttribute('aria-pressed', 'false'); }
+    renderBill();
+  }
+  document.querySelectorAll('[data-splus]').forEach((b) => b.addEventListener('click', () => bumpSupply(b.dataset.splus, 1)));
+  document.querySelectorAll('[data-sminus]').forEach((b) => b.addEventListener('click', () => bumpSupply(b.dataset.sminus, -1)));
+  $('supplyDelivery').addEventListener('click', () => {
+    state.supplyDelivery = !state.supplyDelivery;
+    $('supplyDelivery').setAttribute('aria-pressed', String(state.supplyDelivery));
+    renderBill();
   });
 
-  $('wbNo').textContent = 'FCS-' + new Date().getFullYear() + '-' + String(Math.floor(1000 + Math.random() * 9000));
-  renderWaybill();
+  renderBill();
 
-  /* ---------- Phase 2: quote request ---------- */
+  /* ---------- lock in / pay ---------- */
   let lastQuoteId = null;
 
-  $('lockBtn').addEventListener('click', () => {
+  function quotePayload() {
+    return {
+      cargoId: state.cargoId,
+      quantity: qty,
+      destination: state.dest.name,
+      dims: state.dims,
+      extras: state.extras.map((x) => x.id),
+      supplies: state.supplies,
+      supplyDelivery: state.supplyDelivery,
+    };
+  }
+
+  $('lockBtn').addEventListener('click', async () => {
+    const c = cargoById(state.cargoId);
+    /* EB/L: straight to payment */
+    if (c.ebl && state.ebl) {
+      $('lockBtn').disabled = true;
+      $('lockBtn').textContent = 'Opening secure checkout…';
+      try {
+        const res = await fetch(`${FN}/create-checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eblNo: state.ebl.ebl_no }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.url) throw new Error(data.error || 'Checkout unavailable');
+        window.location.href = data.url;
+      } catch (err) {
+        alert(`Online payment isn't available right now — call ${co.phones[0]} to pay.`);
+        $('lockBtn').disabled = false;
+        $('lockBtn').textContent = 'Pay now →';
+      }
+      return;
+    }
+    if (c.ebl) { $('eblMsg').textContent = 'Enter your EB/L number above first, then hit Load.'; return; }
+    if (state.dest.call) { $('destNote').hidden = false; return; }
     $('lockPanel').classList.add('show');
     $('lockBtn').style.display = 'none';
     $('qName').focus();
@@ -184,16 +338,7 @@
       const res = await fetch(`${FN}/quote-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          phone,
-          email,
-          website: $('qWebsite').value, // honeypot
-          cargoId: state.cargoId,
-          quantity: qty,
-          destination: state.dest,
-          extras: state.extras.map((x) => x.id),
-        }),
+        body: JSON.stringify(Object.assign({ name, phone, email, website: $('qWebsite').value }, quotePayload())),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
@@ -205,15 +350,13 @@
       btn.textContent = 'Sent ✓';
     } catch (err) {
       console.error(err);
-      msg.textContent =
-        `Couldn't send right now — please call ${co.phones[0]} or email ${co.email}.`;
+      msg.textContent = `Couldn't send right now — please call ${co.phones[0]} or email ${co.email}.`;
       msg.classList.add('err');
       btn.disabled = false;
       btn.textContent = 'Send quote request';
     }
   });
 
-  /* ---------- Phase 3: Stripe deposit ---------- */
   $('payBtn').addEventListener('click', async () => {
     const btn = $('payBtn');
     btn.disabled = true;
@@ -222,14 +365,7 @@
       const res = await fetch(`${FN}/create-checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quoteId: lastQuoteId,
-          cargoId: state.cargoId,
-          quantity: qty,
-          destination: state.dest,
-          extras: state.extras.map((x) => x.id),
-          email: $('qEmail').value.trim(),
-        }),
+        body: JSON.stringify(Object.assign({ quoteId: lastQuoteId, email: $('qEmail').value.trim() }, quotePayload())),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data.error || 'Checkout unavailable');
@@ -250,18 +386,18 @@
     const msg = $('quoteMsg');
     $('lockPanel').classList.add('show');
     $('lockBtn').style.display = 'none';
-    msg.textContent = 'Deposit received — thank you! We\'ll call you to arrange drop-off or pickup.';
+    msg.textContent = 'Payment received — thank you! We\'ll call you to arrange drop-off or pickup.';
     msg.className = 'form-msg ok';
     document.getElementById('quote').scrollIntoView();
   } else if (params.get('canceled') === '1') {
     const msg = $('quoteMsg');
     $('lockPanel').classList.add('show');
     $('lockBtn').style.display = 'none';
-    msg.textContent = 'Checkout canceled — your quote request is still saved. Call us anytime.';
+    msg.textContent = 'Checkout canceled — no charge was made. Call us anytime.';
     msg.className = 'form-msg err';
   }
 
-  /* ---------- Phase 4: tracking ---------- */
+  /* ---------- tracking (B/L) ---------- */
   const STATUS_LABELS = {
     received: 'Received at Brooklyn warehouse',
     loaded: 'Loaded & manifested',
@@ -276,7 +412,7 @@
     waybill_no: 'FCS-2026-4471',
     status: 'at_sea',
     vessel: 'M/V Caribbean Star',
-    destination: 'Port Castries',
+    destination: 'Vieux-Fort',
     eta: '2026-07-28',
     events: [
       { status: 'received', note: '9502 Ditmas Ave', created_at: '2026-07-14T10:22:00-04:00' },
@@ -289,14 +425,11 @@
     $('tlNo').textContent = t.waybill_no;
     const statusIdx = STATUS_ORDER.indexOf(t.status);
     $('tlStatus').textContent =
-      (STATUS_LABELS[t.status] || t.status).toUpperCase() +
-      (t.status === 'at_sea' ? ' — ON SCHEDULE' : '');
+      (STATUS_LABELS[t.status] || t.status).toUpperCase() + (t.status === 'at_sea' ? ' — ON SCHEDULE' : '');
     const evByStatus = {};
     (t.events || []).forEach((ev) => (evByStatus[ev.status] = ev));
     const fdt = (iso) =>
-      new Date(iso).toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-      });
+      new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     $('tlSteps').innerHTML = STATUS_ORDER.map((s, i) => {
       const ev = evByStatus[s];
       const cls = i < statusIdx ? 'done' : i === statusIdx ? 'now' : 'future';
@@ -326,13 +459,12 @@
       if (res.status === 404) {
         $('timeline').classList.remove('show');
         const err = $('trackErr');
-        err.textContent = `No shipment found for "${wb}". Double-check the number or call ${co.phones[0]}.`;
+        err.textContent = `No shipment found for "${wb}". Double-check your B/L number or call ${co.phones[0]}.`;
         err.classList.add('show');
         return;
       }
       throw new Error('track function unavailable');
     } catch (e) {
-      /* Static preview / backend not deployed yet: demo waybill still works */
       if (wb === DEMO_TRACKING.waybill_no) return renderTracking(DEMO_TRACKING);
       $('timeline').classList.remove('show');
       const err = $('trackErr');
@@ -350,10 +482,9 @@
     track(DEMO_TRACKING.waybill_no);
   });
 
-  /* ---------- Phase 4: sailing schedule (live with config fallback) ---------- */
+  /* ---------- sailing schedule (live with config fallback) ---------- */
   function renderSchedule(sailings) {
-    const f = (iso) =>
-      new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const f = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const TAGS = {
       open: '<span class="tag open">Accepting cargo</span>',
       closing: '<span class="tag closing">Closing soon</span>',
@@ -361,10 +492,7 @@
       sailed: '<span class="tag sailed">Sailed</span>',
     };
     $('schedBody').innerHTML = sailings
-      .map(
-        (s) =>
-          `<tr><td>${s.vessel}</td><td>${f(s.departs)}</td><td>${f(s.arrives)} (est.)</td><td>${f(s.cutoff)}</td><td>${TAGS[s.status] || TAGS.open}</td></tr>`
-      )
+      .map((s) => `<tr><td>${s.vessel}</td><td>${f(s.departs)}</td><td>${f(s.arrives)} (est.)</td><td>${f(s.cutoff)}</td><td>${TAGS[s.status] || TAGS.open}</td></tr>`)
       .join('');
     startCountdown(sailings);
   }
@@ -374,15 +502,12 @@
       .filter((s) => s.status !== 'sailed' && new Date(s.departs + 'T12:00:00') > new Date())
       .sort((a, b) => a.departs.localeCompare(b.departs))[0];
     const el = $('countdown');
-    if (!next) { el.textContent = 'Next sailing announced soon'; return; }
-    const dep = new Date(next.departs + 'T12:00:00');
+    const dep = next ? new Date(next.departs + 'T12:00:00') : nextThursday();
     function tick() {
       const d = dep - new Date();
       if (d <= 0) { el.textContent = 'Departed — next sailing soon'; return; }
-      const days = Math.floor(d / 86400000),
-        hrs = Math.floor(d / 3600000) % 24,
-        min = Math.floor(d / 60000) % 60,
-        sec = Math.floor(d / 1000) % 60;
+      const days = Math.floor(d / 86400000), hrs = Math.floor(d / 3600000) % 24,
+        min = Math.floor(d / 60000) % 60, sec = Math.floor(d / 1000) % 60;
       el.textContent = `${days}d ${String(hrs).padStart(2, '0')}h ${String(min).padStart(2, '0')}m ${String(sec).padStart(2, '0')}s`;
     }
     tick();
@@ -398,7 +523,7 @@
       }
       throw new Error('fallback');
     } catch {
-      renderSchedule(cfg.sailings); // fallback to config
+      renderSchedule(cfg.sailings);
     }
   })();
 
