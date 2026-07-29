@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Account — FCS Shipping LLC.</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FFFFFF;--bg-soft:#F6F6F4;--ink:#111;--grey:#5C5C5C;--line:#E4E4E0;--sea:#1B4965;--sea-light:#EAF1F5;
+--mono:'IBM Plex Mono',monospace;--body:'Archivo',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);color:var(--ink);background:var(--bg-soft);font-size:16px;line-height:1.6}
+a{color:inherit}button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--sea);outline-offset:2px;border-radius:4px}
+header{background:#fff;border-bottom:1px solid var(--line);padding:1rem 1.5rem}
+.head-inner{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:.75rem}
+.head-inner svg{width:34px;flex-shrink:0}
+.head-inner .l1{font-weight:900;font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;line-height:1.1}
+.head-inner .l2{font-family:var(--mono);font-size:.58rem;letter-spacing:.26em;text-transform:uppercase;color:var(--grey)}
+.head-inner .back{margin-left:auto;font-size:.85rem;font-weight:600;color:var(--grey);text-decoration:none}
+.head-inner .back:hover{color:var(--ink)}
+main{max-width:980px;margin:0 auto;padding:2.5rem 1.25rem}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:2rem;box-shadow:0 10px 30px rgba(17,17,17,.04)}
+.auth-card{max-width:430px;margin:3vh auto 0}
+h1{font-weight:900;font-size:1.5rem;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.35rem}
+.sub{color:var(--grey);font-size:.92rem;margin-bottom:1.4rem}
+label{display:block;font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--grey);margin:.9rem 0 .35rem}
+input{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:.85rem 1rem;font-family:inherit;font-size:1rem;background:#fff}
+input:focus{outline:2px solid var(--sea);border-color:var(--sea)}
+.btn{display:block;width:100%;background:var(--ink);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.98rem;padding:.95rem;margin-top:1.3rem;letter-spacing:.02em;transition:background .2s}
+.btn:hover{background:var(--sea)}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);width:auto;padding:.6rem 1.1rem;font-size:.85rem;display:inline-block}
+.switch{margin-top:1.2rem;text-align:center;font-size:.88rem;color:var(--grey)}
+.switch button{background:none;border:none;color:var(--sea);font-weight:700;font-size:inherit;text-decoration:underline}
+.msg{font-family:var(--mono);font-size:.8rem;margin-top:.9rem;display:none}
+.msg.err{display:block;color:#B03A2E}
+.msg.ok{display:block;color:#1E6B3A}
+.hidden{display:none!important}
+/* dashboard */
+.dash-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.6rem}
+.dash-head h1{margin:0}
+.dash-head .who{font-family:var(--mono);font-size:.78rem;color:var(--grey)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.tile{background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.6rem}
+.tile .ico{font-size:1.6rem;display:block;margin-bottom:.7rem}
+.tile h3{font-weight:800;font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
+.tile p{font-size:.88rem;color:var(--grey)}
+.tile .soon{display:inline-block;margin-top:.9rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--sea);background:var(--sea-light);border-radius:999px;padding:.25rem .8rem}
+.track-mini{display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap}
+.track-mini input{flex:1;min-width:150px;font-family:var(--mono);font-size:.9rem}
+.track-mini button{background:var(--ink);color:#fff;border:none;border-radius:8px;font-weight:700;padding:.7rem 1.1rem}
+footer{max-width:980px;margin:0 auto;padding:2rem 1.25rem;font-family:var(--mono);font-size:.72rem;color:var(--grey);text-align:center}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <svg viewBox="0 0 48 42" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="15" y="1" width="9" height="6" fill="#111"/><rect x="10" y="9" width="9" height="6" fill="#111"/>
+      <rect x="21" y="9" width="9" height="6" fill="#111"/><rect x="32" y="9" width="6" height="6" fill="#111"/>
+      <path d="M4 18h40l-6 12H10L4 18z" fill="#111"/>
+      <path d="M6 37c4 3 8 3 12 0s8-3 12 0 8 3 12 0" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="l1">FCS Shipping LLC.</div>
+      <div class="l2">Customer Portal</div>
+    </div>
+    <a class="back" href="/">← Back to site</a>
+  </div>
+</header>
+
+<main>
+  <!-- ============ AUTH ============ -->
+  <div id="authView">
+    <div class="card auth-card">
+      <div id="cfgWarn" class="msg err" style="display:none">Accounts aren't switched on yet — the site owner needs to connect Supabase in <b>/admin/config.js</b>.</div>
+
+      <div id="signinForm">
+        <h1>Sign in</h1>
+        <p class="sub">Welcome back! Manage your shipments and quotes.</p>
+        <label for="siEmail">Email</label>
+        <input type="email" id="siEmail" autocomplete="username">
+        <label for="siPass">Password</label>
+        <input type="password" id="siPass" autocomplete="current-password">
+        <button class="btn" id="siBtn">Sign in</button>
+        <p class="msg" id="siMsg"></p>
+        <p class="switch">New to FCS? <button type="button" id="toSignup">Create your free account</button></p>
+      </div>
+
+      <div id="signupForm" class="hidden">
+        <h1>Create your free account</h1>
+        <p class="sub">Track shipments, save quotes, and ship faster every time.</p>
+        <label for="suName">Full name</label>
+        <input type="text" id="suName" autocomplete="name">
+        <label for="suPhone">Phone</label>
+        <input type="tel" id="suPhone" autocomplete="tel">
+        <label for="suEmail">Email</label>
+        <input type="email" id="suEmail" autocomplete="username">
+        <label for="suPass">Password (8+ characters)</label>
+        <input type="password" id="suPass" autocomplete="new-password">
+        <button class="btn" id="suBtn">Create account</button>
+        <p class="msg" id="suMsg"></p>
+        <p class="switch">Already have an account? <button type="button" id="toSignin">Sign in</button></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD (framework — content coming later) ============ -->
+  <div id="dashView" class="hidden">
+    <div class="dash-head">
+      <div>
+        <h1>My FCS</h1>
+        <div class="who" id="whoAmI">—</div>
+      </div>
+      <button class="btn ghost" id="signOutBtn">Sign out</button>
+    </div>
+    <div class="grid">
+      <div class="tile">
+        <span class="ico">📦</span>
+        <h3>Track a shipment</h3>
+        <p>Enter your waybill number to see where your cargo is right now.</p>
+        <div class="track-mini">
+          <input type="text" id="wbInput" placeholder="FCS-2026-0000">
+          <button id="wbGo">Track</button>
+        </div>
+      </div>
+      <div class="tile">
+        <span class="ico">🧾</span>
+        <h3>My shipments</h3>
+        <p>All your past and current shipments in one place.</p>
+        <span class="soon">Coming soon</span>
+      </div>
+      <div class="tile">
+        <span class="ico">💬</span>
+        <h3>My quotes</h3>
+        <p>Quotes you've requested and their status.</p>
+        <span class="soon">Coming soon</span>
+      </div>
+      <div class="tile">
+        <span class="ico">🛢️</span>
+        <h3>Book a shipment</h3>
+        <p>Barrels, boxes, vehicles, containers — start a new booking.</p>
+        <a class="btn ghost" href="/#quote" style="margin-top:.9rem">Get a quote →</a>
+      </div>
+      <div class="tile">
+        <span class="ico">👤</span>
+        <h3>Profile</h3>
+        <p id="profileInfo">Name, phone, and delivery preferences.</p>
+        <span class="soon">Coming soon</span>
+      </div>
+      <div class="tile">
+        <span class="ico">☎️</span>
+        <h3>Need a human?</h3>
+        <p>(718) 483-8006 · Mon–Fri 9am–5pm<br>admin@fcsshipping.com</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>© FCS Shipping LLC. · 9502 Ditmas Ave Building 4, Brooklyn NY</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/admin/config.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const C = window.ADMIN_CONFIG || {};
+  const configured = C.SUPABASE_URL && !C.SUPABASE_URL.includes('YOUR-PROJECT') &&
+                     C.SUPABASE_ANON_KEY && !C.SUPABASE_ANON_KEY.includes('PASTE');
+  if (!configured) { $('cfgWarn').style.display = 'block'; }
+  const db = configured ? window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY) : null;
+
+  /* form toggling (+ /account/#signup deep link) */
+  function showSignup(s) {
+    $('signupForm').classList.toggle('hidden', !s);
+    $('signinForm').classList.toggle('hidden', s);
+  }
+  $('toSignup').addEventListener('click', () => showSignup(true));
+  $('toSignin').addEventListener('click', () => showSignup(false));
+  if (location.hash === '#signup') showSignup(true);
+
+  async function refresh() {
+    if (!db) return;
+    const { data: { session } } = await db.auth.getSession();
+    $('authView').classList.toggle('hidden', Boolean(session));
+    $('dashView').classList.toggle('hidden', !session);
+    if (session) {
+      const name = session.user.user_metadata && session.user.user_metadata.full_name;
+      $('whoAmI').textContent = (name ? name + ' · ' : '') + session.user.email;
+    }
+  }
+
+  $('siBtn').addEventListener('click', async () => {
+    const msg = $('siMsg'); msg.className = 'msg';
+    if (!db) return;
+    const { error } = await db.auth.signInWithPassword({
+      email: $('siEmail').value.trim(), password: $('siPass').value,
+    });
+    if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
+    refresh();
+  });
+  $('siPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('siBtn').click(); });
+
+  $('suBtn').addEventListener('click', async () => {
+    const msg = $('suMsg'); msg.className = 'msg';
+    if (!db) return;
+    const name = $('suName').value.trim(), phone = $('suPhone').value.trim();
+    const email = $('suEmail').value.trim(), pass = $('suPass').value;
+    if (!name || !email || pass.length < 8) {
+      msg.textContent = 'Please fill in your name, a valid email, and a password of 8+ characters.';
+      msg.className = 'msg err'; return;
+    }
+    const { data, error } = await db.auth.signUp({
+      email, password: pass,
+      options: { data: { full_name: name, phone } },
+    });
+    if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
+    if (data.session) { refresh(); return; }
+    msg.textContent = 'Almost there — check your email and click the confirmation link, then sign in.';
+    msg.className = 'msg ok';
+  });
+
+  $('signOutBtn').addEventListener('click', async () => { await db.auth.signOut(); refresh(); });
+
+  $('wbGo').addEventListener('click', () => {
+    const wb = $('wbInput').value.trim();
+    if (wb) location.href = '/#track';
+  });
+
+  if (db) { db.auth.onAuthStateChange(() => refresh()); refresh(); }
+})();
+</script>
+</body>
+</html>
