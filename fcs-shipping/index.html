@@ -21,23 +21,37 @@
 
 <nav>
   <div class="nav-inner">
-    <a class="logo" href="#top">
-      <div class="l1">FCS Shipping LLC.</div>
-      <div class="l2">Brooklyn · New York</div>
+    <a class="logo" href="#top" aria-label="FCS Shipping home">
+      <svg class="logo-mark" viewBox="0 0 48 42" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="15" y="1" width="9" height="6" fill="#111"/>
+        <rect x="10" y="9" width="9" height="6" fill="#111"/>
+        <rect x="21" y="9" width="9" height="6" fill="#111"/>
+        <rect x="32" y="9" width="6" height="6" fill="#111"/>
+        <path d="M4 18h40l-6 12H10L4 18z" fill="#111"/>
+        <path d="M6 37c4 3 8 3 12 0s8-3 12 0 8 3 12 0" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="l1">FCS Shipping LLC.</div>
+        <div class="l2">Brooklyn · New York · The World</div>
+      </div>
     </a>
     <ul class="nav-links">
-      <li><a href="#quote">Get a quote</a></li>
-      <li><a href="#track">Track</a></li>
-      <li><a href="#schedule">Sailings</a></li>
+      <li><a href="#about">About us</a></li>
       <li><a href="#services">Services</a></li>
-      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#track">Track</a></li>
     </ul>
-    <a class="nav-cta" href="#quote">Start Shipping!</a>
+    <select class="lang" id="langSel" aria-label="Language">
+      <option value="en">EN</option>
+      <option value="es" disabled>ES — soon</option>
+      <option value="fr" disabled>FR — soon</option>
+    </select>
+    <a class="nav-signin" href="/account/">Sign in</a>
+    <a class="nav-cta" href="/account/#signup">Create free account</a>
   </div>
 </nav>
 
 <header class="hero" id="top">
-  <img class="hero-img" src="/assets/fcs-background-test2.png"
+  <img class="hero-img" src="/assets/fcs-hero-background.jpg"
        onerror="this.onerror=null;this.src='/assets/hero-ship.jpg'"
        alt="FCS Shipping container ship at sea">
   <div>
@@ -45,13 +59,13 @@
     <h1 id="heroTitle">Make Ship Happen!</h1>
     <p class="lede" id="heroLede">For all your freight shipping services to St. Lucia and all islands of the Caribbean. Barrels, boxes, packages, cars, containers &amp; all personal effects.</p>
     <div class="hero-ctas">
-      <a class="btn btn-white" href="#quote">Start Shipping!</a>
+      <a class="btn btn-white" href="#quote">Get a Quote</a>
       <a class="btn btn-dark" href="#track">Track a shipment</a>
     </div>
     <div class="next-sail">
       <span class="pulse" aria-hidden="true"></span>
       <div>
-        <div class="lbl">Next vessel departs Brooklyn in</div>
+        <div class="lbl">Next Vessel Departs In</div>
         <div class="val" id="countdown">—</div>
       </div>
     </div>
@@ -60,8 +74,8 @@
 
 <div class="strip" aria-hidden="true">
   <div class="strip-track">
-    <span>Port Castries <em>●</em> Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> Agents for West-Indies Shipping <em>●</em> Professional, Reliable, Rapid Service <em>●</em> You Name It, We Ship It <em>●</em></span>
-    <span>Port Castries <em>●</em> Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> Agents for West-Indies Shipping <em>●</em> Professional, Reliable, Rapid Service <em>●</em> You Name It, We Ship It <em>●</em></span>
+    <span>Port Castries <em>●</em> Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> St. Lucia <em>●</em> Jamaica <em>●</em> Trinidad &amp; Tobago <em>●</em> Barbados <em>●</em> Grenada <em>●</em> St. Vincent &amp; the Grenadines <em>●</em> Dominica <em>●</em> Antigua &amp; Barbuda <em>●</em> St. Kitts &amp; Nevis <em>●</em> Montserrat <em>●</em> Anguilla <em>●</em> British Virgin Islands <em>●</em> U.S. Virgin Islands <em>●</em> Puerto Rico <em>●</em> Dominican Republic <em>●</em> Haiti <em>●</em> Cuba <em>●</em> The Bahamas <em>●</em> Turks &amp; Caicos <em>●</em> Cayman Islands <em>●</em> Aruba <em>●</em> Curaçao <em>●</em> Bonaire <em>●</em> Sint Maarten <em>●</em> St. Martin <em>●</em> St. Barthélemy <em>●</em> Guadeloupe <em>●</em> Martinique <em>●</em></span>
+    <span>Port Castries <em>●</em> Vieux-Fort <em>●</em> Cul-de-Sac <em>●</em> St. Lucia <em>●</em> Jamaica <em>●</em> Trinidad &amp; Tobago <em>●</em> Barbados <em>●</em> Grenada <em>●</em> St. Vincent &amp; the Grenadines <em>●</em> Dominica <em>●</em> Antigua &amp; Barbuda <em>●</em> St. Kitts &amp; Nevis <em>●</em> Montserrat <em>●</em> Anguilla <em>●</em> British Virgin Islands <em>●</em> U.S. Virgin Islands <em>●</em> Puerto Rico <em>●</em> Dominican Republic <em>●</em> Haiti <em>●</em> Cuba <em>●</em> The Bahamas <em>●</em> Turks &amp; Caicos <em>●</em> Cayman Islands <em>●</em> Aruba <em>●</em> Curaçao <em>●</em> Bonaire <em>●</em> Sint Maarten <em>●</em> St. Martin <em>●</em> St. Barthélemy <em>●</em> Guadeloupe <em>●</em> Martinique <em>●</em></span>
   </div>
 </div>
 
@@ -202,7 +216,7 @@
 </section>
 
 <!-- ============ FOUNDER BAND ============ -->
-<section style="padding-top:0">
+<section id="about" style="padding-top:0">
   <div class="band reveal">
     <img src="/assets/operations.jpg"
          onerror="this.onerror=null;this.src='https://images.squarespace-cdn.com/content/v1/616b4d41e2976800d6464843/1634509851821-WLOO5WTH6YO3I0LYEAH3/IMG_3454.jpg'"
