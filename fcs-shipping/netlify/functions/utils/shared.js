@@ -21,7 +21,9 @@ async function sb(pathAndQuery, { method = 'GET', body, prefer } = {}) {
     throw new Error(`Supabase ${method} ${pathAndQuery} → ${res.status} ${text}`);
   }
   if (res.status === 204) return null;
-  return res.json();
+  const text = await res.text();
+  if (!text) return null; /* e.g. 201 upserts without return=representation */
+  return JSON.parse(text);
 }
 
 /* ---- pricing: site.config.json, overridden by the admin-edited `settings`
