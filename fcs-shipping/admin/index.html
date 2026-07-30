@@ -35,9 +35,16 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 .msg.err{color:#B03A2E}.msg.ok{color:#1E6B3A}
 /* tabs */
 .tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:10}
-.tabs button{flex:1;background:none;border:none;padding:.8rem .2rem 1.1rem;font-size:.72rem;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.03em}
-.tabs button .ico{display:block;font-size:1.25rem;margin-bottom:.15rem}
-.tabs button.on{color:var(--sea)}
+.tabs button{flex:1;background:none;border:none;padding:1rem .2rem 1.2rem;font-size:.72rem;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.03em}
+.tabs button.on{color:var(--sea);box-shadow:inset 0 3px 0 var(--sea)}
+/* dashboard */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:1.1rem;cursor:pointer;text-align:left}
+.stat .n{font-size:2.1rem;font-weight:900;color:var(--sea);line-height:1.1}
+.stat .n.alert{color:#B03A2E}
+.stat .l{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);margin-top:.3rem}
+.stat.wide{grid-column:1/-1}
+.stat .sub{font-size:.86rem;color:var(--grey);margin-top:.25rem}
 .view{display:none}.view.on{display:block}
 /* shipment / quote cards */
 .item{border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:.8rem;background:#fff}
@@ -95,8 +102,20 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 <!-- ============ APP ============ -->
 <main id="app" hidden>
 
+  <!-- Home dashboard -->
+  <div class="view on" id="view-home">
+    <div class="dash-grid" id="dashGrid">
+      <button class="stat" data-go="quotes"><div class="n" id="dNewQuotes">—</div><div class="l">New quote requests</div></button>
+      <button class="stat" data-go="ebl"><div class="n" id="dOpenEbls">—</div><div class="l">Unpaid EB/Ls</div></button>
+      <button class="stat" data-go="ship"><div class="n" id="dActiveShip">—</div><div class="l">Active shipments</div></button>
+      <button class="stat" data-go="ship"><div class="n" id="dAtSea">—</div><div class="l">At sea right now</div></button>
+      <button class="stat wide" data-go="sail"><div class="n" id="dNextSail" style="font-size:1.35rem">—</div><div class="l">Next sailing</div><div class="sub" id="dNextSailSub"></div></button>
+    </div>
+    <p class="msg" id="dashMsg"></p>
+  </div>
+
   <!-- Shipments -->
-  <div class="view on" id="view-ship">
+  <div class="view" id="view-ship">
     <div class="card">
       <h2>Find shipment</h2>
       <input type="text" id="shipSearch" placeholder="B/L number, name, or phone…">
@@ -170,11 +189,18 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
   <!-- Prices -->
   <div class="view" id="view-prices">
     <div class="card">
-      <h2>Prices &amp; fees</h2>
-      <p class="note" style="margin-top:0">These rates are used by the website's quote builder and card deposits the moment you save.</p>
+      <h2>Quote builder — everything editable</h2>
+      <p class="note" style="margin-top:0">Every product, destination, price, and label below drives the website's quote builder and card payments the moment you save. Flat prices win; leave a flat price at 0 to charge by cubic foot instead.</p>
       <div id="priceFields"></div>
-      <button class="btn sea" id="savePrices">Save prices</button>
+      <button class="btn sea" id="savePrices">Save — publish to the website</button>
       <p class="msg" id="priceMsg"></p>
+    </div>
+    <div class="card">
+      <h2>Meet the team</h2>
+      <p class="note" style="margin-top:0">Shown on the website under the founder story. Photo is a link to an image (optional — initials are shown without one).</p>
+      <div id="teamList"></div>
+      <button class="btn sm ghost" id="teamAdd">+ Add team member</button>
+      <p class="note">Team members save with the button above ("Save — publish to the website").</p>
     </div>
     <div class="card">
       <h2>Customer testimonials</h2>
@@ -188,12 +214,13 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 </main>
 
 <nav class="tabs" id="tabs" hidden>
-  <button data-view="ship" class="on"><span class="ico">📦</span>Shipments</button>
-  <button data-view="new"><span class="ico">➕</span>New</button>
-  <button data-view="ebl"><span class="ico">📄</span>EB/L</button>
-  <button data-view="quotes"><span class="ico">💬</span>Quotes</button>
-  <button data-view="sail"><span class="ico">🚢</span>Sailings</button>
-  <button data-view="prices"><span class="ico">💲</span>Prices</button>
+  <button data-view="home" class="on">Home</button>
+  <button data-view="ship">Shipments</button>
+  <button data-view="new">New</button>
+  <button data-view="ebl">EB/L</button>
+  <button data-view="quotes">Quotes</button>
+  <button data-view="sail">Sailings</button>
+  <button data-view="prices">Prices</button>
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -213,9 +240,16 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     received: 'Received', loaded: 'Loaded', at_sea: 'At sea',
     arrived: 'Arrived', ready: 'Ready', delivered: 'Delivered',
   };
-  const DESTS = ['Vieux-Fort', 'Cul-de-Sac', 'Other Caribbean island'];
-  $('nsDest').innerHTML = DESTS.map((d) => `<option>${d}</option>`).join('');
-  $('ebDest').innerHTML = DESTS.map((d) => `<option>${d}</option>`).join('');
+  /* destination dropdowns follow the Prices tab (fallback until pricing loads) */
+  function populateDests(list) {
+    const names = (list || []).filter((d) => !d.call).map((d) => d.name).concat('Other Caribbean island');
+    ['nsDest', 'ebDest'].forEach((id) => {
+      const sel = $(id), cur = sel.value;
+      sel.innerHTML = names.map((d) => `<option>${esc(d)}</option>`).join('');
+      if (cur && names.includes(cur)) sel.value = cur;
+    });
+  }
+  populateDests([{ name: 'Vieux-Fort' }, { name: 'Port Castries' }, { name: 'Cul-de-Sac' }]);
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -231,7 +265,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     $('tabs').hidden = !inApp;
     $('logoutBtn').hidden = !inApp;
     $('ordersLink').hidden = !inApp;
-    if (inApp) { loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); loadTestimonials(); }
+    if (inApp) { loadDash(); loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); loadTestimonials(); }
   }
   $('loginBtn').addEventListener('click', async () => {
     if (!db) return;
@@ -247,14 +281,42 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
   $('logoutBtn').addEventListener('click', async () => { await db.auth.signOut(); refreshAuth(); });
 
   /* ---------- tabs ---------- */
-  document.querySelectorAll('#tabs button').forEach((b) => {
-    b.addEventListener('click', () => {
-      document.querySelectorAll('#tabs button').forEach((x) => x.classList.remove('on'));
-      document.querySelectorAll('.view').forEach((v) => v.classList.remove('on'));
-      b.classList.add('on');
-      $('view-' + b.dataset.view).classList.add('on');
-    });
-  });
+  function showView(name) {
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x.dataset.view === name));
+    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('on', v.id === 'view-' + name));
+    if (name === 'home') loadDash();
+  }
+  document.querySelectorAll('#tabs button').forEach((b) =>
+    b.addEventListener('click', () => showView(b.dataset.view)));
+  document.querySelectorAll('#dashGrid .stat').forEach((b) =>
+    b.addEventListener('click', () => showView(b.dataset.go)));
+
+  /* ---------- home dashboard ---------- */
+  async function loadDash() {
+    try {
+      const count = (q) => q.then((r) => (r.count == null ? '—' : r.count));
+      const [nq, oe, as, at] = await Promise.all([
+        count(db.from('quote_requests').select('id', { count: 'exact', head: true }).eq('status', 'new')),
+        count(db.from('ebl').select('id', { count: 'exact', head: true }).eq('status', 'open')),
+        count(db.from('shipments').select('id', { count: 'exact', head: true }).not('status', 'in', '("delivered")')),
+        count(db.from('shipments').select('id', { count: 'exact', head: true }).eq('status', 'at_sea')),
+      ]);
+      $('dNewQuotes').textContent = nq; $('dNewQuotes').className = 'n' + (nq > 0 ? ' alert' : '');
+      $('dOpenEbls').textContent = oe; $('dOpenEbls').className = 'n' + (oe > 0 ? ' alert' : '');
+      $('dActiveShip').textContent = as;
+      $('dAtSea').textContent = at;
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: sl } = await db.from('sailings').select('*')
+        .gte('departs', today).neq('status', 'sailed').order('departs').limit(1);
+      if (sl && sl[0]) {
+        $('dNextSail').textContent = fd(sl[0].departs) + ' — ' + sl[0].vessel;
+        $('dNextSailSub').textContent = `Cut-off ${fd(sl[0].cutoff)} · arrives ${fd(sl[0].arrives)} · ${sl[0].status}`;
+      } else {
+        $('dNextSail').textContent = 'None scheduled';
+        $('dNextSailSub').textContent = 'Add one on the Sailings tab.';
+      }
+    } catch (e) { $('dashMsg').textContent = e.message; $('dashMsg').className = 'msg err'; }
+  }
 
   /* ---------- shipments ---------- */
   async function loadShipments() {
@@ -423,46 +485,140 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     loadSailings();
   });
 
-  /* ---------- prices (v3: EVERY product name, size, and price is editable) ---------- */
+  /* ---------- prices (v4: EVERYTHING editable — add/remove cargo, destinations
+        with countries, flat per-destination prices, extras, supplies, arrival
+        country, team). Saved as one 'pricing' settings object. ---------- */
   let pricing = null;
-  const rowLP = (group, i, label, num, step) =>
-    `<div class="price-row"><input type="text" data-pl="${group}.${i}" value="${esc(label)}" style="flex:1;min-width:0">` +
-    `<input type="number" min="0" step="${step || 1}" data-p="${group}.${i}" value="${num}"></div>`;
 
   async function loadPrices() {
     const base = await fetch('/site.config.json').then((r) => r.json())
-      .then((c) => ({ cargo: c.cargo, destinations: c.destinations, extras: c.extras, supplies: c.supplies, suppliesDeliveryFee: c.suppliesDeliveryFee || 5 }))
+      .then((c) => ({
+        cargo: c.cargo, destinations: c.destinations, extras: c.extras, supplies: c.supplies,
+        suppliesDeliveryFee: c.suppliesDeliveryFee || 5,
+        arrivalCountry: c.arrivalCountry || 'St. Lucia', team: c.team || [],
+      }))
       .catch(() => null);
     const { data } = await db.from('settings').select('value').eq('key', 'pricing').maybeSingle();
     pricing = (data && data.value && data.value.supplies && data.value.cargo) ? data.value : base;
     if (!pricing) { $('priceFields').innerHTML = '<p class="msg err">Could not load prices.</p>'; return; }
-    $('priceFields').innerHTML =
-      '<label>Cargo types (name / cubic feet)</label>' +
-      pricing.cargo.map((c, i) => (c.custom || c.ebl) ? '' : rowLP('cargo', i, c.label, c.cuft, 0.5)).join('') +
-      '<label>Destination ports (name / $ per cu ft)</label>' +
-      pricing.destinations.map((d, i) => d.call ? '' : rowLP('destinations', i, d.name, d.rate, 0.5)).join('') +
-      '<label>Extras (name / $)</label>' +
-      pricing.extras.map((x, i) => rowLP('extras', i, x.label, x.price)).join('') +
-      '<label>Empty barrels &amp; bins (name / $)</label>' +
-      pricing.supplies.map((s, i) => rowLP('supplies', i, s.label, s.price)).join('') +
-      `<div class="price-row"><span>Supply home delivery fee</span><input type="number" min="0" step="1" data-p="fee.0" value="${pricing.suppliesDeliveryFee}"></div>`;
+    if (!pricing.arrivalCountry) pricing.arrivalCountry = (base && base.arrivalCountry) || 'St. Lucia';
+    if (!Array.isArray(pricing.team)) pricing.team = (base && base.team) || [];
+    pricing.destinations.forEach((d) => { if (d.country == null && !d.call) d.country = pricing.arrivalCountry; });
+    populateDests(pricing.destinations);
+    renderPrices();
   }
+
+  function renderPrices() {
+    const dests = pricing.destinations.filter((d) => !d.call);
+    $('priceFields').innerHTML =
+      '<label>Arrival country (shown on the schedule: "Arrives ___")</label>' +
+      `<input type="text" data-country value="${esc(pricing.arrivalCountry)}">` +
+
+      '<label style="margin-top:1.2rem">Cargo types</label>' +
+      pricing.cargo.map((c, i) => {
+        if (c.ebl) return '';
+        const flats = c.custom ? '<p class="note" style="margin:.3rem 0 0">Priced by measurements (L×W×H → cu ft × port rate).</p>'
+          : dests.map((d) => `<div class="price-row"><span>Flat price → ${esc(d.name)} ($, 0 = use cu ft rate)</span>` +
+              `<input type="number" min="0" step="1" data-flat="${i}|${esc(d.name)}" value="${(c.prices && c.prices[d.name]) || 0}"></div>`).join('');
+        return `<div class="item">
+          <div class="price-row"><input type="text" data-cl="${i}" value="${esc(c.label)}" style="flex:1;min-width:0" placeholder="Name shown to customers">
+          ${c.custom ? '' : `<input type="number" min="0" step="0.5" data-cf="${i}" value="${c.cuft || 0}" title="cubic feet">`}</div>
+          ${c.custom ? '' : '<p class="note" style="margin:0 0 .3rem">↑ name / cubic feet</p>'}
+          ${flats}
+          <button class="btn sm ghost" data-cdel="${i}">Remove</button>
+        </div>`;
+      }).join('') +
+      '<button class="btn sm ghost" data-add="cargo" type="button">+ Add cargo type</button>' +
+
+      '<label style="margin-top:1.2rem">Destination ports</label>' +
+      pricing.destinations.map((d, i) => d.call
+        ? `<p class="note">"${esc(d.name)}" (call-us option — always last)</p>`
+        : `<div class="item">
+            <div class="price-row"><input type="text" data-dn="${i}" value="${esc(d.name)}" style="flex:1;min-width:0" placeholder="Port name">
+            <input type="number" min="0" step="0.5" data-dr="${i}" value="${d.rate || 0}" title="$ per cu ft"></div>
+            <div class="price-row"><span>Country</span><input type="text" data-dc="${i}" value="${esc(d.country || '')}" style="width:180px" placeholder="St. Lucia"></div>
+            <button class="btn sm ghost" data-ddel="${i}">Remove</button>
+          </div>`).join('') +
+      '<button class="btn sm ghost" data-add="dest" type="button">+ Add destination</button>' +
+
+      '<label style="margin-top:1.2rem">Extras (name / $)</label>' +
+      pricing.extras.map((x, i) =>
+        `<div class="price-row"><input type="text" data-xl="${i}" value="${esc(x.label)}" style="flex:1;min-width:0">` +
+        `<input type="number" min="0" step="1" data-xp="${i}" value="${x.price}">` +
+        `<button class="btn sm ghost" style="margin:0" data-xdel="${i}">✕</button></div>`).join('') +
+      '<button class="btn sm ghost" data-add="extra" type="button">+ Add extra</button>' +
+
+      '<label style="margin-top:1.2rem">Empty barrels &amp; bins for sale (name / $)</label>' +
+      pricing.supplies.map((s, i) =>
+        `<div class="price-row"><input type="text" data-sl="${i}" value="${esc(s.label)}" style="flex:1;min-width:0">` +
+        `<input type="number" min="0" step="1" data-sp="${i}" value="${s.price}">` +
+        `<button class="btn sm ghost" style="margin:0" data-sdel="${i}">✕</button></div>`).join('') +
+      '<button class="btn sm ghost" data-add="supply" type="button">+ Add supply</button>' +
+      `<div class="price-row" style="margin-top:1rem"><span>Supply home delivery fee ($)</span><input type="number" min="0" step="1" data-fee value="${pricing.suppliesDeliveryFee}"></div>`;
+
+    $('teamList').innerHTML = pricing.team.map((t, i) => `<div class="item">
+        <label>Name</label><input type="text" data-tmn="${i}" value="${esc(t.name)}" placeholder="e.g. Vernessa Goring">
+        <label>Role</label><input type="text" data-tmr="${i}" value="${esc(t.role)}" placeholder="e.g. Warehouse Manager">
+        <label>Photo link (optional)</label><input type="text" data-tmp="${i}" value="${esc(t.photo || '')}" placeholder="https://…">
+        <button class="btn sm ghost" data-tmdel="${i}">Remove</button>
+      </div>`).join('') || '<p class="msg">No team members yet.</p>';
+
+    /* add / remove wiring (collect current edits first so nothing typed is lost) */
+    const rerender = () => renderPrices();
+    document.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => {
+      collectPrices();
+      if (b.dataset.add === 'cargo') pricing.cargo.splice(pricing.cargo.length - 1, 0, { id: 'item_' + Date.now(), label: 'New item', cuft: 10, prices: {} });
+      if (b.dataset.add === 'dest') pricing.destinations.splice(Math.max(0, pricing.destinations.findIndex((d) => d.call)), 0, { name: 'New port', country: pricing.arrivalCountry, rate: 10 });
+      if (b.dataset.add === 'extra') pricing.extras.push({ id: 'extra_' + Date.now(), label: 'New extra', price: 0 });
+      if (b.dataset.add === 'supply') pricing.supplies.push({ id: 'supply_' + Date.now(), label: 'New supply', price: 0 });
+      rerender();
+    }));
+    const wireDel = (attr, arr) => document.querySelectorAll(`[data-${attr}]`).forEach((b) =>
+      b.addEventListener('click', () => { collectPrices(); arr.splice(+b.dataset[attr], 1); rerender(); }));
+    wireDel('cdel', pricing.cargo);
+    wireDel('ddel', pricing.destinations);
+    wireDel('xdel', pricing.extras);
+    wireDel('sdel', pricing.supplies);
+    wireDel('tmdel', pricing.team);
+    $('teamAdd').onclick = () => { collectPrices(); pricing.team.push({ name: '', role: '', photo: '' }); rerender(); };
+  }
+
+  function collectPrices() {
+    const num = (v) => Math.max(0, Number(v) || 0);
+    const g = (sel, fn) => document.querySelectorAll(sel).forEach(fn);
+    const c1 = document.querySelector('[data-country]');
+    if (c1 && c1.value.trim()) pricing.arrivalCountry = c1.value.trim();
+    g('[data-cl]', (i) => { if (i.value.trim()) pricing.cargo[+i.dataset.cl].label = i.value.trim(); });
+    g('[data-cf]', (i) => (pricing.cargo[+i.dataset.cf].cuft = num(i.value)));
+    g('[data-flat]', (i) => {
+      const [ci, dn] = i.dataset.flat.split('|');
+      const c = pricing.cargo[+ci];
+      if (!c.prices) c.prices = {};
+      const v = num(i.value);
+      if (v > 0) c.prices[dn] = v; else delete c.prices[dn];
+    });
+    g('[data-dn]', (i) => { if (i.value.trim()) pricing.destinations[+i.dataset.dn].name = i.value.trim(); });
+    g('[data-dr]', (i) => (pricing.destinations[+i.dataset.dr].rate = num(i.value)));
+    g('[data-dc]', (i) => (pricing.destinations[+i.dataset.dc].country = i.value.trim()));
+    g('[data-xl]', (i) => { if (i.value.trim()) pricing.extras[+i.dataset.xl].label = i.value.trim(); });
+    g('[data-xp]', (i) => (pricing.extras[+i.dataset.xp].price = num(i.value)));
+    g('[data-sl]', (i) => { if (i.value.trim()) pricing.supplies[+i.dataset.sl].label = i.value.trim(); });
+    g('[data-sp]', (i) => (pricing.supplies[+i.dataset.sp].price = num(i.value)));
+    const fee = document.querySelector('[data-fee]');
+    if (fee) pricing.suppliesDeliveryFee = num(fee.value);
+    g('[data-tmn]', (i) => (pricing.team[+i.dataset.tmn].name = i.value.trim()));
+    g('[data-tmr]', (i) => (pricing.team[+i.dataset.tmr].role = i.value.trim()));
+    g('[data-tmp]', (i) => (pricing.team[+i.dataset.tmp].photo = i.value.trim()));
+  }
+
   $('savePrices').addEventListener('click', async () => {
     const msg = $('priceMsg'); msg.className = 'msg';
-    document.querySelectorAll('[data-pl]').forEach((inp) => {
-      const [group, i] = inp.dataset.pl.split('.');
-      const v = inp.value.trim();
-      if (!v) return;
-      if (group === 'destinations') pricing.destinations[i].name = v;
-      else pricing[group][i].label = v;
-    });
-    document.querySelectorAll('[data-p]').forEach((inp) => {
-      const [group, i] = inp.dataset.p.split('.');
-      const v = Math.max(0, Number(inp.value) || 0);
-      if (group === 'destinations') pricing.destinations[i].rate = v;
-      else if (group === 'fee') pricing.suppliesDeliveryFee = v;
-      else if (group === 'cargo') pricing.cargo[i].cuft = v;
-      else pricing[group][i].price = v;
+    collectPrices();
+    pricing.team = pricing.team.filter((t) => t.name);
+    /* keep flat-price keys in step with any renamed destinations */
+    const destNames = pricing.destinations.filter((d) => !d.call).map((d) => d.name);
+    pricing.cargo.forEach((c) => {
+      if (c.prices) Object.keys(c.prices).forEach((k) => { if (!destNames.includes(k)) delete c.prices[k]; });
     });
     /* regenerate the button text customers see from label + price */
     pricing.extras.forEach((x) => {
@@ -470,8 +626,9 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     });
     const { error } = await db.from('settings').upsert({ key: 'pricing', value: pricing, updated_at: new Date().toISOString() });
     if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
-    msg.textContent = 'Saved — the website is now using these products and rates.'; msg.className = 'msg ok';
-    loadPrices();
+    msg.textContent = 'Saved — the website is now using these products, rates, and team.'; msg.className = 'msg ok';
+    populateDests(pricing.destinations);
+    renderPrices();
   });
 
   /* ---------- testimonials (settings key 'testimonials') ---------- */
