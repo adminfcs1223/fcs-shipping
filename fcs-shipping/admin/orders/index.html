@@ -108,6 +108,7 @@ table.list tbody tr:hover{background:#fafcfd}
   text-align:left;padding:0 6px 5px}
 .items td{padding:3px 3px}
 .items input{width:100%;padding:6px 7px;border:1px solid var(--rule);border-radius:4px}
+.items select{width:100%;padding:6px 4px;border:1px solid var(--rule);border-radius:4px;background:#fff;font-size:13px}
 .items .x{background:none;border:0;color:#a11b1b;cursor:pointer;font-size:16px;line-height:1;padding:4px 6px}
 .toast{
   position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
@@ -217,10 +218,18 @@ table.list tbody tr:hover{background:#fafcfd}
 /* ---------- print ---------- */
 @page{size:letter portrait;margin:0}
 @media print{
-  body{background:#fff}
+  html,body{margin:0!important;padding:0!important;background:#fff}
   .shell,.toast,.gate{display:none!important}
   #printroot{display:block!important}
-  #printroot .page{box-shadow:none;margin:0}
+  /* exactly one letter page: fixed height a hair under 11in so rounding
+     never spills onto a second sheet, overflow clipped */
+  #printroot .page{
+    box-shadow:none;margin:0;width:8.5in;
+    min-height:0;height:10.94in;overflow:hidden;
+    padding:.4in .4in .35in;
+  }
+  #printroot .p-sign{bottom:.35in}
+  .page{break-inside:avoid;page-break-inside:avoid}
 }
 #printroot{display:none}
 </style>
@@ -326,7 +335,7 @@ table.list tbody tr:hover{background:#fafcfd}
             <p class="hint">Amount calculates from quantity × price. Leave quantity blank for a continuation line like “36 CUBIC FT”.</p>
             <table class="items">
               <thead><tr>
-                <th style="width:74px">Qty</th><th style="width:96px">Part no.</th>
+                <th style="width:74px">Qty</th><th style="width:96px">Cu ft</th>
                 <th>Description</th><th style="width:96px">Price/unit</th>
                 <th style="width:96px">Amount</th><th style="width:34px"></th>
               </tr></thead>
@@ -615,13 +624,27 @@ function formToDraft(){
   draft.customerId = $('#fCustomer').value;
   draft.showTotal = $('#fShowTotal').checked;
 }
+const DESC_OPTS = ['Barrel','Commercial Bin','Box','Other'];
+function descCell(it,i){
+  const v = it.desc || '';
+  const isStd = DESC_OPTS.includes(v);
+  const other = !isStd && v !== '';
+  /* dropdown; picking "Other" swaps in a free-text input */
+  if(other || it._descOther){
+    return `<input data-k="desc" value="${esc(v)}" placeholder="Describe it…">`;
+  }
+  return `<select data-k="desc">
+    <option value=""></option>
+    ${DESC_OPTS.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}
+  </select>`;
+}
 function renderItems(){
   const tb=$('#itemRows');
   tb.innerHTML = draft.items.map((it,i)=>`
     <tr data-i="${i}">
       <td><input data-k="qty"   value="${esc(it.qty)}"   inputmode="decimal"></td>
-      <td><input data-k="part"  value="${esc(it.part)}"></td>
-      <td><input data-k="desc"  value="${esc(it.desc)}"></td>
+      <td><input data-k="part"  value="${esc(it.part)}" inputmode="decimal"></td>
+      <td>${descCell(it,i)}</td>
       <td><input data-k="price" value="${esc(it.price)}" inputmode="decimal" placeholder="${esc(S.rate)}"></td>
       <td><input data-k="amount" value="${esc(it.amount)}" inputmode="decimal" placeholder="${itemAmount(it)?itemAmount(it).toFixed(2):''}"></td>
       <td><button class="x" data-del="${i}" title="Remove line" aria-label="Remove line">×</button></td>
@@ -705,7 +728,7 @@ function formHTML(o){
   <table class="p-tbl">
     <thead><tr>
       <th class="c" style="width:1.05in">Quantity</th>
-      <th style="width:1.05in">Part No.</th>
+      <th class="c" style="width:1.05in">Cu Ft</th>
       <th class="c">Description</th>
       <th class="c" style="width:1.05in">Price/Unit</th>
       <th class="r" style="width:1.05in">Amount</th>
@@ -940,6 +963,16 @@ $('#itemRows').addEventListener('input',e=>{
   const amtIn = tr.querySelector('[data-k="amount"]');
   if(k!=='amount' && amtIn){ const a=itemAmount(draft.items[i]); amtIn.placeholder = a?a.toFixed(2):''; amtIn.value=''; }
   renderPreview();
+});
+$('#itemRows').addEventListener('change',e=>{
+  const tr=e.target.closest('tr'); if(!tr) return;
+  const i=+tr.dataset.i;
+  if(e.target.dataset.k==='desc' && e.target.tagName==='SELECT' && e.target.value==='Other'){
+    draft.items[i]._descOther=true; draft.items[i].desc='';
+    renderItems(); renderPreview();
+    const inp=$('#itemRows').querySelector(`tr[data-i="${i}"] [data-k="desc"]`);
+    if(inp) inp.focus();
+  }
 });
 $('#itemRows').addEventListener('click',e=>{
   const d=e.target.dataset.del; if(d===undefined) return;
