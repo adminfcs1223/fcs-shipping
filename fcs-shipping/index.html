@@ -7,7 +7,7 @@
 <meta name="description" content="FCS Shipping LLC — freight shipping from Brooklyn NY to St. Lucia and the Caribbean. Barrels, boxes, vehicles, containers. Make Ship Happen!">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -165,7 +165,8 @@
       </div>
     </form>
 
-    <div class="waybill reveal" aria-live="polite">
+    <div class="wb-col reveal">
+    <div class="waybill" aria-live="polite">
       <div class="wb-head">
         <div class="wb-brand">
           <img src="/assets/fcs-logo.png" alt="" class="wb-logo">
@@ -181,9 +182,36 @@
       <div class="wb-row"><span>Freight</span><span id="wbBase">—</span></div>
       <div class="wb-row"><span>Extras</span><span id="wbExtras">—</span></div>
       <div class="wb-row"><span>Supplies</span><span id="wbSupplies">—</span></div>
+      <div class="wb-save" id="wbSave" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M21.4 11.6l-9-9A2 2 0 0 0 11 2H4a2 2 0 0 0-2 2v7c0 .55.22 1.05.59 1.41l9 9a2 2 0 0 0 2.82 0l7-7a2 2 0 0 0 0-2.82zM6.5 8A1.5 1.5 0 1 1 8 6.5 1.5 1.5 0 0 1 6.5 8z"/></svg>
+        <span>FLAT-RATE DEAL — <b>You save <span id="wbSaveAmt">$0</span></b></span>
+      </div>
       <div class="wb-total"><span id="wbTotalLabel">ESTIMATED TOTAL</span><span class="amt" id="wbTotal">—</span></div>
       <div class="wb-stamp">Ship It!</div>
       <p class="wb-note" id="wbNote">Estimate only. Final rate confirmed at drop-off or pickup when cargo is weighed and manifested.</p>
+    </div>
+
+    <div class="lucia-map" aria-label="Map of St. Lucia showing our ports">
+      <svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" role="img">
+        <path d="M96 12 C110 8 122 16 126 30 C130 43 140 50 142 64 C144 78 138 88 142 102
+                 C146 116 152 128 148 144 C144 160 136 172 130 186 C124 200 118 214 104 222
+                 C92 229 78 226 70 214 C62 202 64 188 58 174 C52 160 46 148 48 132
+                 C50 116 58 106 58 90 C58 74 54 60 62 46 C70 32 82 16 96 12 Z"
+              fill="#DCE9F2" stroke="#0B5C8A" stroke-width="2.5" stroke-linejoin="round"/>
+        <g class="port" >
+          <circle cx="92" cy="52" r="6" fill="#E4572E"/>
+          <circle cx="92" cy="52" r="11" fill="none" stroke="#E4572E" stroke-width="1.5" opacity=".45"/>
+          <text x="108" y="56" font-size="13" font-weight="700" fill="#0A2A3C">Castries</text>
+        </g>
+        <g class="port">
+          <circle cx="96" cy="196" r="6" fill="#E4572E"/>
+          <circle cx="96" cy="196" r="11" fill="none" stroke="#E4572E" stroke-width="1.5" opacity=".45"/>
+          <text x="14" y="188" font-size="13" font-weight="700" fill="#0A2A3C">Vieux-Fort</text>
+        </g>
+        <text x="63" y="124" font-size="11" font-weight="600" letter-spacing="2.5" fill="#4A6E85">ST. LUCIA</text>
+      </svg>
+      <p>Two ports of arrival — <b>Port Castries</b> in the north, <b>Vieux-Fort</b> in the south.</p>
+    </div>
     </div>
   </div>
 </section>
@@ -223,7 +251,7 @@
   </div>
   <div class="sched-wrap reveal">
     <table class="sched">
-      <thead><tr><th>Vessel</th><th>Departs Brooklyn</th><th>Arrives St. Lucia</th><th>Cut-off</th><th>Status</th></tr></thead>
+      <thead><tr><th>Vessel</th><th>Departs</th><th>Arrives <span id="arrCountry">St. Lucia</span></th><th>Cut-off</th><th>Status</th></tr></thead>
       <tbody id="schedBody"></tbody>
     </table>
   </div>
@@ -241,7 +269,10 @@
 <!-- ============ FOUNDER BAND ============ -->
 <section id="about" style="padding-top:0">
   <div class="band reveal">
-    <img src="/assets/founder-og.jpg" alt="Felix Harrison hand-loading customer barrels in the early days of FCS Shipping">
+    <div class="band-img">
+      <img src="/assets/founder-og.jpg" alt="Felix Harrison hand-loading customer barrels in the early days of FCS Shipping">
+      <div class="img-cap">Felix Harrison · 2017</div>
+    </div>
     <div class="txt">
       <div class="eyebrow" style="color:#BCD3E2">In business since 2017</div>
       <h2>Professional, Reliable, Rapid Service!</h2>
@@ -253,6 +284,11 @@
       <div class="sig">— Felix Harrison, Founder &amp; CEO</div>
     </div>
   </div>
+
+  <div class="team-head reveal">
+    <h2 class="team-title">Meet the team!</h2>
+  </div>
+  <div class="team-grid reveal" id="teamGrid"></div>
 </section>
 
 <!-- ============ FAQ ============ -->
