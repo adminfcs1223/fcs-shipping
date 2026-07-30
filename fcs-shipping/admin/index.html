@@ -109,7 +109,12 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       <button class="stat" data-go="ebl"><div class="n" id="dOpenEbls">—</div><div class="l">Unpaid EB/Ls</div></button>
       <button class="stat" data-go="ship"><div class="n" id="dActiveShip">—</div><div class="l">Active shipments</div></button>
       <button class="stat" data-go="ship"><div class="n" id="dAtSea">—</div><div class="l">At sea right now</div></button>
-      <button class="stat wide" data-go="sail"><div class="n" id="dNextSail" style="font-size:1.35rem">—</div><div class="l">Next sailing</div><div class="sub" id="dNextSailSub"></div></button>
+      <button class="stat" data-go="cal"><div class="n" id="dPickups">—</div><div class="l">Pickups booked today</div></button>
+      <button class="stat" data-go="sail"><div class="n" id="dNextSail" style="font-size:1.35rem">—</div><div class="l">Next sailing</div><div class="sub" id="dNextSailSub"></div></button>
+      <div class="stat wide" style="cursor:default">
+        <div class="l">The flow</div>
+        <div class="sub">Website quote (books its own pickup time) → <b>Quotes</b> → "Create order" opens Order entry pre-filled → billing creates the <b>EB/L + shipment + QuickBooks invoice</b> together → advance it on <b>Shipments</b> as it moves.</div>
+      </div>
     </div>
     <p class="msg" id="dashMsg"></p>
   </div>
@@ -119,14 +124,10 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     <div class="card">
       <h2>Find shipment</h2>
       <input type="text" id="shipSearch" placeholder="B/L number, name, or phone…">
+      <p class="note">Orders billed in Order entry create their shipment automatically — this list is where you advance them. Walk-ins can be added below.</p>
     </div>
-    <div id="shipList"></div>
-  </div>
-
-  <!-- New shipment -->
-  <div class="view" id="view-new">
-    <div class="card">
-      <h2>New shipment</h2>
+    <details class="card">
+      <summary style="cursor:pointer;font-weight:700;text-transform:uppercase;font-size:.95rem;letter-spacing:.05em">+ New shipment (walk-in / manual)</summary>
       <label>Customer name</label><input type="text" id="nsName">
       <label>Customer phone</label><input type="tel" id="nsPhone">
       <label>Customer email (shows shipment in their portal account)</label><input type="email" id="nsEmail">
@@ -140,7 +141,22 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       <button class="btn sea" id="nsCreate">Create shipment → get B/L Nº</button>
       <div class="bigwb" id="nsResult" hidden></div>
       <p class="msg" id="nsMsg"></p>
+    </details>
+    <div id="shipList"></div>
+  </div>
+
+  <!-- Pickup calendar -->
+  <div class="view" id="view-cal">
+    <div class="card">
+      <h2>Open pickup times</h2>
+      <p class="note" style="margin-top:0">Add the times you're available — customers book them on the website when they lock in a quote. A chosen time is held for 15 minutes while they finish.</p>
+      <label>Date</label><input type="date" id="calDate">
+      <label>Times</label>
+      <div id="calTimes" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.2rem"></div>
+      <button class="btn sea" id="calAdd">Open these times</button>
+      <p class="msg" id="calMsg"></p>
     </div>
+    <div id="calList"></div>
   </div>
 
   <!-- EB/L -->
@@ -215,10 +231,10 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 
 <nav class="tabs" id="tabs" hidden>
   <button data-view="home" class="on">Home</button>
-  <button data-view="ship">Shipments</button>
-  <button data-view="new">New</button>
-  <button data-view="ebl">EB/L</button>
   <button data-view="quotes">Quotes</button>
+  <button data-view="cal">Calendar</button>
+  <button data-view="ship">Shipments</button>
+  <button data-view="ebl">EB/L</button>
   <button data-view="sail">Sailings</button>
   <button data-view="prices">Prices</button>
 </nav>
@@ -264,7 +280,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     $('tabs').hidden = !inApp;
     $('logoutBtn').hidden = !inApp;
     $('ordersLink').hidden = !inApp;
-    if (inApp) { loadDash(); loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); loadTestimonials(); }
+    if (inApp) { loadDash(); loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); loadTestimonials(); loadCal(); }
   }
   $('loginBtn').addEventListener('click', async () => {
     if (!db) return;
@@ -287,7 +303,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
   }
   document.querySelectorAll('#tabs button').forEach((b) =>
     b.addEventListener('click', () => showView(b.dataset.view)));
-  document.querySelectorAll('#dashGrid .stat').forEach((b) =>
+  document.querySelectorAll('#dashGrid .stat[data-go]').forEach((b) =>
     b.addEventListener('click', () => showView(b.dataset.go)));
 
   /* ---------- home dashboard ---------- */
@@ -305,6 +321,11 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       $('dActiveShip').textContent = as;
       $('dAtSea').textContent = at;
       const today = new Date().toISOString().slice(0, 10);
+      try {
+        const { count: pk } = await db.from('pickup_slots').select('id', { count: 'exact', head: true })
+          .eq('status', 'booked').eq('slot_date', today);
+        $('dPickups').textContent = pk == null ? '—' : pk;
+      } catch { $('dPickups').textContent = '—'; }
       const { data: sl } = await db.from('sailings').select('*')
         .gte('departs', today).neq('status', 'sailed').order('departs').limit(1);
       if (sl && sl[0]) {
@@ -426,9 +447,12 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     $('quoteList').innerHTML = (data || []).map((q) => `<div class="item">
         <div class="top"><b>${esc(q.name)}</b><span class="pill ${esc(q.status)}">${esc(q.status.replace('_', ' '))}</span></div>
         <div class="meta"><a href="tel:${esc(q.phone)}">${esc(q.phone)}</a> · ${esc(q.email)}</div>
-        <div class="meta">${esc(q.cargo)} × ${q.quantity} → ${esc(q.destination)} · $${(q.total_cents / 100).toLocaleString()}</div>
+        ${q.address ? `<div class="meta">Address: ${esc(q.address)}</div>` : ''}
+        ${q.pickup_slot ? `<div class="meta"><b>Pickup booked: ${esc(q.pickup_slot)}</b></div>` : ''}
+        <div class="meta">${esc(q.cargo)} → ${esc(q.destination)} · $${(q.total_cents / 100).toLocaleString()}</div>
         <div class="meta">${new Date(q.created_at).toLocaleString()}</div>
-        ${q.status === 'new' || q.status === 'deposit_paid' ? `<button class="btn sm ghost" data-handle="${q.id}">Mark handled ✓</button>` : ''}
+        <a class="btn sm sea" style="text-decoration:none;display:inline-block;text-align:center" href="/admin/orders/?quote=${q.id}">Create order →</a>
+        ${q.status === 'new' || q.status === 'deposit_paid' ? `<button class="btn sm ghost" data-handle="${q.id}">Mark handled</button>` : ''}
       </div>`).join('') || '<p class="msg">No quote requests yet.</p>';
     document.querySelectorAll('[data-handle]').forEach((b) => {
       b.addEventListener('click', async () => {
@@ -436,6 +460,80 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
         loadQuotes();
       });
     });
+  }
+
+  /* ---------- pickup calendar ---------- */
+  const CAL_TIMES = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+  let calSel = new Set();
+  $('calTimes').innerHTML = CAL_TIMES.map((t) =>
+    `<button type="button" class="btn sm ghost" data-caltime="${t}" style="margin-top:0">${t}</button>`).join('');
+  document.querySelectorAll('[data-caltime]').forEach((b) => b.addEventListener('click', () => {
+    const t = b.dataset.caltime;
+    if (calSel.has(t)) { calSel.delete(t); b.classList.add('ghost'); b.classList.remove('sea'); }
+    else { calSel.add(t); b.classList.remove('ghost'); b.classList.add('sea'); }
+  }));
+  const t12 = (t) => { /* sortable key for '1:00 PM' style times */
+    const [hm, ap] = t.split(' '); let [h, m] = hm.split(':').map(Number);
+    if (ap === 'PM' && h !== 12) h += 12; if (ap === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  };
+  $('calAdd').addEventListener('click', async () => {
+    const msg = $('calMsg'); msg.className = 'msg';
+    const date = $('calDate').value;
+    if (!date) { msg.textContent = 'Pick a date first.'; msg.className = 'msg err'; return; }
+    if (!calSel.size) { msg.textContent = 'Tap at least one time.'; msg.className = 'msg err'; return; }
+    const rows = [...calSel].map((t) => ({ slot_date: date, slot_time: t, status: 'open' }));
+    const { error } = await db.from('pickup_slots').upsert(rows, { onConflict: 'slot_date,slot_time', ignoreDuplicates: true });
+    if (error) {
+      msg.textContent = error.message.includes('pickup_slots')
+        ? 'Run supabase/pickup-calendar.sql first (SQL editor), then try again.' : error.message;
+      msg.className = 'msg err'; return;
+    }
+    msg.textContent = 'Times opened — customers can book them now.'; msg.className = 'msg ok';
+    calSel = new Set();
+    document.querySelectorAll('[data-caltime]').forEach((b) => { b.classList.add('ghost'); b.classList.remove('sea'); });
+    loadCal();
+  });
+
+  async function loadCal() {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await db.from('pickup_slots').select('*')
+      .gte('slot_date', today).order('slot_date').limit(200);
+    if (error) {
+      $('calList').innerHTML = `<p class="msg err">${esc(error.message)} — run supabase/pickup-calendar.sql first.</p>`;
+      return;
+    }
+    const now = Date.now();
+    const byDate = {};
+    (data || []).forEach((s) => { (byDate[s.slot_date] = byDate[s.slot_date] || []).push(s); });
+    $('calList').innerHTML = Object.keys(byDate).sort().map((d) => {
+      const slots = byDate[d].sort((a, b) => t12(a.slot_time) - t12(b.slot_time));
+      const label = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      return `<div class="item"><div class="top"><b>${label}</b>
+          <span class="pill open">${slots.filter((s) => s.status === 'open').length} open · ${slots.filter((s) => s.status === 'booked').length} booked</span></div>
+        ${slots.map((s) => {
+          const heldLive = s.status === 'held' && s.held_until && new Date(s.held_until).getTime() > now;
+          const st = s.status === 'booked' ? 'booked' : (heldLive ? 'held (customer finishing checkout)' : 'open');
+          const pill = s.status === 'booked' ? 'ready' : (heldLive ? 'closing' : 'open');
+          return `<div class="meta" style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:.5rem">
+            <span class="pill ${pill}">${esc(s.slot_time)}</span>
+            <span>${st}${s.status === 'booked' ? ` — <b>${esc(s.booked_name || '')}</b> · <a href="tel:${esc(s.booked_phone || '')}">${esc(s.booked_phone || '')}</a>` : ''}</span>
+            ${s.status !== 'booked' ? `<button class="btn sm ghost" style="margin:0" data-slotdel="${s.id}">Remove</button>`
+              : `<button class="btn sm ghost" style="margin:0" data-slotfree="${s.id}">Unbook</button>`}
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('') || '<p class="msg">No upcoming pickup times — open some above.</p>';
+    document.querySelectorAll('[data-slotdel]').forEach((b) => b.addEventListener('click', async () => {
+      await db.from('pickup_slots').delete().eq('id', b.dataset.slotdel);
+      loadCal();
+    }));
+    document.querySelectorAll('[data-slotfree]').forEach((b) => b.addEventListener('click', async () => {
+      if (confirm('Free this time up again? The customer\'s quote keeps its note, but the slot reopens.')) {
+        await db.from('pickup_slots').update({ status: 'open', booked_name: null, booked_phone: null, booked_email: null, quote_id: null, held_until: null }).eq('id', b.dataset.slotfree);
+        loadCal();
+      }
+    }));
   }
 
   /* ---------- sailings ---------- */
