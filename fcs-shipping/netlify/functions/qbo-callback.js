@@ -22,6 +22,14 @@ exports.handler = async (event) => {
   if (p.error) return page('QuickBooks connection cancelled', p.error_description || p.error, false);
   if (!p.code || !p.realmId) return page('Missing details from QuickBooks', 'Try connecting again.', false);
 
+  /* CSRF check: the state must match the single-use value we stored when
+     the connection started. A mismatch means this callback wasn't started
+     by you — we refuse it. */
+  const stateOk = await qbo.consumeState(p.state);
+  if (!stateOk) {
+    return page('Security check failed', 'This connection attempt could not be verified. Start again from Order entry → Settings → Connect QuickBooks.', false);
+  }
+
   try {
     await qbo.exchangeCode(p.code, p.realmId, process.env.URL);
     return page('QuickBooks connected', 'Invoices created from order entry will now post to your books automatically.', true);

@@ -24,6 +24,15 @@ exports.handler = async (event) => {
         <p><a href="/admin/orders/">← Back to order entry</a></p></body>`,
     };
   }
-  const url = qbo.authorizeUrl(process.env.URL, 'fcs');
+  /* CSRF protection: random single-use state, stored server-side and
+     verified when Intuit redirects back to qbo-callback. */
+  let state;
+  try {
+    state = await qbo.newState();
+  } catch (e) {
+    console.error('Could not store OAuth state:', e.message);
+    return json(503, { error: 'Connect Supabase first — the OAuth state store is unavailable.' });
+  }
+  const url = qbo.authorizeUrl(process.env.URL, state);
   return { statusCode: 302, headers: { Location: url }, body: '' };
 };
