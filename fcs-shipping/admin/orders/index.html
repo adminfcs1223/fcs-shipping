@@ -308,6 +308,10 @@ table.list tbody tr:hover{background:#fafcfd}
             <p class="hint">Pick a saved customer to fill both blocks, or type over anything.</p>
             <div class="grid g2">
               <div style="grid-column:span 2">
+                <label class="f">Website quote</label>
+                <select class="f" id="fQuote"><option value="">— pull in a website quote —</option></select>
+              </div>
+              <div style="grid-column:span 2">
                 <label class="f">Customer on file</label>
                 <select class="f" id="fCustomer"><option value="">— none / one-off —</option></select>
               </div>
@@ -802,6 +806,8 @@ $('#btnMakeEbl').addEventListener('click', async()=>{
         destination: draft.co.city || '',
         priceCents: Math.round(total*100),
         customerName: draft.sh.name,
+        customerPhone: draft.sh.phone,
+        customerEmail: (customers.find(c=>c.id===draft.customerId)||{}).email || '',
         customerExtra: { phone:draft.sh.phone, street:draft.sh.street, city:draft.sh.city, state:draft.sh.state,
                          email:(customers.find(c=>c.id===draft.customerId)||{}).email || '' },
         markPaid: $('#fMarkPaid').checked,
@@ -813,14 +819,22 @@ $('#btnMakeEbl').addEventListener('click', async()=>{
     draft.eblNo = d.eblNo;
     draft.paid = !!$('#fMarkPaid').checked;
     draft.qbInvoiceNo = (d.quickbooks && d.quickbooks.ok) ? (d.quickbooks.docNumber || 'posted') : '';
+    if(d.shipment && d.shipment.ok) draft.waybillNo = d.shipment.waybill;
     await saveOrderQuiet();
     renderBilling();
-    const qbNote = !d.quickbooks.attempted ? 'QuickBooks not connected — EB/L created.'
+    const shipNote = d.shipment && d.shipment.ok
+      ? ` Shipment ${d.shipment.waybill} created — track it on the admin Shipments tab; it's already in the customer's portal.`
+      : ' (Shipment could not be created — add one manually on the Shipments tab.)';
+    const qbNote = (!d.quickbooks.attempted ? 'QuickBooks not connected — EB/L created.'
       : d.quickbooks.ok ? 'QuickBooks invoice posted.'
-      : 'EB/L created, but QuickBooks said: '+d.quickbooks.error;
+      : 'EB/L created, but QuickBooks said: '+d.quickbooks.error) + shipNote;
     $('#billMsg2').textContent = qbNote;
     $('#billMsg2').className = d.quickbooks.attempted && !d.quickbooks.ok ? 'msg err' : 'msg';
-    toast('EB/L '+d.eblNo+' created');
+    /* the website quote this came from is now handled */
+    if(draft._quoteId && SBC){
+      SBC.from('quote_requests').update({status:'handled'}).eq('id',draft._quoteId).then(()=>loadWebQuotes());
+    }
+    toast('EB/L '+d.eblNo+(d.shipment&&d.shipment.ok?' + B/L '+d.shipment.waybill:'')+' created');
   }catch(e){ msg.textContent=e.message; msg.className='msg err'; }
   btn.disabled=false; btn.textContent='Create EB/L + QuickBooks invoice';
 });
@@ -943,6 +957,52 @@ Object.keys(HDR).concat(Object.keys(SH),Object.keys(CO)).forEach(id=>{
 });
 $('#fShowTotal').addEventListener('change',()=>{ formToDraft(); renderPreview(); });
 // customer picker fills both blocks
+/* ---- website quotes → order (the Darnell flow) ---- */
+let webQuotes=[];
+async function loadWebQuotes(){
+  if(!SBC) return;
+  try{
+    const {data,error} = await SBC.from('quote_requests').select('*').order('created_at',{ascending:false}).limit(50);
+    if(error || !data) return;
+    webQuotes = data;
+    $('#fQuote').innerHTML = '<option value="">— pull in a website quote —</option>' +
+      webQuotes.map(q=>`<option value="${q.id}">${q.status==='new'?'● ':''}${esc(q.name)} · $${(q.total_cents/100).toLocaleString()} · ${esc(q.destination||'')} · ${new Date(q.created_at).toLocaleDateString()}</option>`).join('');
+  }catch(e){ console.warn('quotes load skipped', e); }
+}
+async function applyQuote(q){
+  /* file the customer automatically so Darnell is one click next time */
+  const digits = s => String(s||'').replace(/\D/g,'');
+  let c = customers.find(x =>
+    (q.email && x.email && x.email.toLowerCase()===String(q.email).toLowerCase()) ||
+    (digits(q.phone) && digits(x.phone)===digits(q.phone)));
+  if(!c){
+    c = { id:uid(), name:String(q.name||'').toUpperCase(), name2:'', street:String(q.address||'').toUpperCase(),
+          city:'', state:'', phone:q.phone||'', email:q.email||'',
+          notes:'From website quote · '+new Date(q.created_at).toLocaleDateString(), co:{} };
+    customers = customers.concat(c);
+    await persist(); renderCustomers(); renderCustomerSelect();
+    toast((q.name||'Customer')+' added to customers on file');
+  }
+  draft = blankOrder();
+  draft.customerId = c.id;
+  draft._quoteId = q.id;
+  draft.sh = { name:String(q.name||'').toUpperCase(), name2:'', street:String(q.address||c.street||'').toUpperCase(),
+               city:c.city||'', state:c.state||'', phone:q.phone||'' };
+  draft.co = { ...draft.co, city: q.destination ? String(q.destination).toUpperCase()+', ST. LUCIA' : '' };
+  if(q.pickup_slot) draft.service = ('PICKUP: '+q.pickup_slot).toUpperCase();
+  const items = [{ qty:String(q.quantity||1), part:'', desc:String(q.cargo||'').toUpperCase(), price:'', amount:(q.total_cents/100).toFixed(2) }];
+  if(Array.isArray(q.extras) && q.extras.length)
+    items.push({ qty:'', part:'', desc:('INCL: '+q.extras.join(', ')).toUpperCase(), price:'', amount:'' });
+  draft.items = items.concat([blankItem()]);
+  goTab('order');
+  draftToForm();
+  toast('Quote loaded — check it over, save, then bill it');
+}
+$('#fQuote').addEventListener('change',()=>{
+  const q = webQuotes.find(x=>String(x.id)===$('#fQuote').value);
+  if(q) applyQuote(q);
+});
+
 $('#fCustomer').addEventListener('change',e=>{
   const c = customers.find(x=>x.id===e.target.value);
   if(c){
@@ -1149,6 +1209,16 @@ async function startApp(){
     : 'Session only — Supabase not connected.';
   boot();
   await persist();
+  await loadWebQuotes();
+  /* deep link from the admin Quotes tab: /admin/orders/?quote=<id> */
+  const qp = new URLSearchParams(location.search).get('quote');
+  if(qp){
+    let q = webQuotes.find(x=>String(x.id)===qp);
+    if(!q && SBC){
+      try{ const {data} = await SBC.from('quote_requests').select('*').eq('id',qp).maybeSingle(); q = data; }catch(e){}
+    }
+    if(q){ await applyQuote(q); $('#fQuote').value = String(q.id); }
+  }
 }
 /* ---- staff login gate ---- */
 async function gateCheck(){
