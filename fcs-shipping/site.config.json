@@ -71,7 +71,7 @@
     { "name": "Kevin D.", "location": "Canarsie, Brooklyn", "stars": 5, "text": "Called at 9am, barrel picked up by noon, paid my EB/L online in two minutes. This is how shipping home should feel. Five stars every time." }
   ],
   "payments": {
-    "testMode": true,
-    "_note": "testMode true shows the TEST MODE banner on checkout. Set to false only after real Stripe keys are configured in Netlify."
+    "testMode": false,
+    "_note": "Live Stripe keys are configured in Netlify (July 2026). Set back to true only if switching to test keys."
   }
 }
