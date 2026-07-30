@@ -26,7 +26,6 @@
   "destinations": [
     { "name": "Vieux-Fort", "country": "St. Lucia", "rate": 11 },
     { "name": "Port Castries", "country": "St. Lucia", "rate": 11 },
-    { "name": "Cul-de-Sac", "country": "St. Lucia", "rate": 10 },
     { "name": "Other — call (718) 483-8006", "call": true }
   ],
   "arrivalCountry": "St. Lucia",
