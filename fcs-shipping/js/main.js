@@ -45,6 +45,28 @@
     .map((f, i) => `<details${i === 0 ? ' open' : ''}><summary>${f.q}</summary><p>${f.a}</p></details>`)
     .join('');
 
+  /* arrival country on the schedule header (backend-controlled) */
+  const arrCountry = $('arrCountry');
+  if (arrCountry && cfg.arrivalCountry) arrCountry.textContent = cfg.arrivalCountry;
+
+  /* team grid (backend-editable: settings → pricing.team) */
+  (function renderTeam() {
+    const grid = $('teamGrid');
+    if (!grid) return;
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const list = Array.isArray(cfg.team) ? cfg.team.filter((t) => t && t.name) : [];
+    const head = document.querySelector('.team-head');
+    if (!list.length) { if (head) head.hidden = true; grid.hidden = true; return; }
+    grid.innerHTML = list.map((t) => {
+      const initials = t.name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+      const photo = t.photo
+        ? `<img class="ph" src="${esc(t.photo)}" alt="${esc(t.name)}" onerror="this.outerHTML='<div class=&quot;ph-fallback&quot;>${initials}</div>'">`
+        : `<div class="ph-fallback">${initials}</div>`;
+      return `<div class="team-card">${photo}<b>${esc(t.name)}</b><span>${esc(t.role || '')}</span></div>`;
+    }).join('');
+  })();
+
   /* ---------- supabase client (session check + live testimonials) ---------- */
   let sbClient = null;
   try {
@@ -114,7 +136,7 @@
     .map((c, i) => `<button type="button" class="chip" data-id="${c.id}" aria-pressed="${i === 0}">${c.label}</button>`)
     .join('');
   $('dest').innerHTML = cfg.destinations
-    .map((d) => `<option value="${d.name}">${d.name}${d.rate ? ` ($${d.rate}/cu ft)` : ''}</option>`)
+    .map((d) => `<option value="${d.name}">${d.name}${d.country ? `, ${d.country}` : ''}</option>`)
     .join('');
   $('extraChips').innerHTML = cfg.extras
     .map((x) => `<button type="button" class="chip extra" data-id="${x.id}" aria-pressed="false">${x.buttonText}</button>`)
@@ -129,6 +151,11 @@
     .join('');
 
   /* ---------- pricing (mirrors the server; server always recomputes) ---------- */
+  /* v3: a cargo type can carry flat per-destination prices; falls back to cu ft × rate */
+  function flatPrice(c, destName) {
+    return c && c.prices && c.prices[destName] != null ? Number(c.prices[destName]) : null;
+  }
+
   function currentCuft() {
     const c = cargoById(state.cargoId);
     if (!c) return 0;
@@ -144,6 +171,9 @@
     const c = cargoById(state.cargoId);
     $('wbDeparting').textContent = departStr + ' (every Thursday)';
 
+    const country = (state.dest && state.dest.country) || cfg.arrivalCountry || 'St. Lucia';
+    $('wbSave').hidden = true;
+
     /* EB/L mode: show the pre-priced bill from the office */
     if (c.ebl && state.ebl) {
       const e = state.ebl;
@@ -151,7 +181,7 @@
       $('wbNo').textContent = e.ebl_no;
       $('wbItem').textContent = `${e.cargo}${e.quantity > 1 ? ' × ' + e.quantity : ''}`;
       $('wbVolume').textContent = e.cuft ? e.cuft + ' cu ft' : '—';
-      $('wbDest').textContent = e.destination ? `${e.destination}, St. Lucia` : '—';
+      $('wbDest').textContent = e.destination ? `${e.destination}, ${cfg.arrivalCountry || 'St. Lucia'}` : '—';
       $('wbBase').textContent = fmt(e.price_cents);
       $('wbExtras').textContent = '—';
       $('wbSupplies').textContent = '—';
@@ -182,7 +212,20 @@
     const cuft = currentCuft();
     const rate = state.dest.rate || 0;
     const callMode = Boolean(state.dest.call);
-    const freight = Math.round(cuft * rate * qty * 100);
+    const flat = flatPrice(c, state.dest.name);
+    const freight = flat != null
+      ? Math.round(flat * qty * 100)
+      : Math.round(cuft * rate * qty * 100);
+
+    /* savings badge: flat deal vs. the standard cu ft × rate reference */
+    if (!callMode && flat != null && rate && cuft) {
+      const refCents = Math.round(cuft * rate * qty * 100);
+      const saveCents = refCents - freight;
+      if (saveCents > 0) {
+        $('wbSaveAmt').textContent = '$' + Math.round(saveCents / 100).toLocaleString();
+        $('wbSave').hidden = false;
+      }
+    }
     const extrasC = state.extras.reduce((s, x) => s + x.price * 100, 0);
     let suppliesC = 0, suppliesN = 0;
     cfg.supplies.forEach((s) => {
@@ -193,8 +236,12 @@
 
     $('wbItem').textContent = `${c.label} × ${qty}`;
     $('wbVolume').textContent = cuft ? `${(cuft * qty).toLocaleString()} cu ft` + (c.custom ? ` (${cuft}/box)` : '') : (c.custom ? 'enter measurements' : '—');
-    $('wbDest').textContent = callMode ? state.dest.name : `${state.dest.name}, St. Lucia`;
-    $('wbBase').textContent = callMode ? 'call us' : (cuft ? fmt(freight) + ` ($${rate}/cu ft)` : '—');
+    $('wbDest').textContent = callMode ? state.dest.name : `${state.dest.name}, ${country}`;
+    $('wbBase').textContent = callMode
+      ? 'call us'
+      : (flat != null
+        ? fmt(freight) + ` ($${flat} flat)`
+        : (cuft ? fmt(freight) + ` ($${rate}/cu ft)` : '—'));
     $('wbExtras').textContent = state.extras.length
       ? state.extras.map((x) => x.label + (x.price ? '' : ' (FREE)')).join(', ') + (extrasC ? '  ' + fmt(extrasC) : '')
       : '—';
@@ -204,7 +251,7 @@
       : '—';
     $('wbTotal').textContent = callMode
       ? 'Call us'
-      : (cuft || suppliesC ? '$' + Math.round((freight + extrasC + suppliesC) / 100).toLocaleString() : '—');
+      : (freight || suppliesC ? '$' + Math.round((freight + extrasC + suppliesC) / 100).toLocaleString() : '—');
   }
 
   /* ---------- cargo chips ---------- */
