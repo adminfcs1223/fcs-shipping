@@ -117,23 +117,35 @@
   const departDate = nextThursday();
   const departStr = departDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  /* ---------- quote builder state ---------- */
-  let qty = 1;
+  /* ---------- quote builder state (v4: multiple cargo types at once) ---------- */
+  const CARGO_ITEMS = cfg.cargo.filter((c) => !c.ebl);
   const state = {
-    cargoId: cfg.cargo[0].id,
+    counts: {},             /* cargoId -> quantity */
     dest: cfg.destinations[0],
     extras: [],
     dims: { l: 0, w: 0, h: 0 },
     supplies: {},           /* id -> qty */
     supplyDelivery: false,
     ebl: null,              /* loaded EB/L record */
+    eblMode: false,
+    slotId: null,           /* held pickup slot */
   };
+  CARGO_ITEMS.forEach((c) => (state.counts[c.id] = 0));
+  state.counts[CARGO_ITEMS[0].id] = 1;
   cfg.supplies.forEach((s) => (state.supplies[s.id] = 0));
 
   const cargoById = (id) => cfg.cargo.find((c) => c.id === id);
+  const chosenItems = () => CARGO_ITEMS
+    .filter((c) => state.counts[c.id] > 0)
+    .map((c) => ({ cargoId: c.id, quantity: state.counts[c.id], dims: c.custom ? state.dims : undefined }));
 
-  $('itemChips').innerHTML = cfg.cargo
-    .map((c, i) => `<button type="button" class="chip" data-id="${c.id}" aria-pressed="${i === 0}">${c.label}</button>`)
+  $('cargoList').innerHTML = CARGO_ITEMS
+    .map((c) => `<div class="supply-row">
+        <div class="sl">${c.label}<small>${c.custom ? 'you enter the size' : (c.cuft || 0) + ' cu ft each'}</small></div>
+        <button type="button" class="qty-btn" data-cminus="${c.id}" aria-label="Fewer">−</button>
+        <span class="sqty" id="cqty-${c.id}">${state.counts[c.id]}</span>
+        <button type="button" class="qty-btn" data-cplus="${c.id}" aria-label="More">+</button>
+      </div>`)
     .join('');
   $('dest').innerHTML = cfg.destinations
     .map((d) => `<option value="${d.name}">${d.name}${d.country ? `, ${d.country}` : ''}</option>`)
@@ -151,31 +163,24 @@
     .join('');
 
   /* ---------- pricing (mirrors the server; server always recomputes) ---------- */
-  /* v3: a cargo type can carry flat per-destination prices; falls back to cu ft × rate */
+  /* a cargo type can carry flat per-destination prices; falls back to cu ft × rate */
   function flatPrice(c, destName) {
     return c && c.prices && c.prices[destName] != null ? Number(c.prices[destName]) : null;
   }
 
-  function currentCuft() {
-    const c = cargoById(state.cargoId);
-    if (!c) return 0;
-    if (c.custom) {
-      const { l, w, h } = state.dims;
-      if (l > 0 && w > 0 && h > 0) return Math.max(1, Math.round((l * w * h) / 1728 * 10) / 10);
-      return 0;
-    }
-    return c.cuft || 0;
+  function boxCuft() {
+    const { l, w, h } = state.dims;
+    if (l > 0 && w > 0 && h > 0) return Math.max(1, Math.round((l * w * h) / 1728 * 10) / 10);
+    return 0;
   }
 
   function renderBill() {
-    const c = cargoById(state.cargoId);
     $('wbDeparting').textContent = departStr + ' (every Thursday)';
-
     const country = (state.dest && state.dest.country) || cfg.arrivalCountry || 'St. Lucia';
     $('wbSave').hidden = true;
 
     /* EB/L mode: show the pre-priced bill from the office */
-    if (c.ebl && state.ebl) {
+    if (state.eblMode && state.ebl) {
       const e = state.ebl;
       $('wbNoLabel').textContent = 'EB/L Nº';
       $('wbNo').textContent = e.ebl_no;
@@ -198,7 +203,7 @@
     $('wbNote').hidden = false;
     $('lockBtn').textContent = 'Lock in this rate →';
 
-    if (c.ebl) {
+    if (state.eblMode) {
       $('wbItem').textContent = 'Enter your EB/L number';
       $('wbVolume').textContent = '—';
       $('wbDest').textContent = '—';
@@ -209,23 +214,34 @@
       return;
     }
 
-    const cuft = currentCuft();
+    /* v4: sum every chosen cargo line (barrel + bin + box together) */
     const rate = state.dest.rate || 0;
     const callMode = Boolean(state.dest.call);
-    const flat = flatPrice(c, state.dest.name);
-    const freight = flat != null
-      ? Math.round(flat * qty * 100)
-      : Math.round(cuft * rate * qty * 100);
-
-    /* savings badge: flat deal vs. the standard cu ft × rate reference */
-    if (!callMode && flat != null && rate && cuft) {
-      const refCents = Math.round(cuft * rate * qty * 100);
-      const saveCents = refCents - freight;
-      if (saveCents > 0) {
-        $('wbSaveAmt').textContent = '$' + Math.round(saveCents / 100).toLocaleString();
-        $('wbSave').hidden = false;
+    let freight = 0, cuftTotal = 0, saveCents = 0, needDims = false;
+    const labels = [], baseBits = [];
+    chosenItems().forEach((it) => {
+      const c = cargoById(it.cargoId);
+      const cuft = c.custom ? boxCuft() : (c.cuft || 0);
+      if (c.custom && !cuft) needDims = true;
+      const flat = flatPrice(c, state.dest.name);
+      const line = flat != null
+        ? Math.round(flat * it.quantity * 100)
+        : Math.round(cuft * rate * it.quantity * 100);
+      freight += line;
+      cuftTotal += cuft * it.quantity;
+      if (flat != null && rate && cuft) {
+        const ref = Math.round(cuft * rate * it.quantity * 100);
+        if (ref > line) saveCents += ref - line;
       }
+      labels.push(`${c.label} × ${it.quantity}`);
+      if (flat != null) baseBits.push(`$${flat} flat`);
+    });
+
+    if (!callMode && saveCents > 0) {
+      $('wbSaveAmt').textContent = '$' + Math.round(saveCents / 100).toLocaleString();
+      $('wbSave').hidden = false;
     }
+
     const extrasC = state.extras.reduce((s, x) => s + x.price * 100, 0);
     let suppliesC = 0, suppliesN = 0;
     cfg.supplies.forEach((s) => {
@@ -234,14 +250,14 @@
     });
     if (suppliesN > 0 && state.supplyDelivery) suppliesC += (cfg.suppliesDeliveryFee || 5) * 100;
 
-    $('wbItem').textContent = `${c.label} × ${qty}`;
-    $('wbVolume').textContent = cuft ? `${(cuft * qty).toLocaleString()} cu ft` + (c.custom ? ` (${cuft}/box)` : '') : (c.custom ? 'enter measurements' : '—');
+    $('wbItem').textContent = labels.length ? labels.join(', ') : 'add an item above';
+    $('wbVolume').textContent = cuftTotal
+      ? `${cuftTotal.toLocaleString()} cu ft`
+      : (needDims ? 'enter box measurements' : '—');
     $('wbDest').textContent = callMode ? state.dest.name : `${state.dest.name}, ${country}`;
     $('wbBase').textContent = callMode
       ? 'call us'
-      : (flat != null
-        ? fmt(freight) + ` ($${flat} flat)`
-        : (cuft ? fmt(freight) + ` ($${rate}/cu ft)` : '—'));
+      : (freight ? fmt(freight) + (baseBits.length ? ` (${baseBits.join(', ')})` : ` ($${rate}/cu ft)`) : (needDims ? 'enter measurements' : '—'));
     $('wbExtras').textContent = state.extras.length
       ? state.extras.map((x) => x.label + (x.price ? '' : ' (FREE)')).join(', ') + (extrasC ? '  ' + fmt(extrasC) : '')
       : '—';
@@ -254,25 +270,34 @@
       : (freight || suppliesC ? '$' + Math.round((freight + extrasC + suppliesC) / 100).toLocaleString() : '—');
   }
 
-  /* ---------- cargo chips ---------- */
-  document.querySelectorAll('#itemChips .chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('#itemChips .chip').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-      chip.setAttribute('aria-pressed', 'true');
-      state.cargoId = chip.dataset.id;
-      const c = cargoById(state.cargoId);
-      $('dimsField').hidden = !c.custom;
-      $('eblField').hidden = !c.ebl;
-      if (!c.ebl) state.ebl = null;
-      renderBill();
-    });
+  /* ---------- cargo quantity steppers ---------- */
+  function bumpCargo(id, delta) {
+    state.counts[id] = Math.min(50, Math.max(0, state.counts[id] + delta));
+    $('cqty-' + id).textContent = state.counts[id];
+    const box = CARGO_ITEMS.find((c) => c.custom);
+    $('dimsField').hidden = state.eblMode || !(box && state.counts[box.id] > 0);
+    renderBill();
+  }
+  document.querySelectorAll('[data-cplus]').forEach((b) => b.addEventListener('click', () => bumpCargo(b.dataset.cplus, 1)));
+  document.querySelectorAll('[data-cminus]').forEach((b) => b.addEventListener('click', () => bumpCargo(b.dataset.cminus, -1)));
+
+  /* ---------- EB/L mode toggle ---------- */
+  $('eblChip').addEventListener('click', () => {
+    state.eblMode = !state.eblMode;
+    $('eblChip').setAttribute('aria-pressed', String(state.eblMode));
+    $('eblField').hidden = !state.eblMode;
+    $('cargoList').style.display = state.eblMode ? 'none' : '';
+    const box = CARGO_ITEMS.find((c) => c.custom);
+    $('dimsField').hidden = state.eblMode || !(box && state.counts[box.id] > 0);
+    if (!state.eblMode) state.ebl = null;
+    renderBill();
   });
 
   /* box measurements */
   ['dimL', 'dimW', 'dimH'].forEach((id, i) => {
     $(id).addEventListener('input', () => {
       state.dims[['l', 'w', 'h'][i]] = Math.max(0, Number($(id).value) || 0);
-      const cuft = currentCuft();
+      const cuft = boxCuft();
       $('dimsNote').textContent = cuft
         ? `= ${cuft} cu ft per box`
         : '= enter all three to calculate cubic feet';
@@ -308,10 +333,6 @@
     $('destNote').hidden = !state.dest.call;
     renderBill();
   });
-
-  /* quantity */
-  $('qtyPlus').addEventListener('click', () => { qty = Math.min(qty + 1, 50); $('qtyVal').textContent = qty; renderBill(); });
-  $('qtyMinus').addEventListener('click', () => { qty = Math.max(qty - 1, 1); $('qtyVal').textContent = qty; renderBill(); });
 
   /* extras */
   document.querySelectorAll('.chip.extra').forEach((chip) => {
@@ -349,20 +370,79 @@
 
   function quotePayload() {
     return {
-      cargoId: state.cargoId,
-      quantity: qty,
+      items: chosenItems(),
       destination: state.dest.name,
-      dims: state.dims,
       extras: state.extras.map((x) => x.id),
       supplies: state.supplies,
       supplyDelivery: state.supplyDelivery,
+      address: ($('qAddress') && $('qAddress').value.trim()) || '',
+      slotId: state.slotId || null,
     };
   }
 
+  /* ---------- pickup time slots (15-minute hold) ---------- */
+  let slotsLoaded = false, holdTimer = null;
+  async function loadSlots() {
+    const sel = $('slotSel');
+    try {
+      const list = await fetch(`${FN}/slots`).then((r) => (r.ok ? r.json() : []));
+      const fmtS = (s) => new Date(s.slot_date + 'T12:00:00')
+        .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + s.slot_time;
+      if (!list.length) {
+        sel.innerHTML = '<option value="">No online times right now — we\'ll call you to schedule</option>';
+        sel.disabled = true;
+        return;
+      }
+      sel.disabled = false;
+      sel.innerHTML = '<option value="">Choose a time…</option>' +
+        list.map((s) => `<option value="${s.id}">${fmtS(s)}</option>`).join('');
+    } catch {
+      sel.innerHTML = '<option value="">Scheduling unavailable — we\'ll call you</option>';
+      sel.disabled = true;
+    }
+  }
+  $('slotSel').addEventListener('change', async () => {
+    const id = $('slotSel').value;
+    const msg = $('slotMsg');
+    clearInterval(holdTimer);
+    state.slotId = null;
+    msg.hidden = true;
+    if (!id) return;
+    msg.hidden = false;
+    msg.textContent = 'Locking this time for you…';
+    try {
+      const res = await fetch(`${FN}/slot-hold`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotId: id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'That time was just taken.');
+      state.slotId = id;
+      const until = new Date(data.holdUntil).getTime();
+      const tick = () => {
+        const left = until - Date.now();
+        if (left <= 0) {
+          clearInterval(holdTimer);
+          state.slotId = null;
+          msg.textContent = 'Your 15-minute hold expired — pick the time again to re-lock it.';
+          return;
+        }
+        const m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
+        msg.textContent = `✓ This time is locked for you for ${m}:${String(s).padStart(2, '0')} — send your quote to keep it.`;
+      };
+      tick();
+      holdTimer = setInterval(tick, 1000);
+    } catch (e) {
+      msg.textContent = `${e.message} Refreshing available times…`;
+      $('slotSel').value = '';
+      loadSlots();
+    }
+  });
+
   $('lockBtn').addEventListener('click', async () => {
-    const c = cargoById(state.cargoId);
     /* EB/L: straight to payment */
-    if (c.ebl && state.ebl) {
+    if (state.eblMode && state.ebl) {
       $('lockBtn').disabled = true;
       $('lockBtn').textContent = 'Opening secure checkout…';
       try {
@@ -381,10 +461,16 @@
       }
       return;
     }
-    if (c.ebl) { $('eblMsg').textContent = 'Enter your EB/L number above first, then hit Load.'; return; }
+    if (state.eblMode) { $('eblMsg').textContent = 'Enter your EB/L number above first, then hit Load.'; return; }
     if (state.dest.call) { $('destNote').hidden = false; return; }
+    if (!chosenItems().length) {
+      $('wbItem').textContent = 'add an item above';
+      document.querySelector('#cargoList').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     $('lockPanel').classList.add('show');
     $('lockBtn').style.display = 'none';
+    if (!slotsLoaded) { slotsLoaded = true; loadSlots(); }
     $('qName').focus();
   });
 
