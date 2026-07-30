@@ -35,6 +35,8 @@ async function getPricing() {
     extras: config.extras,
     supplies: config.supplies,
     suppliesDeliveryFee: config.suppliesDeliveryFee || 5,
+    arrivalCountry: config.arrivalCountry || 'St. Lucia',
+    team: config.team || [],
   };
   if (supabaseConfigured()) {
     try {
@@ -47,6 +49,8 @@ async function getPricing() {
           extras: v.extras || base.extras,
           supplies: v.supplies || base.supplies,
           suppliesDeliveryFee: v.suppliesDeliveryFee != null ? v.suppliesDeliveryFee : base.suppliesDeliveryFee,
+          arrivalCountry: v.arrivalCountry || base.arrivalCountry,
+          team: Array.isArray(v.team) ? v.team : base.team,
         };
       }
     } catch (e) {
@@ -56,7 +60,9 @@ async function getPricing() {
   return base;
 }
 
-/* ---- quote totals: ALWAYS computed server-side (cu ft × destination rate) ---- */
+/* ---- quote totals: ALWAYS computed server-side.
+        v3: flat per-destination prices (cargo.prices[destName]) win;
+        otherwise cu ft × destination rate ---- */
 function computeQuote(input, pricing) {
   const p = pricing || {
     cargo: config.cargo, destinations: config.destinations, extras: config.extras,
@@ -69,7 +75,9 @@ function computeQuote(input, pricing) {
   const qty = Math.min(Math.max(parseInt(input.quantity, 10) || 1, 1), 50);
   const dest = p.destinations.find((d) => d.name === input.destination);
   if (!dest) throw new Error('Unknown destination');
-  if (dest.call || !dest.rate) throw new Error('Call (718) 483-8006 for exact rates to other islands');
+  if (dest.call) throw new Error('Call (718) 483-8006 for exact rates to other islands');
+  const flat = cargo.prices && cargo.prices[dest.name] != null ? Number(cargo.prices[dest.name]) : null;
+  if (flat == null && !dest.rate) throw new Error('Call (718) 483-8006 for exact rates to other islands');
 
   let cuft = cargo.cuft || 0;
   if (cargo.custom) {
@@ -81,7 +89,9 @@ function computeQuote(input, pricing) {
     cuft = Math.max(1, Math.round((l * w * h) / 1728 * 10) / 10);
   }
 
-  const freightCents = Math.round(cuft * dest.rate * qty * 100);
+  const freightCents = flat != null
+    ? Math.round(flat * qty * 100)
+    : Math.round(cuft * (dest.rate || 0) * qty * 100);
 
   const extraItems = (Array.isArray(input.extras) ? input.extras : [])
     .map((id) => p.extras.find((x) => x.id === id))
@@ -113,6 +123,7 @@ function computeQuote(input, pricing) {
     cuft,
     destination: dest.name,
     rate: dest.rate,
+    flat,
     extraLabels: extraItems.map((x) => x.label),
     supplyLabels,
     freightCents,
