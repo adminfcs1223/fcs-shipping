@@ -22,6 +22,7 @@ exports.handler = async (event) => {
   const name = String(body.name || '').trim().slice(0, 120);
   const phone = String(body.phone || '').trim().slice(0, 40);
   const email = String(body.email || '').trim().slice(0, 160);
+  const address = String(body.address || '').trim().slice(0, 240); /* optional, partial is fine */
   if (!name || !phone || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return json(400, { error: 'Please provide a valid name, phone, and email.' });
   }
@@ -32,6 +33,29 @@ exports.handler = async (event) => {
     quote = computeQuote(body, await getPricing());
   } catch (e) {
     return json(400, { error: e.message });
+  }
+
+  /* --- book the held pickup slot (if one was chosen) --- */
+  let pickupSlot = null, slotRowId = null;
+  if (body.slotId && /^[0-9a-f-]{36}$/i.test(String(body.slotId)) && supabaseConfigured()) {
+    try {
+      const rows = await sb(
+        `pickup_slots?id=eq.${body.slotId}&status=in.(open,held)`,
+        {
+          method: 'PATCH',
+          prefer: 'return=representation',
+          body: { status: 'booked', booked_name: name, booked_phone: phone, booked_email: email },
+        }
+      );
+      if (rows && rows[0]) {
+        slotRowId = rows[0].id;
+        const d = new Date(rows[0].slot_date + 'T12:00:00')
+          .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        pickupSlot = `${d} · ${rows[0].slot_time}`;
+      }
+    } catch (e) {
+      console.error('slot booking failed (quote continues):', e.message);
+    }
   }
 
   /* --- store in Supabase (Phase 4 table quote_requests) --- */
@@ -45,7 +69,9 @@ exports.handler = async (event) => {
           name,
           phone,
           email,
-          cargo: `${quote.cargoLabel} (${quote.cuft * quote.quantity} cu ft)`,
+          address: address || null,
+          pickup_slot: pickupSlot,
+          cargo: `${quote.cargoLabel} (${quote.cuft} cu ft)`,
           quantity: quote.quantity,
           destination: quote.destination,
           extras: quote.extraLabels.concat(quote.supplyLabels),
@@ -54,6 +80,11 @@ exports.handler = async (event) => {
         },
       });
       quoteId = rows && rows[0] && rows[0].id;
+      if (quoteId && slotRowId) {
+        try {
+          await sb(`pickup_slots?id=eq.${slotRowId}`, { method: 'PATCH', body: { quote_id: quoteId } });
+        } catch (e) { console.error('slot quote_id stamp failed:', e.message); }
+      }
     } catch (e) {
       console.error('Supabase insert failed:', e.message);
     }
@@ -76,11 +107,13 @@ exports.handler = async (event) => {
           text: [
             `New quote request from the website:`,
             ``,
-            `Name:  ${name}`,
-            `Phone: ${phone}`,
-            `Email: ${email}`,
+            `Name:    ${name}`,
+            `Phone:   ${phone}`,
+            `Email:   ${email}`,
+            address ? `Address: ${address}` : `Address: (not given)`,
+            pickupSlot ? `Pickup:  ${pickupSlot} (BOOKED — see the admin Calendar)` : `Pickup:  not scheduled`,
             ``,
-            `Cargo:       ${quote.cargoLabel} × ${quote.quantity} (${quote.cuft * quote.quantity} cu ft @ $${quote.rate}/cu ft)`,
+            `Cargo:       ${quote.cargoLabel} (${quote.cuft} cu ft total)`,
             `Destination: ${quote.destination}, St. Lucia`,
             `Extras:      ${quote.extraLabels.join(', ') || 'none'}`,
             `Supplies:    ${quote.supplyLabels.join(', ') || 'none'}`,

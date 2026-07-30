@@ -1,9 +1,11 @@
 /* Turns a saved order-entry order into:
-     1. an EB/L the customer can pay online, and
-     2. a QuickBooks invoice for the books (if QuickBooks is connected).
+     1. an EB/L the customer can pay online,
+     2. a tracked SHIPMENT (B/L number) that appears in the customer's portal
+        and on the admin Shipments tab, and
+     3. a QuickBooks invoice for the books (if QuickBooks is connected).
 
-   Staff-only. The EB/L always gets created; QuickBooks failing never blocks it —
-   the response says what worked so the dashboard can show it plainly. */
+   Staff-only. The EB/L always gets created; the shipment and QuickBooks
+   failing never block it — the response says what worked. */
 
 const { supabaseConfigured, sb, json } = require('./utils/shared');
 const { requireStaff } = require('./utils/staff');
@@ -63,7 +65,57 @@ exports.handler = async (event) => {
     return json(502, { error: 'Could not create the EB/L: ' + e.message });
   }
 
-  /* ---------- 2. QuickBooks invoice (best effort) ---------- */
+  /* ---------- 2. Tracked shipment (best effort) ---------- */
+  let shipment = { attempted: true, ok: false };
+  try {
+    const svcHeaders = {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+    let waybill = b.blNo || null;
+    if (!waybill) {
+      const gen = await fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/generate_waybill`, {
+        method: 'POST', headers: svcHeaders, body: '{}',
+      });
+      if (!gen.ok) throw new Error('waybill generator failed');
+      waybill = await gen.json();
+      if (typeof waybill !== 'string') throw new Error('unexpected waybill');
+    }
+    const rows = await sb('shipments', {
+      method: 'POST',
+      prefer: 'return=representation',
+      body: {
+        waybill_no: waybill,
+        customer_name: customerName,
+        customer_phone: b.customerPhone || '—',
+        customer_email: b.customerEmail || null,
+        cargo,
+        destination: b.destination || 'Vieux-Fort',
+        vessel: b.vessel || null,
+        status: 'received',
+        ebl_no: eblNo,
+      },
+    });
+    const shipId = rows && rows[0] && rows[0].id;
+    if (shipId) {
+      await sb('shipment_events', {
+        method: 'POST',
+        body: { shipment_id: shipId, status: 'received', note: `Order ${b.orderInv || ''} · ${eblNo}`.trim() },
+      });
+    }
+    shipment.ok = true;
+    shipment.waybill = waybill;
+    /* link the EB/L back to its B/L */
+    try {
+      await sb(`ebl?ebl_no=eq.${encodeURIComponent(eblNo)}`, { method: 'PATCH', body: { bl_no: waybill } });
+    } catch (e) { console.error('Could not stamp B/L on EB/L:', e.message); }
+  } catch (e) {
+    console.error('Shipment creation failed (EB/L still stands):', e.message);
+    shipment.error = e.message;
+  }
+
+  /* ---------- 3. QuickBooks invoice (best effort) ---------- */
   let qb = { attempted: false, ok: false };
   if (qbo.configured()) {
     qb.attempted = true;
@@ -96,5 +148,5 @@ exports.handler = async (event) => {
     }
   }
 
-  return json(200, { ok: true, eblNo, priceCents, quickbooks: qb });
+  return json(200, { ok: true, eblNo, priceCents, shipment, quickbooks: qb });
 };
