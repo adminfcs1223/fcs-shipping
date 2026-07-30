@@ -249,11 +249,10 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
       if (cur && names.includes(cur)) sel.value = cur;
     });
   }
-  populateDests([{ name: 'Vieux-Fort' }, { name: 'Port Castries' }, { name: 'Cul-de-Sac' }]);
-
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fd = (d) => d ? new Date(d + (d.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+  populateDests([{ name: 'Vieux-Fort' }, { name: 'Port Castries' }, { name: 'Cul-de-Sac' }]);
 
   /* ---------- auth ---------- */
   async function refreshAuth() {
