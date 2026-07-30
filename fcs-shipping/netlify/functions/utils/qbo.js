@@ -47,6 +47,36 @@ function basicAuth() {
   ).toString('base64');
 }
 
+/* ---- OAuth CSRF state (stored server-side, single use, 10-minute life) ---- */
+async function newState() {
+  const state = require('crypto').randomBytes(16).toString('hex');
+  await sb('settings', {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates',
+    body: { key: 'qb:oauth_state', value: { state, ts: Date.now() }, updated_at: new Date().toISOString() },
+  });
+  return state;
+}
+
+async function consumeState(state) {
+  if (!state) return false;
+  try {
+    const rows = await sb(`settings?key=eq.qb:oauth_state&select=value`);
+    const v = rows && rows[0] && rows[0].value;
+    const valid = Boolean(v && v.state && v.state === state && Date.now() - v.ts < 10 * 60 * 1000);
+    /* single use: clear it regardless */
+    await sb('settings', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates',
+      body: { key: 'qb:oauth_state', value: { state: null, ts: 0 }, updated_at: new Date().toISOString() },
+    });
+    return valid;
+  } catch (e) {
+    console.error('state check failed:', e.message);
+    return false;
+  }
+}
+
 /* ---- token store ---- */
 async function loadTokens() {
   if (!supabaseConfigured()) return null;
@@ -74,6 +104,7 @@ async function exchangeCode(code, realmId, siteUrl) {
     }).toString(),
   });
   const data = await res.json();
+  console.log(`QBO token exchange [intuit_tid: ${res.headers.get('intuit_tid') || 'n/a'}] status ${res.status}`);
   if (!res.ok) throw new Error(data.error_description || data.error || 'Token exchange failed');
   const tokens = {
     access_token: data.access_token,
@@ -93,6 +124,7 @@ async function refresh(tokens) {
     body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: tokens.refresh_token }).toString(),
   });
   const data = await res.json();
+  console.log(`QBO token refresh [intuit_tid: ${res.headers.get('intuit_tid') || 'n/a'}] status ${res.status}`);
   if (!res.ok) throw new Error(data.error_description || 'QuickBooks re-authorisation needed — reconnect in Settings.');
   const next = {
     ...tokens,
@@ -124,13 +156,19 @@ async function qbo(path, { method = 'GET', body, tokens } = {}) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+  /* intuit_tid: Intuit's per-request trace id — logged on every call so their
+     support team can locate the exact request when troubleshooting. */
+  const tid = res.headers.get('intuit_tid') || 'n/a';
   const text = await res.text();
   let data = {};
   try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
   if (!res.ok) {
     const f = data.Fault && data.Fault.Error && data.Fault.Error[0];
-    throw new Error(f ? `${f.Message}${f.Detail ? ' — ' + f.Detail : ''}` : `QuickBooks ${res.status}`);
+    const msg = f ? `${f.Message}${f.Detail ? ' — ' + f.Detail : ''}` : `QuickBooks ${res.status}`;
+    console.error(`QBO ${method} ${path} failed [intuit_tid: ${tid}]: ${msg}`);
+    throw new Error(`${msg} (intuit_tid: ${tid})`);
   }
+  console.log(`QBO ${method} ${path} ok [intuit_tid: ${tid}]`);
   return data;
 }
 
@@ -230,4 +268,5 @@ async function status() {
 
 module.exports = {
   configured, authorizeUrl, exchangeCode, createInvoice, status, qbo, validTokens, saveTokens, loadTokens,
+  newState, consumeState,
 };
