@@ -66,6 +66,7 @@ h1.typing::after{content:"";display:inline-block;width:.055em;height:.82em;backg
 .hero .lede{animation-delay:1.5s}
 .hero .hero-ctas{animation-delay:1.75s}
 .hero .next-sail{animation-delay:2s}
+.hero .endorse-wrap{animation-delay:2.25s}
 @keyframes hero-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){
   .hero .lede,.hero .hero-ctas,.hero .next-sail,.hero .endorse-wrap{animation:none}
