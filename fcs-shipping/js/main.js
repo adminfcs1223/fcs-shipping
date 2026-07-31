@@ -31,7 +31,27 @@
   $('tbAddr').textContent = '📍 ' + co.addressShort;
   $('tbHours').textContent = co.hours;
   $('heroKicker').textContent = cfg.hero.kicker;
-  $('heroTitle').textContent = cfg.hero.title;
+  /* headline spells itself out, letter by letter, with a blinking caret */
+  (function typeHeadline() {
+    const el = $('heroTitle');
+    const text = cfg.hero.title;
+    if (!el) return;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { el.textContent = text; return; }
+    el.textContent = '';
+    el.classList.add('typing');
+    let i = 0;
+    const tick = () => {
+      el.textContent = text.slice(0, ++i);
+      if (i < text.length) {
+        /* slight jitter reads like real typing; pause a beat on spaces */
+        setTimeout(tick, text[i - 1] === ' ' ? 150 : 62 + Math.random() * 60);
+      } else {
+        setTimeout(() => el.classList.remove('typing'), 2600); /* caret blinks, then rests */
+      }
+    };
+    setTimeout(tick, 500);
+  })();
   $('heroLede').textContent = cfg.hero.lede;
   $('quotePhone').textContent = co.phones[0];
   $('trackPhone').textContent = co.phones[0];
