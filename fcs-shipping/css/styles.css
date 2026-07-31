@@ -57,7 +57,7 @@ nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.92);backdrop-f
 .hero-top{margin-top:clamp(2rem,11vh,7.5rem)}
 .hero::after{content:"";position:absolute;inset:0;z-index:-1;
   background:linear-gradient(180deg,rgba(10,25,40,.52) 0%,rgba(10,25,40,.18) 20%,rgba(10,25,40,0) 38%,rgba(10,25,40,.14) 62%,rgba(10,25,40,.62) 82%,rgba(10,25,40,.82) 100%)}
-.hero .kicker{font-family:var(--mono);font-size:.8rem;letter-spacing:.3em;text-transform:uppercase;margin-bottom:1.2rem;color:#DCE9F2}
+.hero .kicker{font-family:var(--mono);font-size:.8rem;letter-spacing:.3em;text-transform:uppercase;margin-top:1.1rem;color:#DCE9F2}
 h1{font-weight:900;font-size:clamp(2.8rem,7vw,5.2rem);line-height:1.02;letter-spacing:.02em;text-transform:uppercase;
   min-height:1.05em;text-shadow:0 3px 26px rgba(6,18,30,.5)}
 /* headline types itself out, with a blinking caret */
