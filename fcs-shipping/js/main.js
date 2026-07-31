@@ -52,7 +52,32 @@
     };
     setTimeout(tick, 500);
   })();
-  $('heroLede').textContent = cfg.hero.lede;
+  /* tagline: "___ Shipping Simplified" with a rotating first word */
+  (function heroTagline() {
+    const p = $('heroLede');
+    if (!p) return;
+    const words = (Array.isArray(cfg.hero.rotatorWords) && cfg.hero.rotatorWords.length)
+      ? cfg.hero.rotatorWords
+      : ['Barrel', 'Box', 'Container', 'Crate', 'Life'];
+    const suffix = cfg.hero.rotatorSuffix || 'Shipping Simplified';
+    const escW = (s) => String(s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    p.innerHTML = `<b id="rotWord">${escW(words[0])}</b> ${escW(suffix)}`;
+    const w = $('rotWord');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || words.length < 2) return;
+    let i = 0;
+    setInterval(() => {
+      w.classList.add('rot-out');                       /* slide up & out */
+      setTimeout(() => {
+        i = (i + 1) % words.length;
+        w.textContent = words[i];
+        w.classList.remove('rot-out');
+        w.classList.add('rot-in');                      /* appear from below */
+        requestAnimationFrame(() => requestAnimationFrame(() => w.classList.remove('rot-in')));
+      }, 260);
+    }, 2300);
+  })();
   $('quotePhone').textContent = co.phones[0];
   $('trackPhone').textContent = co.phones[0];
   $('cAddr').textContent = co.address;
