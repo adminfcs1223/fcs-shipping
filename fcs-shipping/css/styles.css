@@ -50,7 +50,7 @@ nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.92);backdrop-f
 .hero{position:relative;min-height:88vh;display:flex;flex-direction:column;
   align-items:center;justify-content:space-between;text-align:center;color:#fff;isolation:isolate;
   padding:clamp(1.8rem,3.5vh,2.6rem) 1.5rem clamp(1.6rem,3.5vh,2.2rem);
-  background:#0A1928 url('/assets/fcs-hero-background.webp') center 42%/cover no-repeat}
+  background:#0A1928 url('/assets/fcs-hero-background.webp?v=2') center 42%/cover no-repeat}
 .hero-img{display:none}
 .hero-top,.hero-bottom{display:flex;flex-direction:column;align-items:center}
 /* headline floats in the open water just above the ship */
