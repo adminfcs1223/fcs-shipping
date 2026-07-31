@@ -78,6 +78,35 @@
       }, 260);
     }, 2300);
   })();
+
+  /* ---------- hero geometry: the water above and below the ship are two
+        windows; each text bubble stays dead-center in its window at ANY
+        viewport size. Ship band measured from the photo itself. ---------- */
+  (function heroBands() {
+    const hero = document.querySelector('.hero');
+    const topEl = document.querySelector('.hero-top');
+    const botEl = document.querySelector('.hero-bottom');
+    if (!hero || !topEl || !botEl) return;
+    const IMG = { w: 3200, h: 2128, posY: 0.42, shipTop: 0.412, shipBottom: 0.607 };
+    function layout() {
+      const W = hero.clientWidth, H = hero.clientHeight;
+      if (!W || !H) return;
+      const scale = Math.max(W / IMG.w, H / IMG.h);   /* background-size: cover */
+      const dispH = IMG.h * scale;
+      const offset = (dispH - H) * IMG.posY;          /* image cropped above the frame */
+      const shipTopPx = Math.max(0, IMG.shipTop * dispH - offset);
+      const shipBotPx = Math.min(H, IMG.shipBottom * dispH - offset);
+      /* top bubble: centered between the photo's top edge and the ship */
+      topEl.style.top = Math.max(8, (shipTopPx - topEl.offsetHeight) / 2) + 'px';
+      /* bottom bubble: centered between the ship and the photo's bottom edge */
+      botEl.style.top = Math.max(shipBotPx + 8, shipBotPx + (H - shipBotPx - botEl.offsetHeight) / 2) + 'px';
+    }
+    layout();
+    window.addEventListener('resize', layout);
+    window.addEventListener('load', layout);
+    setTimeout(layout, 350);
+    setTimeout(layout, 1800);  /* once fonts + animations have settled */
+  })();
   $('quotePhone').textContent = co.phones[0];
   $('trackPhone').textContent = co.phones[0];
   $('cAddr').textContent = co.address;
