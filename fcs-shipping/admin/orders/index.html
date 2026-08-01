@@ -859,7 +859,7 @@ async function setPaid(paid){
 $('#btnPaid').addEventListener('click',()=>setPaid(true));
 $('#btnUnpaid').addEventListener('click',()=>setPaid(false));
 $('#btnCopyEbl').addEventListener('click',async()=>{
-  const txt = `Your FCS Shipping bill of lading: ${draft.eblNo}\nAmount due: ${money(orderTotal(draft))}\nPay online at ${location.origin}/#quote — choose "Other (EB/L Number)" and enter ${draft.eblNo}.`;
+  const txt = `Your FCS Shipping bill of lading: ${draft.eblNo}\nAmount due: ${money(orderTotal(draft))}\nPay online at ${location.origin}/#quote — tap "I have an EB/L number" and enter ${draft.eblNo}.\nYou can track your shipment at fcsshipping.com`;
   try{ await navigator.clipboard.writeText(txt); toast('Copied — paste into a text or email'); }
   catch{ prompt('Copy this for the customer:', txt); }
 });
