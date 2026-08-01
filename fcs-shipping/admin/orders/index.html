@@ -207,6 +207,10 @@ table.list tbody tr:hover{background:#fafcfd}
 .p-tbl td.desc{text-align:center;border-left:1px solid #000;border-right:1px solid #000}
 .p-tbl td.pu,.p-tbl td.amt{text-align:right}
 .p-tbl td.tot{font-weight:700;border-bottom:1px solid #000}
+.p-track{
+  position:absolute;left:.4in;right:.4in;bottom:1in;
+  text-align:center;font-family:var(--serif);font-variant:small-caps;font-size:11.5pt;letter-spacing:.03em;
+}
 .p-sign{
   position:absolute;left:.4in;right:.4in;bottom:.4in;
   display:flex;gap:.4in;align-items:flex-end;
@@ -301,6 +305,8 @@ table.list tbody tr:hover{background:#fafcfd}
               <div><label class="f">Ship via</label><input class="f" id="fShipVia"></div>
               <div style="grid-column:span 2"><label class="f">Cross street</label><input class="f" id="fCross"></div>
               <div style="grid-column:span 2"><label class="f">Service</label><input class="f" id="fService"></div>
+              <div style="grid-column:span 2"><label class="f">Tracking # (customer's eBL — prints on the form, works on the website tracker)</label>
+                <input class="f" id="fEbl" placeholder="Insert eBL"></div>
             </div>
           </div>
           <div class="card">
@@ -588,7 +594,7 @@ function blankItem(){ return {qty:'',part:'',desc:'',price:'',amount:''}; }
 function blankOrder(){
   return {
     id:null, inv:S.next, invDate:todayISO(), pickup:todayISO(), time:nowTime(),
-    po:'', container:'', code:'', shipVia:'', cross:'', service:'',
+    po:'', container:'', code:'', shipVia:'', cross:'', service:'', trackNo:'',
     customerId:'',
     sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
     co:{name:'',name2:'',title:'',org:'',city:'',phone:''},
@@ -605,7 +611,8 @@ function orderTotal(o){ return o.items.reduce((s,it)=>s+itemAmount(it),0); }
 /* ---- form <-> draft ---- */
 const HDR = {
   fInv:'inv', fInvDate:'invDate', fPickup:'pickup', fTime:'time', fPO:'po',
-  fContainer:'container', fCode:'code', fShipVia:'shipVia', fCross:'cross', fService:'service'
+  fContainer:'container', fCode:'code', fShipVia:'shipVia', fCross:'cross', fService:'service',
+  fEbl:'trackNo'
 };
 const SH = {fShName:'name',fShName2:'name2',fShStreet:'street',fShCity:'city',fShState:'state',fShPhone:'phone'};
 const CO = {fCoName:'name',fCoName2:'name2',fCoTitle:'title',fCoOrg:'org',fCoCity:'city',fCoPhone:'phone'};
@@ -701,6 +708,10 @@ function formHTML(o){
         <span class="lbl">Container #</span>
         <div class="fld">${esc(o.container)}</div>
       </div>
+      ${o.trackNo ? `<div class="p-cont" style="margin-top:6pt">
+        <span class="lbl">Tracking # (eBL)</span>
+        <div class="fld">${esc(o.trackNo)}</div>
+      </div>` : ''}
       <div class="p-quad">
         <div><div class="fld">${esc(usDate(o.pickup))}</div><div class="cap">Pick Up Date</div></div>
         <div><div class="fld">${esc(o.code)}</div><div class="cap">Shipping Code</div></div>
@@ -739,6 +750,7 @@ function formHTML(o){
     </tr></thead>
     <tbody>${body}</tbody>
   </table>
+  <div class="p-track">You can track your shipment at <b>www.fcsshipping.com</b></div>
   <div class="p-sign">
     <div class="s"><div class="line"></div><div class="cap2">Driver&rsquo;s Signature</div></div>
     <div class="d"><div class="line"></div><div class="cap2">Date</div></div>
@@ -801,6 +813,7 @@ $('#btnMakeEbl').addEventListener('click', async()=>{
       method:'POST', headers: await authHeaders(),
       body: JSON.stringify({
         orderInv: draft.inv, blNo: draft.container || '',
+        trackNo: draft.trackNo || '',
         cargo: draft.items.map(i=>i.desc).filter(Boolean).join(', ') || 'Shipping services',
         quantity: parseInt(draft.items[0] && draft.items[0].qty,10) || 1,
         destination: draft.co.city || '',
