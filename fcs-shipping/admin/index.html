@@ -138,6 +138,8 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
         <div><label>Vessel</label><input type="text" id="nsVessel" value="M/V Caribbean Star"></div>
       </div>
       <label>ETA (optional)</label><input type="date" id="nsEta">
+      <label>Carrier eBL / booking number (optional — customers can track with it too)</label>
+      <input type="text" id="nsEbl" placeholder="Insert eBL">
       <button class="btn sea" id="nsCreate">Create shipment → get B/L Nº</button>
       <div class="bigwb" id="nsResult" hidden></div>
       <p class="msg" id="nsMsg"></p>
@@ -382,6 +384,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
         customer_email: $('nsEmail').value.trim() || null,
         destination: $('nsDest').value, vessel: $('nsVessel').value.trim() || null,
         eta: $('nsEta').value || null,
+        ebl_no: $('nsEbl').value.trim().toUpperCase() || null,
       }).select().single();
       if (error) throw error;
       await db.from('shipment_events').insert({ shipment_id: data.id, status: 'received', note: '9502 Ditmas Ave warehouse' });
