@@ -94,7 +94,9 @@ exports.handler = async (event) => {
         destination: b.destination || 'Vieux-Fort',
         vessel: b.vessel || null,
         status: 'received',
-        ebl_no: eblNo,
+        /* customers can track with the carrier eBL from the order form,
+           falling back to our own EB/L number */
+        ebl_no: (String(b.trackNo || '').trim().toUpperCase()) || eblNo,
       },
     });
     const shipId = rows && rows[0] && rows[0].id;
