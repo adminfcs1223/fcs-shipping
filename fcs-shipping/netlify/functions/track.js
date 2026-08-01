@@ -23,27 +23,30 @@ exports.handler = async (event) => {
   const ip = event.headers['x-nf-client-connection-ip'] || 'unknown';
   if (rateLimited(ip, 30, 60 * 1000)) return json(429, { error: 'Slow down, please.' });
 
-  const waybill = String((event.queryStringParameters || {}).waybill || '').trim().toUpperCase();
-  if (!/^FCS-\d{4}-\d{3,6}$/.test(waybill)) {
-    return json(400, { error: 'Waybill numbers look like FCS-2026-4471.' });
+  /* Accepts EITHER the FCS waybill number (FCS-2026-4471), our EB/L number
+     (EBL-2026-0042), or a carrier eBL / booking number stored on the shipment. */
+  const no = String((event.queryStringParameters || {}).waybill || '').trim().toUpperCase();
+  if (!/^[A-Z0-9][A-Z0-9\/\-]{3,30}$/.test(no)) {
+    return json(400, { error: 'Enter your FCS waybill (FCS-2026-4471) or eBL tracking number.' });
   }
 
   if (!supabaseConfigured()) {
-    if (waybill === DEMO.waybill_no) return json(200, DEMO);
+    if (no === DEMO.waybill_no) return json(200, DEMO);
     return json(404, { error: 'Not found' });
   }
 
   try {
     /* SELECT only safe columns — customer_name / customer_phone stay server-side */
+    const enc = encodeURIComponent(no);
+    const filter = `or=(waybill_no.eq.${enc},ebl_no.eq.${enc})`;
     const rows = await sb(
-      `shipments?waybill_no=eq.${encodeURIComponent(waybill)}&select=waybill_no,status,vessel,destination,eta`
+      `shipments?${filter}&select=id,waybill_no,status,vessel,destination,eta&limit=1`
     );
     if (!rows || !rows.length) return json(404, { error: 'Not found' });
-    const shipment = rows[0];
+    const { id, ...shipment } = rows[0];
 
-    const idRows = await sb(`shipments?waybill_no=eq.${encodeURIComponent(waybill)}&select=id`);
     const events = await sb(
-      `shipment_events?shipment_id=eq.${idRows[0].id}&select=status,note,created_at&order=created_at.asc`
+      `shipment_events?shipment_id=eq.${id}&select=status,note,created_at&order=created_at.asc`
     );
 
     return json(200, { ...shipment, events: events || [] });
