@@ -131,6 +131,12 @@ details.hier details.hier{background:#101A26}
   font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .mbl-tally-row{display:flex;gap:.6rem;align-items:flex-start;border-bottom:1px solid var(--line);padding:.55rem 0;cursor:pointer}
 .mbl-tally-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--amber);margin-top:.15rem}
+/* live paper preview beside the editor (order-entry style) */
+.mbl-split{display:grid;grid-template-columns:1fr;gap:1.2rem;align-items:start}
+@media(min-width:1100px){.mbl-split{grid-template-columns:1fr 1.05fr}
+  main:has(#view-mbl.on){max-width:1500px}}
+.mbl-prev-col{position:sticky;top:1rem}
+#mblPreview{border-radius:8px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 #labelRoot{display:none}
 @media print{
   body>*:not(#labelRoot){display:none!important}
@@ -281,17 +287,25 @@ details.hier details.hier{background:#101A26}
       <button class="btn" id="mblConfirm" style="margin-top:.8rem">Confirm tally → Master B/L</button>
     </div>
     <div class="card" hidden id="mblDocCard">
-      <h2>Master B/L <span style="font-family:var(--mono);font-weight:400;font-size:.7rem;color:var(--dim)"> — everything editable</span></h2>
-      <div id="mblHead"></div>
-      <h2 style="margin-top:1rem">Cargo</h2>
-      <div id="mblRows"></div>
-      <button class="btn ghost sm" id="mblAddRow">+ Add row</button>
-      <div class="meta" id="mblTotals" style="margin-top:.5rem"></div>
-      <div style="display:flex;gap:.6rem;margin-top:.8rem">
-        <button class="btn sm" id="mblSave" style="margin:0">Save</button>
-        <button class="btn sm" id="mblPrint" style="margin:0">Print Master B/L</button>
+      <h2>Master B/L <span style="font-family:var(--mono);font-weight:400;font-size:.7rem;color:var(--dim)"> — everything editable, the paper builds itself alongside</span></h2>
+      <div class="mbl-split">
+        <div>
+          <div id="mblHead"></div>
+          <h2 style="margin-top:1rem">Cargo</h2>
+          <div id="mblRows"></div>
+          <button class="btn ghost sm" id="mblAddRow">+ Add row</button>
+          <div class="meta" id="mblTotals" style="margin-top:.5rem"></div>
+          <div style="display:flex;gap:.6rem;margin-top:.8rem">
+            <button class="btn sm" id="mblSave" style="margin:0">Save</button>
+            <button class="btn sm" id="mblPrint" style="margin:0">Print Master B/L</button>
+          </div>
+          <p class="msg" id="mblMsg2"></p>
+        </div>
+        <div class="mbl-prev-col">
+          <h2>Live preview</h2>
+          <div id="mblPreview"></div>
+        </div>
       </div>
-      <p class="msg" id="mblMsg2"></p>
     </div>
   </div>
 
@@ -895,8 +909,8 @@ details.hier details.hier{background:#101A26}
       ...saved,
       rows: chosen.map((t) => ({ mark: t.mark, pkgs: t.pkgs, desc: t.desc, cuft: t.cuft, meas: t.meas })),
     };
-    renderMblDoc();
     $('mblDocCard').hidden = false;
+    renderMblDoc();
     $('mblDocCard').scrollIntoView({ behavior: 'smooth' });
   });
 
@@ -914,6 +928,11 @@ details.hier details.hier{background:#101A26}
       MBL_HF.map(([k, l, rows]) => `<label>${l}</label>` + (rows
         ? `<textarea data-hf="${k}" rows="${rows}">${esc(mbl.head[k] || '')}</textarea>`
         : `<input data-hf="${k}" value="${esc(mbl.head[k] || '')}">`)).join('');
+    /* the paper on the right redraws with every keystroke — order-entry style */
+    document.querySelectorAll('#mblHead [data-df]').forEach((f) =>
+      f.addEventListener('input', () => { mbl.doc[f.dataset.df] = f.value; mblPreview(); }));
+    document.querySelectorAll('#mblHead [data-hf]').forEach((f) =>
+      f.addEventListener('input', () => { mbl.head[f.dataset.hf] = f.value; mblPreview(); }));
     renderMblRows();
   }
   function renderMblRows() {
@@ -929,11 +948,12 @@ details.hier details.hier{background:#101A26}
       </div>`).join('');
     mblTotals();
     document.querySelectorAll('#mblRows [data-r]').forEach((f) => f.addEventListener('input', () => {
-      mbl.doc.rows[+f.dataset.r][f.dataset.k] = f.value; mblTotals();
+      mbl.doc.rows[+f.dataset.r][f.dataset.k] = f.value; mblTotals(); mblPreview();
     }));
     document.querySelectorAll('#mblRows [data-rx]').forEach((b) => b.addEventListener('click', () => {
       mbl.doc.rows.splice(+b.dataset.rx, 1); renderMblRows();
     }));
+    mblPreview();
   }
   function mblTotals() {
     const pk = mbl.doc.rows.reduce((s, r) => s + (parseInt(r.pkgs, 10) || 0), 0);
@@ -952,36 +972,34 @@ details.hier details.hier{background:#101A26}
     await kvSave('fcs:mbl:' + mbl.ship.shipment_no, mbl.doc);
     $('mblMsg2').textContent = 'Saved \u2014 header details will come back pre-filled next time.'; $('mblMsg2').className = 'msg ok';
   });
-  $('mblPrint').addEventListener('click', () => {
-    mblCollect();
+  /* one renderer draws BOTH the live preview and the printed page */
+  const MBL_DOC_CSS = `
+    .mbl-paper{background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;width:816px;padding:26px;box-sizing:border-box;transform-origin:top left}
+    .mbl-paper .doc{border:1.5px solid #000}
+    .mbl-paper .bar{display:flex;border-bottom:1.5px solid #000}
+    .mbl-paper .bar .co{font-size:15pt;font-weight:700;padding:6pt 8pt;flex:1}
+    .mbl-paper .bar .ti{font-size:8.5pt;padding:8pt;align-self:center}
+    .mbl-paper .grid{display:grid;grid-template-columns:1fr 1fr}
+    .mbl-paper .cell{border-bottom:1px solid #000;border-right:1px solid #000;padding:3pt 6pt;min-height:16pt}
+    .mbl-paper .cell:nth-child(2n){border-right:none}
+    .mbl-paper .lab{font-size:6.5pt;letter-spacing:.02em}
+    .mbl-paper .val{white-space:pre-wrap;font-size:9pt;line-height:1.35}
+    .mbl-paper table{width:100%;border-collapse:collapse}
+    .mbl-paper th{font-size:6.8pt;font-weight:400;border-bottom:1px solid #000;background:#eee;padding:2pt 5pt;text-align:left}
+    .mbl-paper td{font-size:9pt;padding:1.5pt 5pt;vertical-align:top}
+    .mbl-paper .num{text-align:right}
+    .mbl-paper .mid{min-height:110pt;padding:8pt 6pt}
+    .mbl-paper .hl{background:#e8e8e8;display:inline-block;padding:1pt 6pt}
+    .mbl-paper .tot{display:flex;justify-content:space-between;padding:3pt 6pt;border-top:1px solid #000}
+    .mbl-paper .foot{border-top:1.5px solid #000;display:grid;grid-template-columns:1.2fr 1fr .8fr}
+    .mbl-paper .fcell{border-right:1px solid #000;padding:3pt 6pt}
+    .mbl-paper .fcell:last-child{border-right:none}
+    .mbl-paper .terms{font-size:6.3pt;line-height:1.4;padding:4pt 6pt;border-top:1px solid #000}
+    .mbl-paper .sig{display:flex;justify-content:space-between;padding:6pt;border-top:1px solid #000;font-size:8.5pt}`;
+  function mblDocHTML() {
     const t = mblTotals();
     const nl = (s) => esc(s || '').replace(/\n/g, '<br>');
-    const w = window.open('', '_blank', 'width=900,height=1100');
-    if (!w) { $('mblMsg2').textContent = 'Pop-up blocked \u2014 allow pop-ups to print.'; $('mblMsg2').className = 'msg err'; return; }
-    w.document.write(`<!doctype html><html><head><title>Master B/L ${esc(mbl.ship.shipment_no)}</title><style>
-      @page{size:letter portrait;margin:.45in}
-      body{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#000}
-      .doc{border:1.5px solid #000}
-      .bar{display:flex;border-bottom:1.5px solid #000}
-      .bar .co{font-size:15pt;font-weight:700;padding:6pt 8pt;flex:1}
-      .bar .ti{font-size:8.5pt;padding:8pt;align-self:center}
-      .grid{display:grid;grid-template-columns:1fr 1fr}
-      .cell{border-bottom:1px solid #000;border-right:1px solid #000;padding:3pt 6pt;min-height:16pt}
-      .cell:nth-child(2n){border-right:none}
-      .lab{font-size:6.5pt;letter-spacing:.02em}
-      .val{white-space:pre-wrap;font-size:9pt;line-height:1.35}
-      table{width:100%;border-collapse:collapse}
-      th{font-size:6.8pt;font-weight:400;border-bottom:1px solid #000;background:#eee;padding:2pt 5pt;text-align:left}
-      td{font-size:9pt;padding:1.5pt 5pt;vertical-align:top}
-      .num{text-align:right}
-      .mid{min-height:150pt}
-      .hl{background:#e8e8e8;display:inline-block;padding:1pt 6pt}
-      .foot{border-top:1.5px solid #000;display:grid;grid-template-columns:1.2fr 1fr .8fr}
-      .fcell{border-right:1px solid #000;padding:3pt 6pt}
-      .fcell:last-child{border-right:none}
-      .terms{font-size:6.3pt;line-height:1.4;padding:4pt 6pt;border-top:1px solid #000}
-      .sig{display:flex;justify-content:space-between;padding:6pt;border-top:1px solid #000;font-size:8.5pt}
-    </style></head><body><div class="doc">
+    return `<div class="doc">
       <div class="bar"><div class="co">${esc(mbl.head.carrier)}</div>
         <div class="ti"><b>${esc(mbl.head.trucking)}</b> &nbsp; LONG FORM - INTERNATIONAL BILL OF LADING</div></div>
       <div class="grid">
@@ -1005,13 +1023,12 @@ details.hier details.hier{background:#101A26}
         <th style="width:13%">MEASUREMENT (22)</th></tr></thead>
         <tbody>${mbl.doc.rows.map((r) => `<tr><td>${esc(r.mark)}</td><td style="text-align:center">${esc(r.pkgs)}</td>
           <td>${esc(r.desc)}</td><td class="num">${esc(r.cuft)}</td><td>${esc(r.meas)}</td></tr>`).join('')}</tbody></table>
-      <div class="mid" style="padding:8pt 6pt">
+      <div class="mid">
         <div><span class="hl"><b>${esc(mbl.head.exempt)}</b></span></div>
         <div style="margin-top:14pt">CARGO&nbsp; DESCRIPTION:- &nbsp;${esc(mbl.head.cargoDesc)}</div>
         <div style="margin-top:14pt"><span class="hl">${esc(mbl.head.loadNote)}</span></div>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:3pt 6pt;border-top:1px solid #000">
-        <b>TOTAL &nbsp;&nbsp;&nbsp; ${t.pk}</b><b>${t.cf}</b></div>
+      <div class="tot"><b>TOTAL &nbsp;&nbsp;&nbsp; ${t.pk}</b><b>${t.cf}</b></div>
       <div class="foot">
         <div class="fcell"><div class="lab">(23) DECLARED VALUE $ ________ \u2014 IF SHIPPER ENTERS A VALUE, CARRIER'S "PACKAGE" LIABILITY DOES NOT APPLY AND THE AD VALOREM RATE WILL BE CHARGED</div>
           <div style="margin-top:4pt">FREIGHT CHARGES &nbsp; <b>PREPAID</b></div></div>
@@ -1022,8 +1039,32 @@ details.hier details.hier{background:#101A26}
       <div class="terms">THE RECEIPT, CUSTODY, CARRIAGE AND DELIVERY OF THE GOODS ARE SUBJECT TO THE TERMS APPEARING ON THE FACE AND BACK HEREOF AND TO CARRIER'S APPLICABLE TARIFF &nbsp; <span class="hl"><b>${esc(mbl.head.exempt)}</b></span></div>
       <div class="sig"><span>${esc(mbl.head.carrier)} &nbsp; By: ................................................. &nbsp; BILL OF LADING NO.</span>
         <span>DATE: &nbsp; ${esc(mbl.doc.date)}</span></div>
-    </div>
-    <script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
+    </div>`;
+  }
+  let mblCssInjected = false;
+  function mblPreview() {
+    const host = $('mblPreview');
+    if (!host || !mbl.doc) return;
+    if (!mblCssInjected) {
+      const st = document.createElement('style'); st.textContent = MBL_DOC_CSS;
+      document.head.appendChild(st); mblCssInjected = true;
+    }
+    host.innerHTML = `<div style="overflow:hidden"><div class="mbl-paper">${mblDocHTML()}</div></div>`;
+    const paper = host.querySelector('.mbl-paper');
+    const s = Math.min(1, (host.clientWidth || 640) / 816);
+    paper.style.transform = `scale(${s})`;
+    requestAnimationFrame(() => { host.firstChild.style.height = (paper.scrollHeight * s) + 'px'; });
+  }
+  window.addEventListener('resize', () => mblPreview());
+  $('mblPrint').addEventListener('click', () => {
+    mblCollect();
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (!w) { $('mblMsg2').textContent = 'Pop-up blocked \u2014 allow pop-ups to print.'; $('mblMsg2').className = 'msg err'; return; }
+    w.document.write(`<!doctype html><html><head><title>Master B/L ${esc(mbl.ship.shipment_no)}</title>
+      <style>@page{size:letter portrait;margin:.45in}body{margin:0}${MBL_DOC_CSS}
+      .mbl-paper{width:auto;padding:0}</style></head>
+      <body><div class="mbl-paper">${mblDocHTML()}</div>
+      <script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
     w.document.close();
   });
 
