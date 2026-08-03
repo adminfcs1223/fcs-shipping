@@ -129,8 +129,14 @@ details.hier details.hier{background:#101A26}
 .mbl-row{display:grid;grid-template-columns:1.1fr .5fr 1.6fr .55fr .95fr auto;gap:.35rem;margin-top:.35rem;align-items:center}
 .mbl-rh{display:grid;grid-template-columns:1.1fr .5fr 1.6fr .55fr .95fr auto;gap:.35rem;margin-top:.6rem;
   font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
-.mbl-tally-row{display:flex;gap:.6rem;align-items:flex-start;border-bottom:1px solid var(--line);padding:.55rem 0;cursor:pointer}
-.mbl-tally-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--amber);margin-top:.15rem}
+.mbl-th{display:grid;grid-template-columns:26px 1fr 1.6fr .4fr .45fr;gap:.55rem;align-items:center;
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);
+  padding:.45rem 0;border-bottom:1px solid var(--line)}
+.mbl-tally-row{display:grid;grid-template-columns:26px 1fr 1.6fr .4fr .45fr;gap:.55rem;align-items:center;
+  border-bottom:1px solid var(--line);padding:.55rem 0;cursor:pointer}
+.mbl-tally-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--amber)}
+.mbl-tally-row .t-mark{font-family:var(--mono);font-weight:700;color:var(--amber);font-size:.82rem;word-break:break-all}
+.mbl-tally-row .t-num{font-family:var(--mono);font-weight:700;color:var(--ink);text-align:center}
 /* live paper preview beside the editor (order-entry style) */
 .mbl-split{display:grid;grid-template-columns:1fr;gap:1.2rem;align-items:start}
 @media(min-width:1100px){.mbl-split{grid-template-columns:1fr 1.05fr}
@@ -853,6 +859,21 @@ details.hier details.hier{background:#101A26}
   const kvSave = (k, v) => db.from('settings').upsert({ key: k, value: v, updated_at: new Date().toISOString() });
   const mbl = { ship: null, tallyItems: [], head: {}, doc: null };
 
+  /* measurements hide inside cargo descriptions ("Box 37x29x22…") — pull them
+     out, and a commercial bin is ALWAYS 29X19X19. Cubic ft = L×W×H ÷ 1728. */
+  function parseDims(cargo) {
+    const txt = String(cargo || '');
+    const dims = [...txt.matchAll(/(\d{1,3})\s*[xX×]\s*(\d{1,3})\s*[xX×]\s*(\d{1,3})/g)]
+      .map((m) => [+m[1], +m[2], +m[3]]);
+    const bins = (txt.match(/commercial\s*bin/gi) || []).length;
+    for (let i = 0; i < bins; i++) dims.push([29, 19, 19]);
+    if (!dims.length) return { meas: '', cuft: null };
+    return {
+      meas: dims.map((d) => d.join('X')).join(', '),
+      cuft: dims.reduce((s, d) => s + Math.max(1, Math.round(d[0] * d[1] * d[2] / 1728)), 0),
+    };
+  }
+
   async function mblInit() {
     const { data } = await db.from('wms_shipments').select('*').eq('direction', 'outbound')
       .neq('status', 'closed').order('created_at', { ascending: false }).limit(20);
@@ -877,18 +898,32 @@ details.hier details.hier{background:#101A26}
       const { data: ebls } = await db.from('ebl').select('ebl_no,cuft').in('ebl_no', eblNos);
       (ebls || []).forEach((e) => (eblMap[e.ebl_no] = e));
     }
-    mbl.tallyItems = items.map((i) => ({
-      mark: i.order_inv ? 'BL#' + String(i.order_inv).toUpperCase() : (i.ebl_no || ''),
-      pkgs: i.pieces || 1,
-      desc: String(i.cargo || '').toUpperCase(),
-      cuft: eblMap[i.ebl_no] && eblMap[i.ebl_no].cuft != null ? eblMap[i.ebl_no].cuft : '',
-      meas: '', customer: i.customer_name || '', sector: i.sector || 'C',
-    }));
-    $('mblTally').innerHTML = mbl.tallyItems.map((t, idx) => `<label class="mbl-tally-row">
+    mbl.tallyItems = items.map((i) => {
+      const pd = parseDims(i.cargo);
+      const fallbackCuft = eblMap[i.ebl_no] && eblMap[i.ebl_no].cuft != null ? eblMap[i.ebl_no].cuft : '';
+      return {
+        mark: i.order_inv ? 'BL#' + String(i.order_inv).toUpperCase() : (i.ebl_no || ''),
+        pkgs: i.pieces || 1,
+        desc: String(i.cargo || '').toUpperCase(),
+        cuft: pd.cuft != null ? pd.cuft : fallbackCuft,
+        meas: pd.meas, customer: i.customer_name || '', sector: i.sector || 'C',
+      };
+    });
+    const tallyPkgs = mbl.tallyItems.reduce((s, t) => s + (parseInt(t.pkgs, 10) || 0), 0);
+    const tallyCuft = mbl.tallyItems.reduce((s, t) => s + (parseFloat(t.cuft) || 0), 0);
+    $('mblTally').innerHTML =
+      `<div class="mbl-th"><span></span><span>B/L \u00B7 Mark</span><span>Customer &amp; cargo</span><span>Pkgs</span><span>Cu ft</span></div>` +
+      mbl.tallyItems.map((t, idx) => `<label class="mbl-tally-row">
         <input type="checkbox" checked data-tk="${idx}">
-        <span style="flex:1"><b style="color:var(--ink)">${esc(t.mark)}</b> \u00B7 ${esc(t.customer)}
-          <br><span class="meta" style="margin:0">${esc(t.desc)} \u00B7 ${t.pkgs} pkg${t.pkgs === 1 ? '' : 's'}${t.cuft !== '' ? ' \u00B7 ' + t.cuft + ' cu ft' : ''}</span></span>
-      </label>`).join('');
+        <span class="t-mark">${esc(t.mark)}</span>
+        <span><b style="color:var(--ink)">${esc(t.customer)}</b>
+          <br><span class="meta" style="margin:0">${esc(t.desc)}${t.meas ? '<br>' + esc(t.meas) : ''}</span></span>
+        <span class="t-num">${esc(t.pkgs)}</span>
+        <span class="t-num">${esc(t.cuft)}</span>
+      </label>`).join('') +
+      `<div class="mbl-th" style="border-bottom:none;border-top:2px solid var(--line);color:var(--ink);font-weight:700">
+        <span></span><span>TOTAL</span><span>${mbl.tallyItems.length} EB/L${mbl.tallyItems.length === 1 ? '' : 's'}</span>
+        <span>${tallyPkgs}</span><span>${Math.round(tallyCuft * 10) / 10}</span></div>`;
     $('mblTallyCard').hidden = false; $('mblDocCard').hidden = true;
   });
 
