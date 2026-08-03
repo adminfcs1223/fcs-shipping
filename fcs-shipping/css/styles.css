@@ -48,7 +48,7 @@ nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.92);backdrop-f
 /* Hero: the water above and below the ship are two "windows".
    JS (heroBands in main.js) measures where the ship lands at any viewport
    size and centers each text bubble in its window — always symmetrical. */
-.hero{position:relative;min-height:88vh;display:block;text-align:center;color:#fff;isolation:isolate;
+.hero{position:relative;min-height:75vh;display:block;text-align:center;color:#fff;isolation:isolate;
   overflow:hidden;
   background:#0A1928 url('/assets/fcs-hero-background.webp?v=2') center 42%/cover no-repeat}
 .hero-img{display:none}
@@ -138,9 +138,99 @@ section{max-width:1180px;margin:0 auto;padding:5rem 1.5rem;position:relative}
 h2{font-weight:900;font-size:clamp(1.8rem,4vw,2.6rem);text-transform:uppercase;line-height:1.08;letter-spacing:.02em;margin:.3rem 0 .8rem}
 .sec-head p{color:var(--grey)}
 
+/* ---------- Request a Pickup wizard ---------- */
+.wz-step{display:none;animation:wz-in .35s cubic-bezier(.22,1,.36,1)}
+.wz-step.on{display:block}
+@keyframes wz-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.wz-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+.wz-card{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:0 0 1rem;cursor:pointer;
+  overflow:hidden;text-align:center;transition:transform .18s,box-shadow .18s,border-color .18s;position:relative}
+.wz-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+.wz-card span{display:block;margin-top:.8rem;font-weight:800;font-size:1rem;letter-spacing:.02em;text-transform:uppercase}
+.wz-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(6,18,30,.14);border-color:var(--sea)}
+.wz-card:active{transform:translateY(-1px)}
+.wz-card .flag{position:absolute;top:.7rem;right:.7rem;width:34px;height:34px;border-radius:50%;
+  background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.15rem;
+  box-shadow:0 2px 8px rgba(6,18,30,.25)}
+.wz-card.wz-dest{padding:1.6rem 1rem 1.4rem}
+.wz-card.wz-dest .big{font-size:2rem;line-height:1;display:block}
+.wz-card.wz-dest span{margin-top:.6rem}
+.wz-card.wz-dest small{display:block;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--grey);margin-top:.3rem}
+.wz-links{margin-top:1.4rem;display:flex;flex-direction:column;gap:.4rem;align-items:flex-start}
+.wz-links button{background:none;border:none;color:var(--sea);font-weight:600;font-size:.88rem;
+  cursor:pointer;padding:.2rem 0;text-decoration:underline;text-underline-offset:3px}
+.wz-back{background:none;border:none;color:var(--grey);font-weight:600;font-size:.85rem;cursor:pointer;
+  padding:.2rem 0;margin-bottom:.6rem}
+.wz-back:hover{color:var(--ink)}
+.wz-q{font-size:1.35rem;font-weight:900;text-transform:uppercase;letter-spacing:.02em;margin-bottom:1.1rem}
+.wz-extras{display:flex;flex-direction:column;gap:.7rem}
+.wz-toggle{display:flex;align-items:center;gap:.7rem;background:#fff;border:1.5px solid var(--line);
+  border-radius:12px;padding:.9rem 1.1rem;font-weight:700;font-size:.95rem;cursor:pointer;text-align:left;
+  transition:border-color .15s,background .15s}
+.wz-toggle .tick{width:22px;height:22px;border:2px solid var(--line);border-radius:50%;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.wz-toggle[aria-pressed="true"]{border-color:#1E7A46;background:#EAF6EE}
+.wz-toggle[aria-pressed="true"] .tick{border-color:#1E7A46;background:#1E7A46}
+.wz-toggle[aria-pressed="true"] .tick::after{content:"✓";color:#fff;font-size:.8rem;font-weight:900}
+.wz-toggle.ghosted{color:var(--grey);font-weight:600}
+.wz-check{display:flex;align-items:center;gap:.6rem;font-size:.92rem;font-weight:600;padding:.2rem .2rem;cursor:pointer}
+.wz-check input{width:18px;height:18px;accent-color:var(--sea)}
+.wz-request{background:var(--ink);color:#fff;width:100%;justify-content:center;margin-top:1.3rem;
+  padding:1.05rem 1.8rem;font-size:1.02rem;border-radius:10px;
+  animation:wz-glow 2.2s ease-in-out infinite}
+@keyframes wz-glow{0%,100%{box-shadow:0 0 0 0 rgba(27,73,101,.0)}50%{box-shadow:0 0 26px 4px rgba(27,73,101,.55)}}
+.wz-request:hover{background:var(--sea)}
+/* supply steppers inside the wizard reuse .supply-row styles */
+
+/* ---------- modals ---------- */
+.modal-back{position:fixed;inset:0;z-index:200;background:rgba(10,25,40,.45);
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto}
+.modal{background:#fff;border-radius:18px;padding:2rem 2.1rem;max-width:720px;width:100%;position:relative;
+  box-shadow:0 30px 80px rgba(6,18,30,.35);animation:wz-in .3s cubic-bezier(.22,1,.36,1);
+  max-height:92vh;overflow-y:auto}
+.modal.m-small{max-width:430px}
+.m-x{position:absolute;top:.8rem;right:1rem;background:none;border:none;font-size:1.6rem;color:var(--grey);cursor:pointer;line-height:1}
+.m-title{font-size:1.5rem;font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+.m-sub{color:var(--grey);margin:.4rem 0 1.2rem;font-size:.95rem}
+.m-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.6rem}
+@media(max-width:640px){.m-cols{grid-template-columns:1fr}}
+.m-cols h4{font-family:var(--mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--sea);margin-bottom:.6rem}
+.modal input,.modal textarea{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:.75rem .85rem;
+  font-family:inherit;font-size:.93rem;margin-bottom:.55rem;background:#fff}
+.modal input:focus,.modal textarea:focus{outline:2px solid var(--sea);border-color:var(--sea)}
+.m-row{display:flex;gap:.55rem}
+.m-lbl{display:block;font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);margin:.2rem 0 .3rem}
+.m-err{color:#B03A2E;font-size:.88rem;margin-top:.6rem}
+.m-addr{background:var(--bg-soft);border:1.5px dashed var(--sea);border-radius:12px;padding:1.1rem 1.2rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;
+  font-weight:700;line-height:1.6}
+.m-check{width:96px;height:96px;margin:0 auto 1rem}
+.m-check svg{width:100%;height:100%}
+.m-check circle{fill:none;stroke:#1E7A46;stroke-width:3;stroke-dasharray:160;stroke-dashoffset:160;
+  animation:draw .6s ease forwards}
+.m-check path{fill:none;stroke:#1E7A46;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:60;stroke-dashoffset:60;animation:draw .45s ease .5s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* ---------- ship-it-your-way (blog cards) ---------- */
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem}
+@media(max-width:900px){.how-grid{grid-template-columns:1fr}}
+.how-card{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;
+  transition:transform .18s,box-shadow .18s}
+.how-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(6,18,30,.12)}
+.how-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.how-card h3{font-size:1.15rem;font-weight:900;text-transform:uppercase;letter-spacing:.02em;margin:1.1rem 1.3rem .5rem}
+.how-card p{color:var(--grey);font-size:.93rem;margin:0 1.3rem 1.3rem}
+
 /* ---------- quote / waybill ---------- */
 .quote-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start}
-@media(max-width:900px){.quote-grid{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .quote-grid{grid-template-columns:1fr}
+  .wb-col{display:none}            /* the waybill is a desktop treat */
+}
+@media(max-width:640px){.topbar{display:none}}  /* phone: the black banner goes */
 .field{margin-bottom:1.4rem}
 .field label{display:block;font-family:var(--mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grey);margin-bottom:.55rem}
 .field select,.field input[type=text],.field input[type=tel],.field input[type=email]{width:100%;background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:6px;padding:.85rem 1rem;font-family:var(--body);font-size:.95rem}
