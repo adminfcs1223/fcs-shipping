@@ -1314,6 +1314,13 @@ async function startApp(){
     }
     if(q){ await applyQuote(q); $('#fQuote').value = String(q.id); }
   }
+  /* deep link from the admin Customers tab: /admin/orders/?inv=<invoice #> */
+  const ip = new URLSearchParams(location.search).get('inv');
+  if(ip){
+    const o = orders.find(x=>String(x.inv)===String(ip));
+    if(o){ draft=JSON.parse(JSON.stringify(o)); goTab('order'); draftToForm(); toast('Order '+o.inv+' opened'); }
+    else toast('No order with invoice #'+ip+' on this device');
+  }
 }
 /* ---- staff login gate ---- */
 async function gateCheck(){
