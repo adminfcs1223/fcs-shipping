@@ -125,8 +125,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
 }
 .label{width:4in;height:6in;background:#fff;color:#000;padding:.22in;font-family:var(--body);
   display:flex;flex-direction:column;align-items:center;text-align:center}
-.label .lb-head{font-family:var(--mono);font-weight:700;font-size:13pt;letter-spacing:.08em;
-  border-bottom:2.5px solid #000;width:100%;padding-bottom:4pt}
+.label .lb-head{display:flex;align-items:center;justify-content:center;gap:8pt;
+  font-family:var(--mono);font-weight:700;font-size:12pt;letter-spacing:.06em;
+  border-bottom:2.5px solid #000;width:100%;padding-bottom:5pt}
+.label .lb-head img{height:.34in;width:auto}
 .label .lb-qr{margin:10pt 0 6pt}
 .label .lb-qr img,.label .lb-qr canvas{width:2.45in!important;height:2.45in!important}
 .label .lb-no{font-family:var(--mono);font-weight:700;font-size:16pt;letter-spacing:.03em}
@@ -622,7 +624,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
     const sec = load.sector || sectorFor(load.destination);
     const root = $('labelRoot');
     root.innerHTML = `<div class="label">
-        <div class="lb-head">FCS·WMS &nbsp;WAREHOUSE LABEL</div>
+        <div class="lb-head"><img src="/assets/fcs-logo.png" alt="FCS"><span>FCS·WMS &nbsp;WAREHOUSE LABEL</span></div>
         <div class="lb-qr" id="lbQr"></div>
         <div class="lb-no">${esc(load.load_no)}</div>
         <div class="lb-sec">${sec}</div>
@@ -635,7 +637,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
       text: `https://fcsshipping.com/admin/wms/?load=${encodeURIComponent(load.load_no)}`,
       width: 236, height: 236, correctLevel: QRCode.CorrectLevel.M,
     });
-    setTimeout(() => window.print(), 350);
+    setTimeout(() => window.print(), 550);  /* give the logo + QR a beat to render */
   }
 
   db.auth.onAuthStateChange(() => refreshAuth());
