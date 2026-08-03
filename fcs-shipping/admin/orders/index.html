@@ -848,12 +848,12 @@ function printWmsLabel(){
       '@page{size:4in 6in;margin:0}body{margin:0;font-family:Archivo,Arial,sans-serif}'+
       '.label{width:4in;height:6in;padding:.22in;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center}'+
       '.h{display:flex;align-items:center;justify-content:center;gap:8pt;font-family:monospace;font-weight:700;font-size:12pt;letter-spacing:.06em;border-bottom:2.5px solid #000;width:100%;padding-bottom:5pt}'+
-      '.h img{height:.34in;width:auto}'+
-      'img{width:2.45in;height:2.45in;margin:10pt 0 6pt}'+
-      '.no{font-family:monospace;font-weight:700;font-size:16pt}'+
-      '.sec{font-size:64pt;font-weight:900;line-height:1;border:4px solid #000;border-radius:10px;padding:2pt 18pt;margin:6pt 0 4pt}'+
-      '.pcs{font-size:26pt;font-weight:900;margin-top:2pt}'+
-      '.dest{font-weight:900;font-size:13pt}.meta{font-family:monospace;font-size:8.5pt;margin-top:5pt;line-height:1.55}'+
+      '.h img{height:.3in;width:auto}'+
+      'img{width:2in;height:2in;margin:6pt 0 4pt}'+
+      '.no{font-family:monospace;font-weight:700;font-size:14pt}'+
+      '.sec{font-size:46pt;font-weight:900;line-height:1;border:3px solid #000;border-radius:8px;padding:2pt 16pt;margin:4pt 0 3pt}'+
+      '.pcs{font-size:22pt;font-weight:900;margin-top:1pt}'+
+      '.dest{font-weight:900;font-size:12pt}.meta{font-family:monospace;font-size:8pt;margin-top:3pt;line-height:1.45}'+
       '.foot{margin-top:auto;font-family:monospace;font-size:7.5pt;border-top:1.5px solid #000;width:100%;padding-top:4pt}'+
       '<\/style><\/head><body><div class="label">'+
       '<div class="h"><img src="https://fcsshipping.com/assets/fcs-logo.png" alt="FCS"><span>FCS·WMS&nbsp; WAREHOUSE LABEL<\/span><\/div>'+
@@ -1085,9 +1085,22 @@ async function applyQuote(q){
                city:c.city||'', state:c.state||'', phone:q.phone||'' };
   draft.co = { ...draft.co, city: q.destination ? String(q.destination).toUpperCase()+', ST. LUCIA' : '' };
   if(q.pickup_slot) draft.service = ('PICKUP: '+q.pickup_slot).toUpperCase();
+  /* the consignee from the website goes into the CONSIGNEE block, not a line item */
+  const extras = Array.isArray(q.extras) ? q.extras.slice() : [];
+  const ci = extras.findIndex(x=>/^Consignee:/i.test(String(x)));
+  if(ci > -1){
+    const parts = String(extras.splice(ci,1)[0]).replace(/^Consignee:\s*/i,'').split(' · ').map(s=>s.trim()).filter(Boolean);
+    const coName = parts.shift() || '';
+    let coPhone = '';
+    if(parts.length && String(parts[parts.length-1]).replace(/\D/g,'').length >= 7) coPhone = parts.pop();
+    draft.co = { ...draft.co,
+      name: coName.toUpperCase(),
+      phone: coPhone,
+      city: (parts.join(', ') || draft.co.city || '').toUpperCase() };
+  }
   const items = [{ qty:String(q.quantity||1), part:'', desc:String(q.cargo||'').toUpperCase(), price:'', amount:(q.total_cents/100).toFixed(2) }];
-  if(Array.isArray(q.extras) && q.extras.length)
-    items.push({ qty:'', part:'', desc:('INCL: '+q.extras.join(', ')).toUpperCase(), price:'', amount:'' });
+  if(extras.length)
+    items.push({ qty:'', part:'', desc:('INCL: '+extras.join(', ')).toUpperCase(), price:'', amount:'' });
   draft.items = items.concat([blankItem()]);
   goTab('order');
   draftToForm();
