@@ -155,6 +155,17 @@ h2{font-weight:900;font-size:clamp(1.8rem,4vw,2.6rem);text-transform:uppercase;l
 .wz-card .flag-sm{display:inline-flex;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
   background:#fff;align-items:center;justify-content:center;font-size:1.05rem;margin:0 auto .4rem;
   box-shadow:0 2px 6px rgba(6,18,30,.15)}
+/* quantity stepper on selected item cards */
+.wz-card.sel{border-color:var(--sea);box-shadow:0 0 0 3px rgba(11,92,138,.18),0 16px 36px rgba(6,18,30,.12)}
+.wz-qty{display:flex !important;align-items:center;justify-content:center;gap:.7rem;margin-top:.55rem}
+.wz-qty[hidden]{display:none !important}
+.wz-qty .qb{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--sea);background:#fff;color:var(--sea);
+  font-size:1.25rem;font-weight:900;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s}
+.wz-qty .qb:hover{background:var(--sea);color:#fff}
+.wz-qty b{min-width:1.4em;text-align:center;font-size:1.15rem;font-weight:900;color:var(--ink)}
+#wzContinue{margin-top:1.1rem}
+.lucia-map[hidden]{display:none !important}
 .wz-card.wz-dest{padding:1.1rem .9rem 1rem;display:flex;flex-direction:column;align-items:center}
 .wz-card.wz-dest span{margin-top:.1rem;font-size:.92rem}
 .wz-card.wz-dest small{display:block;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;
