@@ -818,13 +818,13 @@ function renderBilling(){
   if(has && draft.loadNo && window.QRCode){
     qw.hidden = false;
     const qr = $('#billQr');
-    if(qr.dataset.load !== draft.loadNo){
-      qr.innerHTML=''; qr.dataset.load = draft.loadNo;
-      new QRCode(qr, { text:'https://fcsshipping.com/admin/wms/?load='+encodeURIComponent(draft.loadNo),
+    if(qr.dataset.load !== draft.eblNo){
+      qr.innerHTML=''; qr.dataset.load = draft.eblNo;
+      new QRCode(qr, { text:'https://fcsshipping.com/admin/wms/?ebl='+encodeURIComponent(draft.eblNo),
         width:128, height:128, correctLevel:QRCode.CorrectLevel.M });
     }
     const SEC={A:'Vieux-Fort',B:'Castries',C:'Other islands'};
-    $('#billQrNo').textContent = draft.loadNo;
+    $('#billQrNo').textContent = draft.loadNo + (draft.pieces ? '  ·  '+draft.pieces+' PC' : '');
     $('#billQrSec').textContent = 'SECTOR '+(draft.sector||'?')+' · '+(SEC[draft.sector]||'');
   } else { qw.hidden = true; }
 }
@@ -834,7 +834,7 @@ function renderBilling(){
 function printWmsLabel(){
   if(!draft || !draft.loadNo) return;
   const tmp=document.createElement('div'); tmp.style.display='none'; document.body.appendChild(tmp);
-  new QRCode(tmp,{ text:'https://fcsshipping.com/admin/wms/?load='+encodeURIComponent(draft.loadNo),
+  new QRCode(tmp,{ text:'https://fcsshipping.com/admin/wms/?ebl='+encodeURIComponent(draft.eblNo),
     width:472, height:472, correctLevel:QRCode.CorrectLevel.M });
   setTimeout(()=>{
     const cv=tmp.querySelector('canvas');
@@ -852,13 +852,16 @@ function printWmsLabel(){
       'img{width:2.45in;height:2.45in;margin:10pt 0 6pt}'+
       '.no{font-family:monospace;font-weight:700;font-size:16pt}'+
       '.sec{font-size:64pt;font-weight:900;line-height:1;border:4px solid #000;border-radius:10px;padding:2pt 18pt;margin:6pt 0 4pt}'+
+      '.pcs{font-size:26pt;font-weight:900;margin-top:2pt}'+
       '.dest{font-weight:900;font-size:13pt}.meta{font-family:monospace;font-size:8.5pt;margin-top:5pt;line-height:1.55}'+
       '.foot{margin-top:auto;font-family:monospace;font-size:7.5pt;border-top:1.5px solid #000;width:100%;padding-top:4pt}'+
       '<\/style><\/head><body><div class="label">'+
       '<div class="h"><img src="https://fcsshipping.com/assets/fcs-logo.png" alt="FCS"><span>FCS·WMS&nbsp; WAREHOUSE LABEL<\/span><\/div>'+
       '<img src="'+dataUrl+'">'+
-      '<div class="no">'+esc(draft.loadNo)+'<\/div><div class="sec">'+sec+'<\/div><div class="dest">'+SECTORS[sec]+'<\/div>'+
-      '<div class="meta">'+esc(draft.sh.name||'')+'<br>'+esc(draft.items.map(i=>i.desc).filter(Boolean).join(', '))+
+      '<div class="no">'+esc(draft.loadNo)+'<\/div>'+
+      '<div class="pcs">'+(draft.pieces||1)+' PIECE'+((draft.pieces||1)===1?'':'S')+'<\/div>'+
+      '<div class="sec">'+sec+'<\/div><div class="dest">'+SECTORS[sec]+'<\/div>'+
+      '<div class="meta">'+esc(draft.sh.name||'')+
       '<br>EB\/L: '+esc(draft.eblNo||'—')+' · Inv '+esc(draft.inv||'')+'<\/div>'+
       '<div class="foot">Scan with any phone camera · fcsshipping.com<\/div><\/div>'+
       '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print()},250)}<\/scr'+'ipt><\/body><\/html>');
@@ -888,6 +891,7 @@ $('#btnMakeEbl').addEventListener('click', async()=>{
       body: JSON.stringify({
         orderInv: draft.inv, blNo: draft.container || '',
         trackNo: draft.trackNo || '',
+        pieces: Math.max(1, Math.round(draft.items.reduce((s2,it)=>s2+(parseFloat(it.qty)||0),0)) || 1),
         cargo: draft.items.map(i=>i.desc).filter(Boolean).join(', ') || 'Shipping services',
         quantity: parseInt(draft.items[0] && draft.items[0].qty,10) || 1,
         destination: draft.co.city || '',
@@ -907,14 +911,14 @@ $('#btnMakeEbl').addEventListener('click', async()=>{
     draft.paid = !!$('#fMarkPaid').checked;
     draft.qbInvoiceNo = (d.quickbooks && d.quickbooks.ok) ? (d.quickbooks.docNumber || 'posted') : '';
     if(d.shipment && d.shipment.ok) draft.waybillNo = d.shipment.waybill;
-    if(d.wms && d.wms.ok){ draft.loadNo = d.wms.loadNo; draft.sector = d.wms.sector; }
+    if(d.wms && d.wms.ok){ draft.loadNo = d.wms.loadNo; draft.sector = d.wms.sector; draft.pieces = d.wms.pieces; }
     await saveOrderQuiet();
     renderBilling();
     const shipNote = (d.shipment && d.shipment.ok
       ? ` Shipment ${d.shipment.waybill} created — track it on the admin Shipments tab; it's already in the customer's portal.`
       : ' (Shipment could not be created — add one manually on the Shipments tab.)')
       + (d.wms && d.wms.ok
-      ? ` WMS load ${d.wms.loadNo} → Sector ${d.wms.sector}. Print the 4×6 label below and stick it on the cargo.`
+      ? ` ${d.wms.pieces} pc added to ${d.wms.loadNo} (Sector ${d.wms.sector}). Print the 4×6 label below and stick it on the cargo.`
       : ' (WMS load not created — run supabase/wms.sql, or add it in the WMS.)');
     const qbNote = (!d.quickbooks.attempted ? 'QuickBooks not connected — EB/L created.'
       : d.quickbooks.ok ? 'QuickBooks invoice posted.'
