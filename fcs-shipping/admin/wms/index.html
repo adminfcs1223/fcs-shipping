@@ -122,6 +122,15 @@ details.hier details.hier{background:#101A26}
 #loginView{max-width:420px;margin:8vh auto 0;padding:1.2rem}
 .note{font-family:var(--mono);font-size:.7rem;color:var(--dim);margin-top:.8rem}
 /* ============ 4×6 label ============ */
+/* Master B/L builder */
+#view-mbl input,#view-mbl select,#view-mbl textarea{width:100%;border:1.5px solid var(--line);border-radius:8px;
+  padding:.55rem .65rem;background:#0D141D;color:var(--ink);font-family:inherit;font-size:.88rem}
+#view-mbl textarea{resize:vertical;line-height:1.45}
+.mbl-row{display:grid;grid-template-columns:1.1fr .5fr 1.6fr .55fr .95fr auto;gap:.35rem;margin-top:.35rem;align-items:center}
+.mbl-rh{display:grid;grid-template-columns:1.1fr .5fr 1.6fr .55fr .95fr auto;gap:.35rem;margin-top:.6rem;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.mbl-tally-row{display:flex;gap:.6rem;align-items:flex-start;border-bottom:1px solid var(--line);padding:.55rem 0;cursor:pointer}
+.mbl-tally-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--amber);margin-top:.15rem}
 #labelRoot{display:none}
 @media print{
   body>*:not(#labelRoot){display:none!important}
@@ -130,7 +139,7 @@ details.hier details.hier{background:#101A26}
   @page{size:4in 6in;margin:0}
 }
 .label{width:4in;height:6in;background:#fff;color:#000;padding:.22in;font-family:var(--body);
-  display:flex;flex-direction:column;align-items:center;text-align:center}
+  display:flex;flex-direction:column;align-items:center;text-align:center;page-break-after:always}
 .label .lb-head{display:flex;align-items:center;justify-content:center;gap:8pt;
   font-family:var(--mono);font-weight:700;font-size:12pt;letter-spacing:.06em;
   border-bottom:2.5px solid #000;width:100%;padding-bottom:5pt}
@@ -257,6 +266,35 @@ details.hier details.hier{background:#101A26}
     <div id="shipList"></div>
   </div>
 
+  <!-- Master B/L — the document for the shipping line -->
+  <div class="view" id="view-mbl">
+    <div class="card">
+      <h2>Master B/L — for the shipping line</h2>
+      <p class="note" style="margin:0 0 .5rem">Pick a shipment → confirm the tally of everything going on it → the Master B/L fills itself in. Header details (shipper, broker, exempt code…) save once and come back every time.</p>
+      <label>Shipment</label><select id="mblShip"></select>
+      <button class="btn sm" id="mblBuild">Build tally sheet</button>
+      <p class="msg" id="mblMsg"></p>
+    </div>
+    <div class="card" hidden id="mblTallyCard">
+      <h2>Tally — tick everything that's going</h2>
+      <div id="mblTally"></div>
+      <button class="btn" id="mblConfirm" style="margin-top:.8rem">Confirm tally → Master B/L</button>
+    </div>
+    <div class="card" hidden id="mblDocCard">
+      <h2>Master B/L <span style="font-family:var(--mono);font-weight:400;font-size:.7rem;color:var(--dim)"> — everything editable</span></h2>
+      <div id="mblHead"></div>
+      <h2 style="margin-top:1rem">Cargo</h2>
+      <div id="mblRows"></div>
+      <button class="btn ghost sm" id="mblAddRow">+ Add row</button>
+      <div class="meta" id="mblTotals" style="margin-top:.5rem"></div>
+      <div style="display:flex;gap:.6rem;margin-top:.8rem">
+        <button class="btn sm" id="mblSave" style="margin:0">Save</button>
+        <button class="btn sm" id="mblPrint" style="margin:0">Print Master B/L</button>
+      </div>
+      <p class="msg" id="mblMsg2"></p>
+    </div>
+  </div>
+
   <!-- Map -->
   <div class="view" id="view-map">
     <div class="mapwrap">
@@ -284,6 +322,7 @@ details.hier details.hier{background:#101A26}
   <button data-view="scan">Scan</button>
   <button data-view="loads">Loads</button>
   <button data-view="ships">Shipments</button>
+  <button data-view="mbl">B/L</button>
   <button data-view="map">Map</button>
 </nav>
 
@@ -338,24 +377,36 @@ details.hier details.hier{background:#101A26}
     if (name === 'map') drawMap();
     if (name === 'loads') loadLoads();
     if (name === 'ships') loadShips();
+    if (name === 'mbl') mblInit();
   }
   document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
   document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => showView(b.dataset.go)));
 
   /* ---------- dashboard (counts from individual EB/L items) ---------- */
+  /* cargo counts as ON THE FLOOR until its shipment actually departs —
+     scanned-out pieces sitting in a container still show on the map */
+  async function onFloorCounts() {
+    const { data } = await db.from('wms_items')
+      .select('sector,status,pieces, wms_loads(wms_shipments(status))')
+      .in('status', ['in_warehouse', 'shipped']);
+    const counts = { A: 0, B: 0, C: 0, total: 0 };
+    (data || []).forEach((i) => {
+      const shipStatus = i.wms_loads && i.wms_loads.wms_shipments ? i.wms_loads.wms_shipments.status : null;
+      const onFloor = i.status === 'in_warehouse' || (i.status === 'shipped' && (!shipStatus || shipStatus === 'open'));
+      if (onFloor) { counts[i.sector || 'C'] += 1; counts.total += 1; }
+    });
+    return counts;
+  }
   async function loadDash() {
     try {
       const cnt = (q) => q.then((r) => (r.count == null ? '—' : r.count));
-      const [exp, inWh, a, b, c, ships] = await Promise.all([
+      const [exp, floor, ships] = await Promise.all([
         cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'expected')),
-        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse')),
-        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'A')),
-        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'B')),
-        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'C')),
+        onFloorCounts(),
         cnt(db.from('wms_shipments').select('id', { count: 'exact', head: true }).eq('status', 'open')),
       ]);
-      $('dExpected').textContent = exp; $('dInWh').textContent = inWh;
-      $('dA').textContent = a; $('dB').textContent = b; $('dC').textContent = c;
+      $('dExpected').textContent = exp; $('dInWh').textContent = floor.total;
+      $('dA').textContent = floor.A; $('dB').textContent = floor.B; $('dC').textContent = floor.C;
       $('dOpenShips').textContent = ships;
       const today = new Date().toISOString().slice(0, 10);
       const { data: dep } = await db.from('wms_shipments').select('*')
@@ -423,11 +474,7 @@ details.hier details.hier{background:#101A26}
   }
   async function drawMap(target) {
     let counts = {};
-    try {
-      const g = (s) => db.from('wms_items').select('id', { count: 'exact', head: true })
-        .eq('status', 'in_warehouse').eq('sector', s).then((r) => r.count || 0);
-      counts = { A: await g('A'), B: await g('B'), C: await g('C') };
-    } catch (e) { /* map still draws */ }
+    try { counts = await onFloorCounts(); } catch (e) { /* map still draws */ }
     $('mapHolder').innerHTML = mapSVG(target, counts);
   }
 
@@ -768,27 +815,247 @@ details.hier details.hier{background:#101A26}
     } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
   });
 
+  /* ==================================================================
+     MASTER B/L \u2014 tally the shipment, confirm, print for the shipping line.
+     Header details save ONCE ('fcs:mbl-header'); each shipment's document
+     saves under 'fcs:mbl:<SHIP-NO>'. Modeled on the King Ocean long form.
+     ================================================================== */
+  const MBL_HEAD_DEFAULTS = {
+    carrier: 'KING OCEAN SERVICES', trucking: 'CABBY TRUCKING',
+    shipper: 'STANDARD SHIPPERS\n9502 DITMAS AVE\nBROOKLYN,\nNEW YORK, 11236\n718-483-8006',
+    consignee: 'ELLA SAMUEL CUSTOMS BROKERAGE\nNEW DOCK ROAD\nVIEUX-FORT\nST. LUCIA\n758-454-5343\nCELL: 758-721-4017',
+    notify: 'SAME AS ABOVE',
+    forwarder: 'STANDARD SHIPPERS\n9502 DITMAS AVE\nBROOKLYN, NY 11236',
+    origin: 'USA', exempt: 'EXEMPT   CODE 30.37A',
+    cargoDesc: 'FOOD, HOUSEHOLD SUPPLIES & CLOTHING',
+    loadNote: 'PLEASE APPLY NOSE LOAD RATE', freight: 'FREIGHT PREPAID',
+  };
+  const kvLoad = async (k, fb) => {
+    try {
+      const { data } = await db.from('settings').select('value').eq('key', k).maybeSingle();
+      return data && data.value != null ? data.value : fb;
+    } catch (e) { return fb; }
+  };
+  const kvSave = (k, v) => db.from('settings').upsert({ key: k, value: v, updated_at: new Date().toISOString() });
+  const mbl = { ship: null, tallyItems: [], head: {}, doc: null };
+
+  async function mblInit() {
+    const { data } = await db.from('wms_shipments').select('*').eq('direction', 'outbound')
+      .neq('status', 'closed').order('created_at', { ascending: false }).limit(20);
+    $('mblShip').innerHTML = (data || []).map((s) =>
+      `<option value="${s.id}">${esc(s.shipment_no)} \u00B7 departs ${fd(s.departs)} \u00B7 ${esc(s.status)}</option>`).join('') ||
+      '<option value="">No outbound shipments yet \u2014 create one on Shipments</option>';
+  }
+
+  $('mblBuild').addEventListener('click', async () => {
+    const msg = $('mblMsg'); msg.className = 'msg'; msg.textContent = '';
+    const sid = $('mblShip').value;
+    if (!sid) { msg.textContent = 'Create an outbound shipment first.'; msg.className = 'msg err'; return; }
+    const { data: sh, error } = await db.from('wms_shipments')
+      .select('*, wms_loads(*, wms_items(*))').eq('id', sid).single();
+    if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
+    mbl.ship = sh;
+    const items = (sh.wms_loads || []).flatMap((l) => l.wms_items || []);
+    if (!items.length) { msg.textContent = 'No EB/Ls on this shipment yet \u2014 attach loads on the Loads tab first.'; msg.className = 'msg err'; return; }
+    const eblNos = items.map((i) => i.ebl_no).filter(Boolean);
+    const eblMap = {};
+    if (eblNos.length) {
+      const { data: ebls } = await db.from('ebl').select('ebl_no,cuft').in('ebl_no', eblNos);
+      (ebls || []).forEach((e) => (eblMap[e.ebl_no] = e));
+    }
+    mbl.tallyItems = items.map((i) => ({
+      mark: i.order_inv ? 'BL#' + String(i.order_inv).toUpperCase() : (i.ebl_no || ''),
+      pkgs: i.pieces || 1,
+      desc: String(i.cargo || '').toUpperCase(),
+      cuft: eblMap[i.ebl_no] && eblMap[i.ebl_no].cuft != null ? eblMap[i.ebl_no].cuft : '',
+      meas: '', customer: i.customer_name || '', sector: i.sector || 'C',
+    }));
+    $('mblTally').innerHTML = mbl.tallyItems.map((t, idx) => `<label class="mbl-tally-row">
+        <input type="checkbox" checked data-tk="${idx}">
+        <span style="flex:1"><b style="color:var(--ink)">${esc(t.mark)}</b> \u00B7 ${esc(t.customer)}
+          <br><span class="meta" style="margin:0">${esc(t.desc)} \u00B7 ${t.pkgs} pkg${t.pkgs === 1 ? '' : 's'}${t.cuft !== '' ? ' \u00B7 ' + t.cuft + ' cu ft' : ''}</span></span>
+      </label>`).join('');
+    $('mblTallyCard').hidden = false; $('mblDocCard').hidden = true;
+  });
+
+  $('mblConfirm').addEventListener('click', async () => {
+    const chosen = mbl.tallyItems.filter((t, idx) => {
+      const cb = document.querySelector(`[data-tk="${idx}"]`); return cb && cb.checked;
+    });
+    if (!chosen.length) { $('mblMsg').textContent = 'Nothing ticked.'; $('mblMsg').className = 'msg err'; return; }
+    mbl.head = { ...MBL_HEAD_DEFAULTS, ...(await kvLoad('fcs:mbl-header', {})) };
+    const saved = await kvLoad('fcs:mbl:' + mbl.ship.shipment_no, {});
+    const secCounts = {};
+    chosen.forEach((t) => (secCounts[t.sector] = (secCounts[t.sector] || 0) + 1));
+    const major = Object.keys(secCounts).sort((a, b) => secCounts[b] - secCounts[a])[0] || 'A';
+    mbl.doc = {
+      bkg: '', blNo: '', vessel: mbl.ship.vessel || '',
+      portDischarge: (major === 'B' ? 'CASTRIES' : 'VIEUX-FORT') + '   ST. LUCIA',
+      placeDelivery: '', date: new Date().toLocaleDateString('en-US'),
+      ...saved,
+      rows: chosen.map((t) => ({ mark: t.mark, pkgs: t.pkgs, desc: t.desc, cuft: t.cuft, meas: t.meas })),
+    };
+    renderMblDoc();
+    $('mblDocCard').hidden = false;
+    $('mblDocCard').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  const MBL_DF = [['bkg', 'Booking N\u00BA (BKG#)'], ['blNo', 'B/L N\u00BA'], ['vessel', 'Vessel'],
+    ['portDischarge', 'Port of discharge'], ['placeDelivery', 'Place of delivery'], ['date', 'Date']];
+  const MBL_HF = [['carrier', 'Carrier (top-left)'], ['trucking', 'Trucking'],
+    ['shipper', 'Shipper / Exporter', 5], ['consignee', 'Consignee', 6], ['notify', 'Notify party'],
+    ['forwarder', 'Freight forwarder / CHB', 3], ['origin', 'Point & country of origin'],
+    ['exempt', 'Exempt code'], ['cargoDesc', 'Cargo description'], ['loadNote', 'Note to carrier'],
+    ['freight', 'Freight terms']];
+  function renderMblDoc() {
+    $('mblHead').innerHTML =
+      '<div class="row2">' + MBL_DF.map(([k, l]) =>
+        `<div><label>${l}</label><input data-df="${k}" value="${esc(mbl.doc[k] || '')}"></div>`).join('') + '</div>' +
+      MBL_HF.map(([k, l, rows]) => `<label>${l}</label>` + (rows
+        ? `<textarea data-hf="${k}" rows="${rows}">${esc(mbl.head[k] || '')}</textarea>`
+        : `<input data-hf="${k}" value="${esc(mbl.head[k] || '')}">`)).join('');
+    renderMblRows();
+  }
+  function renderMblRows() {
+    $('mblRows').innerHTML =
+      `<div class="mbl-rh"><span>Marks</span><span>Pkgs</span><span>Description</span><span>Cu ft</span><span>Measurement</span><span></span></div>` +
+      mbl.doc.rows.map((r, i) => `<div class="mbl-row">
+        <input data-r="${i}" data-k="mark" value="${esc(r.mark)}">
+        <input data-r="${i}" data-k="pkgs" value="${esc(r.pkgs)}" style="text-align:center">
+        <input data-r="${i}" data-k="desc" value="${esc(r.desc)}">
+        <input data-r="${i}" data-k="cuft" value="${esc(r.cuft)}" style="text-align:center">
+        <input data-r="${i}" data-k="meas" value="${esc(r.meas)}" placeholder="24X24X44">
+        <button class="btn ghost sm" data-rx="${i}" style="margin:0">\u2715</button>
+      </div>`).join('');
+    mblTotals();
+    document.querySelectorAll('#mblRows [data-r]').forEach((f) => f.addEventListener('input', () => {
+      mbl.doc.rows[+f.dataset.r][f.dataset.k] = f.value; mblTotals();
+    }));
+    document.querySelectorAll('#mblRows [data-rx]').forEach((b) => b.addEventListener('click', () => {
+      mbl.doc.rows.splice(+b.dataset.rx, 1); renderMblRows();
+    }));
+  }
+  function mblTotals() {
+    const pk = mbl.doc.rows.reduce((s, r) => s + (parseInt(r.pkgs, 10) || 0), 0);
+    const cf = mbl.doc.rows.reduce((s, r) => s + (parseFloat(r.cuft) || 0), 0);
+    $('mblTotals').innerHTML = `TOTAL: <b style="color:var(--ink)">${pk} pkgs</b> \u00B7 <b style="color:var(--ink)">${Math.round(cf * 10) / 10} cu ft</b>`;
+    return { pk, cf: Math.round(cf * 10) / 10 };
+  }
+  function mblCollect() {
+    document.querySelectorAll('#mblHead [data-df]').forEach((f) => (mbl.doc[f.dataset.df] = f.value));
+    document.querySelectorAll('#mblHead [data-hf]').forEach((f) => (mbl.head[f.dataset.hf] = f.value));
+  }
+  $('mblAddRow').addEventListener('click', () => { mbl.doc.rows.push({ mark: '', pkgs: '', desc: '', cuft: '', meas: '' }); renderMblRows(); });
+  $('mblSave').addEventListener('click', async () => {
+    mblCollect();
+    await kvSave('fcs:mbl-header', mbl.head);
+    await kvSave('fcs:mbl:' + mbl.ship.shipment_no, mbl.doc);
+    $('mblMsg2').textContent = 'Saved \u2014 header details will come back pre-filled next time.'; $('mblMsg2').className = 'msg ok';
+  });
+  $('mblPrint').addEventListener('click', () => {
+    mblCollect();
+    const t = mblTotals();
+    const nl = (s) => esc(s || '').replace(/\n/g, '<br>');
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (!w) { $('mblMsg2').textContent = 'Pop-up blocked \u2014 allow pop-ups to print.'; $('mblMsg2').className = 'msg err'; return; }
+    w.document.write(`<!doctype html><html><head><title>Master B/L ${esc(mbl.ship.shipment_no)}</title><style>
+      @page{size:letter portrait;margin:.45in}
+      body{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#000}
+      .doc{border:1.5px solid #000}
+      .bar{display:flex;border-bottom:1.5px solid #000}
+      .bar .co{font-size:15pt;font-weight:700;padding:6pt 8pt;flex:1}
+      .bar .ti{font-size:8.5pt;padding:8pt;align-self:center}
+      .grid{display:grid;grid-template-columns:1fr 1fr}
+      .cell{border-bottom:1px solid #000;border-right:1px solid #000;padding:3pt 6pt;min-height:16pt}
+      .cell:nth-child(2n){border-right:none}
+      .lab{font-size:6.5pt;letter-spacing:.02em}
+      .val{white-space:pre-wrap;font-size:9pt;line-height:1.35}
+      table{width:100%;border-collapse:collapse}
+      th{font-size:6.8pt;font-weight:400;border-bottom:1px solid #000;background:#eee;padding:2pt 5pt;text-align:left}
+      td{font-size:9pt;padding:1.5pt 5pt;vertical-align:top}
+      .num{text-align:right}
+      .mid{min-height:150pt}
+      .hl{background:#e8e8e8;display:inline-block;padding:1pt 6pt}
+      .foot{border-top:1.5px solid #000;display:grid;grid-template-columns:1.2fr 1fr .8fr}
+      .fcell{border-right:1px solid #000;padding:3pt 6pt}
+      .fcell:last-child{border-right:none}
+      .terms{font-size:6.3pt;line-height:1.4;padding:4pt 6pt;border-top:1px solid #000}
+      .sig{display:flex;justify-content:space-between;padding:6pt;border-top:1px solid #000;font-size:8.5pt}
+    </style></head><body><div class="doc">
+      <div class="bar"><div class="co">${esc(mbl.head.carrier)}</div>
+        <div class="ti"><b>${esc(mbl.head.trucking)}</b> &nbsp; LONG FORM - INTERNATIONAL BILL OF LADING</div></div>
+      <div class="grid">
+        <div class="cell"><div class="lab">(2) SHIPPER/EXPORTER</div><div class="val">${nl(mbl.head.shipper)}</div></div>
+        <div class="cell"><div class="lab">(5) BOOKING NO &nbsp;&nbsp;&nbsp;&nbsp; (5A) B/L NO</div>
+          <div class="val"><b>BKG# ${esc(mbl.doc.bkg)}</b> &nbsp;&nbsp; ${esc(mbl.doc.blNo)}</div>
+          <div class="lab" style="margin-top:5pt">(6) EXPORT REFERENCES</div>
+          <div class="lab" style="margin-top:5pt">(7) FREIGHT FORWARDER/CHB</div><div class="val">${nl(mbl.head.forwarder)}</div>
+          <div class="lab" style="margin-top:5pt">(8) POINT AND COUNTRY OF ORIGIN</div><div class="val">${esc(mbl.head.origin)}</div></div>
+        <div class="cell"><div class="lab">(3) CONSIGNEE</div><div class="val">${nl(mbl.head.consignee)}</div>
+          <div class="lab" style="margin-top:5pt">(4) NOTIFY PARTY</div><div class="val">${nl(mbl.head.notify)}</div></div>
+        <div class="cell"><div class="lab">(9) ALSO NOTIFY \u00B7 ROUTING INSTRUCTIONS</div></div>
+        <div class="cell"><div class="lab">(14) VESSEL</div><div class="val">${esc(mbl.doc.vessel)}</div>
+          <div class="lab" style="margin-top:4pt">PORT OF DISCHARGE</div><div class="val"><b>${esc(mbl.doc.portDischarge)}</b></div></div>
+        <div class="cell"><div class="lab">(15) PORT OF LOADING</div>
+          <div class="lab" style="margin-top:4pt">(17) PLACE OF DELIVERY</div><div class="val">${esc(mbl.doc.placeDelivery)}</div></div>
+      </div>
+      <table><thead><tr>
+        <th style="width:16%">MARKS AND NUMBERS (18)</th><th style="width:9%">NO. OF PKGS (19)</th>
+        <th>DESCRIPTION OF PACKAGES AND GOODS (20)</th><th style="width:9%" class="num">CUBIC FT (21)</th>
+        <th style="width:13%">MEASUREMENT (22)</th></tr></thead>
+        <tbody>${mbl.doc.rows.map((r) => `<tr><td>${esc(r.mark)}</td><td style="text-align:center">${esc(r.pkgs)}</td>
+          <td>${esc(r.desc)}</td><td class="num">${esc(r.cuft)}</td><td>${esc(r.meas)}</td></tr>`).join('')}</tbody></table>
+      <div class="mid" style="padding:8pt 6pt">
+        <div><span class="hl"><b>${esc(mbl.head.exempt)}</b></span></div>
+        <div style="margin-top:14pt">CARGO&nbsp; DESCRIPTION:- &nbsp;${esc(mbl.head.cargoDesc)}</div>
+        <div style="margin-top:14pt"><span class="hl">${esc(mbl.head.loadNote)}</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:3pt 6pt;border-top:1px solid #000">
+        <b>TOTAL &nbsp;&nbsp;&nbsp; ${t.pk}</b><b>${t.cf}</b></div>
+      <div class="foot">
+        <div class="fcell"><div class="lab">(23) DECLARED VALUE $ ________ \u2014 IF SHIPPER ENTERS A VALUE, CARRIER'S "PACKAGE" LIABILITY DOES NOT APPLY AND THE AD VALOREM RATE WILL BE CHARGED</div>
+          <div style="margin-top:4pt">FREIGHT CHARGES &nbsp; <b>PREPAID</b></div></div>
+        <div class="fcell"><div class="lab">(24) FREIGHT PAYABLE AT</div><div class="val"><b>${esc(mbl.head.freight)}</b></div></div>
+        <div class="fcell"><div class="val" style="font-size:11pt;font-weight:700">MASTER B/L</div>
+          <div class="lab" style="margin-top:3pt">CURRENCY/RATE OF EXCHANGE</div></div>
+      </div>
+      <div class="terms">THE RECEIPT, CUSTODY, CARRIAGE AND DELIVERY OF THE GOODS ARE SUBJECT TO THE TERMS APPEARING ON THE FACE AND BACK HEREOF AND TO CARRIER'S APPLICABLE TARIFF &nbsp; <span class="hl"><b>${esc(mbl.head.exempt)}</b></span></div>
+      <div class="sig"><span>${esc(mbl.head.carrier)} &nbsp; By: ................................................. &nbsp; BILL OF LADING NO.</span>
+        <span>DATE: &nbsp; ${esc(mbl.doc.date)}</span></div>
+    </div>
+    <script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
+    w.document.close();
+  });
+
   /* ---------- 4\u00D76 label: piece count up front, detail lives in the WMS ---------- */
   function printLabel(item, loadNo) {
     const sec = item.sector || sectorFor(item.destination);
-    const pcs = item.pieces || 1;
+    const pcs = Math.max(1, item.pieces || 1);
     const code = item.ebl_no || loadNo || item.load_no || '';
     const root = $('labelRoot');
-    root.innerHTML = `<div class="label">
+    /* one label per piece \u2014 "1 OF 3 PIECES", "2 OF 3 PIECES"\u2026 \u2014 but scanning
+       ANY one of them moves the whole EB/L */
+    let html = '';
+    for (let i = 1; i <= pcs; i++) {
+      html += `<div class="label">
         <div class="lb-head"><img src="/assets/fcs-logo.png" alt="FCS"><span>FCS\u00B7WMS &nbsp;WAREHOUSE LABEL</span></div>
-        <div class="lb-qr" id="lbQr"></div>
+        <div class="lb-qr" id="lbQr-${i}"></div>
         <div class="lb-no">${esc(loadNo || item.load_no || '')}</div>
-        <div class="lb-pieces">${pcs} PIECE${pcs === 1 ? '' : 'S'}</div>
+        <div class="lb-pieces">${pcs === 1 ? '1 PIECE' : i + ' OF ' + pcs + ' PIECES'}</div>
         <div class="lb-sec">${sec}</div>
         <div class="lb-dest">${esc(SECTORS[sec])}</div>
-        <div class="lb-meta">${esc(item.customer_name || '')}<br>EB/L: ${esc(item.ebl_no || '\u2014')}${item.order_inv ? ' \u00B7 Inv ' + esc(item.order_inv) : ''}</div>
-        <div class="lb-foot">Scan with any phone camera \u00B7 fcsshipping.com \u00B7 ${new Date().toLocaleDateString()}</div>
+        <div class="lb-meta">${esc(item.customer_name || '')}<br>EB/L: ${esc(item.ebl_no || '\u2014')}${item.order_inv ? ' \u00B7 B/L ' + esc(item.order_inv) : ''}</div>
+        <div class="lb-foot">Scan any one label \u2014 it moves all ${pcs === 1 ? 'of it' : pcs + ' pieces'} \u00B7 fcsshipping.com</div>
       </div>`;
-    new QRCode(document.getElementById('lbQr'), {
-      text: `https://fcsshipping.com/admin/wms/?ebl=${encodeURIComponent(code)}`,
-      width: 236, height: 236, correctLevel: QRCode.CorrectLevel.M,
-    });
-    setTimeout(() => window.print(), 550);
+    }
+    root.innerHTML = html;
+    for (let i = 1; i <= pcs; i++) {
+      new QRCode(document.getElementById('lbQr-' + i), {
+        text: `https://fcsshipping.com/admin/wms/?ebl=${encodeURIComponent(code)}`,
+        width: 236, height: 236, correctLevel: QRCode.CorrectLevel.M,
+      });
+    }
+    setTimeout(() => window.print(), 550 + pcs * 60);
   }
 
   db.auth.onAuthStateChange(() => refreshAuth());
