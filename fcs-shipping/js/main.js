@@ -98,7 +98,7 @@
       const shipBotPx = Math.min(H, IMG.shipBottom * dispH - offset);
       /* if a window can't fit its bubble, grow the hero just enough — never clip */
       const deficit = Math.max(0,
-        (botEl.offsetHeight + 20) - (H - shipBotPx),
+        (botEl.offsetHeight + 76) - (H - shipBotPx),
         (topEl.offsetHeight + 20) - shipTopPx);
       if (deficit > 4 && !second) {
         hero.style.minHeight = (H + deficit) + 'px';
@@ -254,11 +254,10 @@
     $('wzDestGrid').innerHTML = cfg.destinations.map((d, i) => {
       if (d.call) {
         return `<button type="button" class="wz-card wz-dest" data-dest="${i}" data-call="1">
-          <span class="big">\u260E\uFE0F</span><span>Other island</span><small>call us for rates</small></button>`;
+          <span class="flag-sm">+</span><span>Other island</span><small>call us for rates</small></button>`;
       }
       return `<button type="button" class="wz-card wz-dest" data-dest="${i}">
-        <div class="flag">${flagFor(d.country)}</div>
-        <span class="big">\u2693</span><span>${d.name}</span><small>${d.country || ''}</small></button>`;
+        <span class="flag-sm">${flagFor(d.country)}</span><span>${d.name}</span><small>${d.country || ''}</small></button>`;
     }).join('');
     document.querySelectorAll('[data-dest]').forEach((b) =>
       b.addEventListener('click', () => {
