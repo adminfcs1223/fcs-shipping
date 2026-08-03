@@ -258,6 +258,12 @@ table.list tbody tr:hover{background:#fafcfd}
 
 <div class="shell" id="shell" hidden>
   <aside class="rail">
+    <a id="wmsBtn" href="/admin/wms/" style="display:flex;align-items:center;gap:.45rem;text-decoration:none;background:#0F1620;border:1.5px solid #FFB020;border-radius:8px;padding:.4rem .6rem;margin-bottom:12px">
+      <span style="width:22px;height:22px;border:1.5px solid #FFB020;border-radius:4px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:3px">
+        <i style="background:#FFB020;border-radius:1px"></i><i style="background:#FFB020;border-radius:1px"></i>
+        <i style="background:#FFB020;border-radius:1px"></i><i style="background:#5a6b7d;border-radius:1px"></i></span>
+      <span style="font-family:var(--monofont,monospace);font-weight:700;font-size:.8rem;color:#E8EEF5;letter-spacing:.04em">FCS<b style="color:#FFB020">·WMS</b></span>
+    </a>
     <div class="brand">
       <b>FCS SHIPPING LLC</b>
       <span>Order entry &amp; invoicing</span>
@@ -268,6 +274,7 @@ table.list tbody tr:hover{background:#fafcfd}
       <button data-tab="customers">Customers <span class="cnt" id="cCust">0</span></button>
       <button data-tab="settings">Settings</button>
       <a class="raillink" href="/admin/">← Shipments &amp; EB/L</a>
+      <a class="raillink" href="/admin/wms/">▦ Warehouse (WMS)</a>
     </nav>
     <div class="foot">
       <div id="storeState">Loading…</div>
@@ -396,6 +403,7 @@ table.list tbody tr:hover{background:#fafcfd}
                 <button class="btn" id="btnPaid">Mark PAID</button>
                 <button class="btn ghost" id="btnUnpaid">Mark NOT paid</button>
                 <button class="btn ghost" id="btnCopyEbl">Copy EB/L for customer</button>
+                <button class="btn ghost" id="btnWmsLabel" hidden>Print 4×6 WMS label</button>
               </div>
               <p class="msg" id="billMsg2" style="font-size:12.5px;margin-top:10px"></p>
             </div>
@@ -506,6 +514,7 @@ table.list tbody tr:hover{background:#fafcfd}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/admin/config.js"></script>
 <script>
 /* ============================================================
@@ -785,13 +794,51 @@ function renderBilling(){
   $('#billMsg').textContent = (draft && !draft.id)
     ? 'Save the order to enable billing.' : '';
   if(has){
-    $('#billEbl').textContent = draft.eblNo;
+    $('#billEbl').textContent = draft.eblNo + (draft.loadNo ? '  ·  '+draft.loadNo+' (Sector '+(draft.sector||'?')+')' : '');
     $('#billQb').textContent = draft.qbInvoiceNo ? 'Invoice '+draft.qbInvoiceNo : 'not posted';
     const st = $('#billState');
     st.textContent = draft.paid ? 'PAID' : 'NOT PAID';
     st.style.color = draft.paid ? '#177245' : '#B45309';
   }
+  $('#btnWmsLabel').hidden = !(draft && draft.loadNo);
 }
+
+/* ---- 4×6 WMS warehouse label: prints in its own window so the label's
+        4in×6in page size never fights the letter-size order form ---- */
+function printWmsLabel(){
+  if(!draft || !draft.loadNo) return;
+  const tmp=document.createElement('div'); tmp.style.display='none'; document.body.appendChild(tmp);
+  new QRCode(tmp,{ text:'https://fcsshipping.com/admin/wms/?load='+encodeURIComponent(draft.loadNo),
+    width:472, height:472, correctLevel:QRCode.CorrectLevel.M });
+  setTimeout(()=>{
+    const cv=tmp.querySelector('canvas');
+    const dataUrl=cv ? cv.toDataURL('image/png') : (tmp.querySelector('img')||{}).src;
+    tmp.remove();
+    const SECTORS={A:'VIEUX-FORT',B:'CASTRIES',C:'OTHER ISLANDS'};
+    const sec=draft.sector||'C';
+    const w=window.open('','_blank','width=430,height=660');
+    if(!w){ toast('Pop-up blocked — allow pop-ups to print labels'); return; }
+    w.document.write('<!doctype html><html><head><title>'+esc(draft.loadNo)+'</title><style>'+
+      '@page{size:4in 6in;margin:0}body{margin:0;font-family:Archivo,Arial,sans-serif}'+
+      '.label{width:4in;height:6in;padding:.22in;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center}'+
+      '.h{font-family:monospace;font-weight:700;font-size:13pt;letter-spacing:.08em;border-bottom:2.5px solid #000;width:100%;padding-bottom:4pt}'+
+      'img{width:2.45in;height:2.45in;margin:10pt 0 6pt}'+
+      '.no{font-family:monospace;font-weight:700;font-size:16pt}'+
+      '.sec{font-size:64pt;font-weight:900;line-height:1;border:4px solid #000;border-radius:10px;padding:2pt 18pt;margin:6pt 0 4pt}'+
+      '.dest{font-weight:900;font-size:13pt}.meta{font-family:monospace;font-size:8.5pt;margin-top:5pt;line-height:1.55}'+
+      '.foot{margin-top:auto;font-family:monospace;font-size:7.5pt;border-top:1.5px solid #000;width:100%;padding-top:4pt}'+
+      '<\/style><\/head><body><div class="label">'+
+      '<div class="h">FCS·WMS&nbsp; WAREHOUSE LABEL<\/div>'+
+      '<img src="'+dataUrl+'">'+
+      '<div class="no">'+esc(draft.loadNo)+'<\/div><div class="sec">'+sec+'<\/div><div class="dest">'+SECTORS[sec]+'<\/div>'+
+      '<div class="meta">'+esc(draft.sh.name||'')+'<br>'+esc(draft.items.map(i=>i.desc).filter(Boolean).join(', '))+
+      '<br>EB\/L: '+esc(draft.eblNo||'—')+' · Inv '+esc(draft.inv||'')+'<\/div>'+
+      '<div class="foot">Scan with any phone camera · fcsshipping.com<\/div><\/div>'+
+      '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print()},250)}<\/scr'+'ipt><\/body><\/html>');
+    w.document.close();
+  },320);
+}
+$('#btnWmsLabel').addEventListener('click', printWmsLabel);
 async function saveOrderQuiet(){
   if(!draft.id) return;
   orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
@@ -833,11 +880,15 @@ $('#btnMakeEbl').addEventListener('click', async()=>{
     draft.paid = !!$('#fMarkPaid').checked;
     draft.qbInvoiceNo = (d.quickbooks && d.quickbooks.ok) ? (d.quickbooks.docNumber || 'posted') : '';
     if(d.shipment && d.shipment.ok) draft.waybillNo = d.shipment.waybill;
+    if(d.wms && d.wms.ok){ draft.loadNo = d.wms.loadNo; draft.sector = d.wms.sector; }
     await saveOrderQuiet();
     renderBilling();
-    const shipNote = d.shipment && d.shipment.ok
+    const shipNote = (d.shipment && d.shipment.ok
       ? ` Shipment ${d.shipment.waybill} created — track it on the admin Shipments tab; it's already in the customer's portal.`
-      : ' (Shipment could not be created — add one manually on the Shipments tab.)';
+      : ' (Shipment could not be created — add one manually on the Shipments tab.)')
+      + (d.wms && d.wms.ok
+      ? ` WMS load ${d.wms.loadNo} → Sector ${d.wms.sector}. Print the 4×6 label below and stick it on the cargo.`
+      : ' (WMS load not created — run supabase/wms.sql, or add it in the WMS.)');
     const qbNote = (!d.quickbooks.attempted ? 'QuickBooks not connected — EB/L created.'
       : d.quickbooks.ok ? 'QuickBooks invoice posted.'
       : 'EB/L created, but QuickBooks said: '+d.quickbooks.error) + shipNote;
