@@ -593,6 +593,7 @@ details.hier details.hier{background:#101A26}
       <div class="meta">In: ${fdt(i.scanned_in_at)} \u00B7 Out: ${fdt(i.scanned_out_at)}</div>
       <button class="btn ghost sm" data-lbl="${i.id}">4\u00D76 label</button>
       ${i.ebl_no ? `<button class="btn sm" data-open="${esc(i.ebl_no)}">Scan / move</button>` : ''}
+      <button class="btn ghost sm" data-delitem="${i.id}" style="color:#FF8A7A;border-color:#6b2f28">Remove</button>
     </div>`;
   }
   function loadBlock(l, openShips) {
@@ -613,6 +614,10 @@ details.hier details.hier{background:#101A26}
             <button class="btn sm" data-attach="${l.id}" style="margin:0">Attach</button>
           </div>` : ''}
         ${items.map(itemRow).join('') || '<p class="msg" style="margin-top:.6rem">Empty load \u2014 EB/Ls land here as orders are billed.</p>'}
+        <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
+          ${l.shipment_id ? `<button class="btn ghost sm" data-detach="${l.id}" style="margin:0">Detach from shipment</button>` : ''}
+          <button class="btn ghost sm" data-delload="${l.id}" style="margin:0;color:#FF8A7A;border-color:#6b2f28">Delete load</button>
+        </div>
       </div>
     </details>`;
   }
@@ -654,6 +659,20 @@ details.hier details.hier{background:#101A26}
       if (!sel || !sel.value) return;
       await db.from('wms_loads').update({ shipment_id: sel.value }).eq('id', b.dataset.attach);
       loadLoads(); loadShips();
+    }));
+    document.querySelectorAll('[data-detach]').forEach((b) => b.addEventListener('click', async () => {
+      await db.from('wms_loads').update({ shipment_id: null }).eq('id', b.dataset.detach);
+      loadLoads(); loadShips();
+    }));
+    document.querySelectorAll('[data-delload]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Delete this load? Its EB/Ls are kept and go back to unassigned.')) return;
+      await db.from('wms_loads').delete().eq('id', b.dataset.delload);
+      loadLoads(); loadShips(); loadDash();
+    }));
+    document.querySelectorAll('[data-delitem]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Remove this EB/L from the WMS? (The EB/L itself and the order are untouched.)')) return;
+      await db.from('wms_items').delete().eq('id', b.dataset.delitem);
+      loadLoads(); loadDash();
     }));
   }
   let lsTimer; $('loadSearch').addEventListener('input', () => { clearTimeout(lsTimer); lsTimer = setTimeout(loadLoads, 300); });
@@ -697,12 +716,40 @@ details.hier details.hier{background:#101A26}
         <div class="meta">${esc(s.vessel || '—')} · departs ${fd(s.departs)} · expected ${fd(s.expected_arrival)}</div>
         <div class="meta">${loads.length} load${loads.length === 1 ? '' : 's'}: ${loads.map((l) => esc(l.load_no)).join(', ') || '—'}</div>
         ${s.notes ? `<div class="meta">${esc(s.notes)}</div>` : ''}
-        ${NEXT[s.status] ? `<button class="btn ghost sm" data-adv="${s.id}" data-next="${NEXT[s.status]}">Mark ${NEXT[s.status]}</button>` : ''}
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.4rem">
+          ${NEXT[s.status] ? `<button class="btn ghost sm" data-adv="${s.id}" data-next="${NEXT[s.status]}" style="margin:0">Mark ${NEXT[s.status]}</button>` : ''}
+          <button class="btn ghost sm" data-editship="${s.id}" style="margin:0">Edit</button>
+          <button class="btn ghost sm" data-delship="${s.id}" style="margin:0;color:#FF8A7A;border-color:#6b2f28">Delete</button>
+        </div>
+        <div class="ship-edit" data-editbox="${s.id}" hidden style="margin-top:.7rem;border-top:1px solid var(--line);padding-top:.7rem">
+          <label>Vessel</label><input type="text" data-ef="vessel" value="${esc(s.vessel || '')}">
+          <div class="row2"><div><label>Departs</label><input type="date" data-ef="departs" value="${esc(s.departs || '')}"></div>
+          <div><label>Expected arrival</label><input type="date" data-ef="expected_arrival" value="${esc(s.expected_arrival || '')}"></div></div>
+          <label>Notes</label><input type="text" data-ef="notes" value="${esc(s.notes || '')}">
+          <button class="btn sm" data-saveship="${s.id}">Save changes</button>
+        </div>
       </div>`;
     }).join('') || '<p class="msg">No shipments yet.</p>';
     document.querySelectorAll('[data-adv]').forEach((b) => b.addEventListener('click', async () => {
       await db.from('wms_shipments').update({ status: b.dataset.next }).eq('id', b.dataset.adv);
       loadShips(); loadDash();
+    }));
+    document.querySelectorAll('[data-editship]').forEach((b) => b.addEventListener('click', () => {
+      const box = document.querySelector(`[data-editbox="${b.dataset.editship}"]`);
+      if (box) box.hidden = !box.hidden;
+    }));
+    document.querySelectorAll('[data-saveship]').forEach((b) => b.addEventListener('click', async () => {
+      const box = document.querySelector(`[data-editbox="${b.dataset.saveship}"]`);
+      const upd = {};
+      box.querySelectorAll('[data-ef]').forEach((f) => { upd[f.dataset.ef] = f.value.trim() || null; });
+      await db.from('wms_shipments').update(upd).eq('id', b.dataset.saveship);
+      loadShips(); loadLoads();
+    }));
+    document.querySelectorAll('[data-delship]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Delete this shipment? Its loads are kept and go back to "building now".')) return;
+      await db.from('wms_loads').update({ shipment_id: null }).eq('shipment_id', b.dataset.delship);
+      await db.from('wms_shipments').delete().eq('id', b.dataset.delship);
+      loadShips(); loadLoads(); loadDash();
     }));
   }
   $('nsCreate').addEventListener('click', async () => {
