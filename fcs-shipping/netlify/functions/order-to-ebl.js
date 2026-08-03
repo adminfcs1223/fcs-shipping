@@ -117,6 +117,41 @@ exports.handler = async (event) => {
     shipment.error = e.message;
   }
 
+  /* ---------- 2b. WMS load + warehouse sector (best effort) ---------- */
+  let wms = { attempted: true, ok: false };
+  try {
+    const svcHeaders = {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+    const gen = await fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/generate_load_no`, {
+      method: 'POST', headers: svcHeaders, body: '{}',
+    });
+    if (!gen.ok) throw new Error('load number generator failed (run supabase/wms.sql)');
+    const loadNo = await gen.json();
+    if (typeof loadNo !== 'string') throw new Error('unexpected load number');
+    const dl = String(b.destination || '').toLowerCase();
+    const sector = dl.includes('vieux') ? 'A' : dl.includes('castries') ? 'B' : 'C';
+    await sb('wms_loads', {
+      method: 'POST',
+      body: {
+        load_no: loadNo,
+        ebl_no: eblNo,
+        order_inv: b.orderInv || null,
+        customer_name: customerName,
+        cargo,
+        destination: b.destination || null,
+        sector,
+        status: 'expected',
+      },
+    });
+    wms.ok = true; wms.loadNo = loadNo; wms.sector = sector;
+  } catch (e) {
+    console.error('WMS load creation failed (EB/L still stands):', e.message);
+    wms.error = e.message;
+  }
+
   /* ---------- 3. QuickBooks invoice (best effort) ---------- */
   let qb = { attempted: false, ok: false };
   if (qbo.configured()) {
@@ -150,5 +185,5 @@ exports.handler = async (event) => {
     }
   }
 
-  return json(200, { ok: true, eblNo, priceCents, shipment, quickbooks: qb });
+  return json(200, { ok: true, eblNo, priceCents, shipment, wms, quickbooks: qb });
 };
