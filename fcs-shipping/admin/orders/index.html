@@ -302,7 +302,7 @@ table.list tbody tr:hover{background:#fafcfd}
             <h2>Header</h2>
             <p class="hint">Invoice number advances automatically. Time stamps when you start the order.</p>
             <div class="grid g4">
-              <div><label class="f">Invoice # <span class="req">*</span></label><input class="f" id="fInv"></div>
+              <div><label class="f">Invoice # (= B/L Nº on the Master B/L) <span class="req">*</span></label><input class="f" id="fInv"></div>
               <div><label class="f">Invoice date</label><input class="f" type="date" id="fInvDate"></div>
               <div><label class="f">Pick up date</label><input class="f" type="date" id="fPickup"></div>
               <div><label class="f">Time</label><input class="f" id="fTime" placeholder="12:39:20 PM"></div>
@@ -722,7 +722,7 @@ function formHTML(o){
     </div>
     <div class="p-right">
       <div class="p-inv">
-        <div><div class="fld">${esc(o.inv)}</div><div class="cap">Invoice #</div></div>
+        <div><div class="fld">${esc(o.inv)}</div><div class="cap">Invoice / B/L #</div></div>
         <div><div class="fld">${esc(usDate(o.invDate))}</div><div class="cap">Invoice Date</div></div>
       </div>
       <div class="p-cont">
@@ -855,15 +855,20 @@ function printWmsLabel(){
       '.pcs{font-size:22pt;font-weight:900;margin-top:1pt}'+
       '.dest{font-weight:900;font-size:12pt}.meta{font-family:monospace;font-size:8pt;margin-top:3pt;line-height:1.45}'+
       '.foot{margin-top:auto;font-family:monospace;font-size:7.5pt;border-top:1.5px solid #000;width:100%;padding-top:4pt}'+
-      '<\/style><\/head><body><div class="label">'+
-      '<div class="h"><img src="https://fcsshipping.com/assets/fcs-logo.png" alt="FCS"><span>FCS·WMS&nbsp; WAREHOUSE LABEL<\/span><\/div>'+
-      '<img src="'+dataUrl+'">'+
-      '<div class="no">'+esc(draft.loadNo)+'<\/div>'+
-      '<div class="pcs">'+(draft.pieces||1)+' PIECE'+((draft.pieces||1)===1?'':'S')+'<\/div>'+
-      '<div class="sec">'+sec+'<\/div><div class="dest">'+SECTORS[sec]+'<\/div>'+
-      '<div class="meta">'+esc(draft.sh.name||'')+
-      '<br>EB\/L: '+esc(draft.eblNo||'—')+' · Inv '+esc(draft.inv||'')+'<\/div>'+
-      '<div class="foot">Scan with any phone camera · fcsshipping.com<\/div><\/div>'+
+      '.label{page-break-after:always}'+
+      '<\/style><\/head><body>'+
+      Array.from({length:Math.max(1,draft.pieces||1)},(_,ix)=>{
+        const n=Math.max(1,draft.pieces||1);
+        return '<div class="label">'+
+        '<div class="h"><img src="https://fcsshipping.com/assets/fcs-logo.png" alt="FCS"><span>FCS·WMS&nbsp; WAREHOUSE LABEL<\/span><\/div>'+
+        '<img src="'+dataUrl+'">'+
+        '<div class="no">'+esc(draft.loadNo)+'<\/div>'+
+        '<div class="pcs">'+(n===1?'1 PIECE':(ix+1)+' OF '+n+' PIECES')+'<\/div>'+
+        '<div class="sec">'+sec+'<\/div><div class="dest">'+SECTORS[sec]+'<\/div>'+
+        '<div class="meta">'+esc(draft.sh.name||'')+
+        '<br>EB\/L: '+esc(draft.eblNo||'—')+' · B\/L '+esc(draft.inv||'')+'<\/div>'+
+        '<div class="foot">Scan any one label — it moves the whole EB\/L · fcsshipping.com<\/div><\/div>';
+      }).join('')+
       '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print()},250)}<\/scr'+'ipt><\/body><\/html>');
     w.document.close();
   },320);
