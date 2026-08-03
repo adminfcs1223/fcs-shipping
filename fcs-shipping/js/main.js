@@ -384,7 +384,7 @@
             name: $('cName').value.trim(), address: $('cAddress').value.trim(),
             country: $('cCountry').value.trim(),
             phone: $('cPhone').value.trim(), phone2: $('cPhone2').value.trim(),
-            email: $('cEmail').value.trim(),
+            email: $('ccEmail').value.trim(),
           },
           website: $('pWebsite').value,
         }),
