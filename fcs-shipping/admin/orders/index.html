@@ -1175,8 +1175,19 @@ $('#ordersList').addEventListener('click',async e=>{
   }
   if(t.dataset.delo){
     const o=orders.find(x=>x.id===t.dataset.delo); if(!o) return;
-    if(!confirm('Delete order '+o.inv+'? This cannot be undone.')) return;
-    orders=orders.filter(x=>x.id!==o.id); await persist(); renderOrders(); toast('Order deleted');
+    if(!confirm('Delete order '+o.inv+'?'+(o.eblNo?' Its EB/L, tracking, and warehouse entry go with it.':'')+' This cannot be undone.')) return;
+    /* orders are the source of truth — deleting one clears its EB/L,
+       tracked shipment, and warehouse item everywhere (Customers tab + WMS) */
+    if(o.eblNo && SBC){
+      try{
+        await SBC.from('wms_items').delete().eq('ebl_no', o.eblNo);
+        const {data:shs} = await SBC.from('shipments').select('id').eq('ebl_no', o.eblNo);
+        for(const s of (shs||[])) await SBC.from('shipment_events').delete().eq('shipment_id', s.id);
+        await SBC.from('shipments').delete().eq('ebl_no', o.eblNo);
+        await SBC.from('ebl').delete().eq('ebl_no', o.eblNo);
+      }catch(e){ console.warn('linked-record cleanup:', e.message); }
+    }
+    orders=orders.filter(x=>x.id!==o.id); await persist(); renderOrders(); toast('Order deleted everywhere');
   }
 });
 $('#qOrders').addEventListener('input',renderOrders);
