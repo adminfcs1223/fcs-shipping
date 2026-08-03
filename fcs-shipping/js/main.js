@@ -204,7 +204,8 @@
      The waybill (desktop) fills in live as choices are made.
      ================================================================== */
   const state = {
-    item: null,             /* 'barrel' | 'bin' | 'box' | 'amazon' */
+    item: null,             /* 'amazon' side path only */
+    items: { barrel: 0, bin: 0, box: 0 },  /* id -> qty, mix & match */
     dest: null,             /* destination object from cfg */
     insurance: false,
     supplies: {},           /* id -> qty */
@@ -212,6 +213,7 @@
     suppliesOnly: false,
     ebl: null,
   };
+  const ITEM_IDS = ['barrel', 'bin', 'box'];
   cfg.supplies.forEach((s) => (state.supplies[s.id] = 0));
   const cargoById = (id) => cfg.cargo.find((c) => c.id === id);
   const insuranceExtra = cfg.extras.find((x) => x.id === 'insurance') || { price: 25, label: 'Insurance' };
@@ -238,16 +240,47 @@
   document.querySelectorAll('.wz-back').forEach((b) =>
     b.addEventListener('click', () => showStep(b.dataset.back)));
 
-  /* step 1: pick an item */
+  /* step 1: pick items with quantities — tap a card, +/- appears, mix as many
+     kinds as you want, then hit Continue */
+  function syncItemCards() {
+    let total = 0;
+    ITEM_IDS.forEach((id) => {
+      const n = state.items[id]; total += n;
+      const card = document.querySelector(`[data-pick="${id}"]`);
+      if (!card) return;
+      card.classList.toggle('sel', n > 0);
+      const st = card.querySelector('.wz-qty'); if (st) st.hidden = n === 0;
+      const q = $('iqty-' + id); if (q) q.textContent = n;
+    });
+    $('wzContinue').hidden = total === 0;
+    renderBill();
+  }
   document.querySelectorAll('[data-pick]').forEach((card) =>
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (ev) => {
       state.suppliesOnly = false;
-      state.item = card.dataset.pick;
       state.ebl = null;
-      if (state.item === 'amazon') { openModal('mAmazon'); renderBill(); return; }
-      buildDestGrid();
-      showStep(2);
+      const id = card.dataset.pick;
+      if (id === 'amazon') { state.item = 'amazon'; openModal('mAmazon'); renderBill(); return; }
+      state.item = null;
+      if (ev.target.closest('.qb')) return; /* +/- buttons handle themselves */
+      if (state.items[id] === 0) state.items[id] = 1;
+      syncItemCards();
     }));
+  document.querySelectorAll('[data-iplus]').forEach((b) => b.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    state.items[b.dataset.iplus] = Math.min(50, state.items[b.dataset.iplus] + 1);
+    syncItemCards();
+  }));
+  document.querySelectorAll('[data-iminus]').forEach((b) => b.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    state.items[b.dataset.iminus] = Math.max(0, state.items[b.dataset.iminus] - 1);
+    syncItemCards();
+  }));
+  $('wzContinue').addEventListener('click', () => {
+    if (!ITEM_IDS.some((id) => state.items[id] > 0)) return;
+    buildDestGrid();
+    showStep(2);
+  });
 
   /* step 2: destination cards from the admin-controlled destinations list */
   function buildDestGrid() {
@@ -367,7 +400,8 @@
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: state.suppliesOnly ? 'supplies' : (state.item === 'amazon' ? 'amazon' : 'pickup'),
-          item: state.item,
+          item: state.item || ITEM_IDS.filter((id) => state.items[id] > 0).map((id) => id + '×' + state.items[id]).join(', '),
+          items: state.items,
           destination: state.dest ? state.dest.name : '',
           insurance: state.insurance,
           supplies: state.supplies,
@@ -470,20 +504,30 @@
     $('wbTotalLabel').textContent = 'ESTIMATED TOTAL';
     $('wbNote').hidden = false;
 
-    const c = state.item ? cargoById(state.item) : null;
     const d = state.dest;
-    let freight = 0, cuft = 0, boxLater = false;
-    if (c && d && !d.call) {
-      cuft = c.cuft || 0;
-      const flat = flatPrice(c, d.name);
-      if (flat != null) {
-        freight = Math.round(flat * 100);
-        if (d.rate && cuft) {
-          const ref = Math.round(cuft * d.rate * 100);
-          if (ref > freight) { $('wbSaveAmt').textContent = '$' + Math.round((ref - freight) / 100).toLocaleString(); $('wbSave').hidden = false; }
-        }
-      } else if (c.custom) { boxLater = true; }
-      else if (d.rate && cuft) { freight = Math.round(cuft * d.rate * 100); }
+    /* the little St. Lucia map only appears once a St. Lucia destination is chosen */
+    const lm = $('luciaMap');
+    if (lm) lm.hidden = !(d && !d.call &&
+      String(d.country || cfg.arrivalCountry || '').toLowerCase().includes('lucia'));
+    const chosen = ITEM_IDS.filter((id) => state.items[id] > 0);
+    let freight = 0, cuft = 0, boxLater = false, ref = 0, anyFlat = false;
+    if (chosen.length && d && !d.call) {
+      chosen.forEach((id) => {
+        const c = cargoById(id); if (!c) return;
+        const n = state.items[id];
+        cuft += (c.cuft || 0) * n;
+        const flat = flatPrice(c, d.name);
+        if (flat != null) {
+          freight += Math.round(flat * 100) * n;
+          anyFlat = true;
+          ref += (d.rate && c.cuft) ? Math.round(c.cuft * d.rate * 100) * n : Math.round(flat * 100) * n;
+        } else if (c.custom) { boxLater = true; }
+        else if (d.rate && c.cuft) { const v = Math.round(c.cuft * d.rate * 100) * n; freight += v; ref += v; }
+      });
+      if (anyFlat && ref > freight) {
+        $('wbSaveAmt').textContent = '$' + Math.round((ref - freight) / 100).toLocaleString();
+        $('wbSave').hidden = false;
+      }
     }
     let suppliesC = 0, suppliesN = 0;
     const supplyBits = [];
@@ -496,10 +540,12 @@
 
     $('wbItem').textContent = state.suppliesOnly ? 'Empty supplies order'
       : state.item === 'amazon' ? 'Online orders \u2192 our warehouse'
-      : c ? c.label : 'pick an item to begin';
-    $('wbVolume').textContent = cuft ? cuft + ' cu ft' : (boxLater ? 'measured at pickup' : '\u2014');
+      : chosen.length
+        ? chosen.map((id) => { const c2 = cargoById(id); return `${c2 ? c2.label : id}${state.items[id] > 1 ? ' \u00d7 ' + state.items[id] : ''}`; }).join(', ')
+        : 'pick an item to begin';
+    $('wbVolume').textContent = cuft ? cuft + ' cu ft' + (boxLater ? ' + box' : '') : (boxLater ? 'measured at pickup' : '\u2014');
     $('wbDest').textContent = d && !d.call ? `${d.name}, ${d.country || cfg.arrivalCountry || 'St. Lucia'}` : '\u2014';
-    $('wbBase').textContent = freight ? fmt(freight) + (flatPrice(c, d && d.name) != null ? ' (flat)' : '')
+    $('wbBase').textContent = freight ? fmt(freight) + (anyFlat ? ' (flat)' : '') + (boxLater ? ' + box at pickup' : '')
       : (boxLater ? 'priced at pickup' : '\u2014');
     $('wbExtras').textContent = state.insurance ? `${insuranceExtra.label}  ${fmt(insC)}` : '\u2014';
     $('wbSupplies').textContent = suppliesN
@@ -621,18 +667,8 @@
     setInterval(tick, 1000);
   }
 
-  (async () => {
-    try {
-      const res = await fetch(`${FN}/sailings`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length) return startCountdown(data);
-      }
-      throw new Error('fallback');
-    } catch {
-      startCountdown(cfg.sailings);
-    }
-  })();
+  /* the vessel leaves every Thursday — countdown always aims at the next one */
+  startCountdown([]);
 
   /* ---------- scroll reveal ---------- */
   const io = new IntersectionObserver(
