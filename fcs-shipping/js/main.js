@@ -88,7 +88,7 @@
     const botEl = document.querySelector('.hero-bottom');
     if (!hero || !topEl || !botEl) return;
     const IMG = { w: 3200, h: 2128, posY: 0.42, shipTop: 0.412, shipBottom: 0.607 };
-    function layout() {
+    function layout(second) {
       const W = hero.clientWidth, H = hero.clientHeight;
       if (!W || !H) return;
       const scale = Math.max(W / IMG.w, H / IMG.h);   /* background-size: cover */
@@ -96,6 +96,14 @@
       const offset = (dispH - H) * IMG.posY;          /* image cropped above the frame */
       const shipTopPx = Math.max(0, IMG.shipTop * dispH - offset);
       const shipBotPx = Math.min(H, IMG.shipBottom * dispH - offset);
+      /* if a window can't fit its bubble, grow the hero just enough — never clip */
+      const deficit = Math.max(0,
+        (botEl.offsetHeight + 20) - (H - shipBotPx),
+        (topEl.offsetHeight + 20) - shipTopPx);
+      if (deficit > 4 && !second) {
+        hero.style.minHeight = (H + deficit) + 'px';
+        return layout(true);
+      }
       /* top bubble: centered between the photo's top edge and the ship */
       topEl.style.top = Math.max(8, (shipTopPx - topEl.offsetHeight) / 2) + 'px';
       /* bottom bubble: centered between the ship and the photo's bottom edge */
