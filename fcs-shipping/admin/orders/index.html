@@ -110,6 +110,9 @@ table.list tbody tr:hover{background:#fafcfd}
 .items input{width:100%;padding:6px 7px;border:1px solid var(--rule);border-radius:4px}
 .items select{width:100%;padding:6px 4px;border:1px solid var(--rule);border-radius:4px;background:#fff;font-size:13px}
 .items .x{background:none;border:0;color:#a11b1b;cursor:pointer;font-size:16px;line-height:1;padding:4px 6px}
+.items .nci{font-size:9.5px;font-weight:700;letter-spacing:.04em;border:1px solid var(--line);background:#fff;
+  color:var(--muted);border-radius:5px;padding:3px 6px;cursor:pointer;margin-right:2px;vertical-align:middle}
+.items .nci.on{background:#B45309;border-color:#B45309;color:#fff}
 .toast{
   position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
   background:var(--ink);color:#fff;padding:10px 18px;border-radius:6px;font-size:13.5px;
@@ -611,7 +614,7 @@ function bumpInvoice(v){
 /* ============================================================
    3. DRAFT ORDER
    ============================================================ */
-function blankItem(){ return {qty:'',part:'',desc:'',price:'',amount:''}; }
+function blankItem(){ return {qty:'',part:'',desc:'',price:'',amount:'',nci:false}; }
 function blankOrder(){
   return {
     id:null, inv:S.next, invDate:todayISO(), pickup:todayISO(), time:nowTime(),
@@ -679,7 +682,7 @@ function renderItems(){
       <td>${descCell(it,i)}</td>
       <td><input data-k="price" value="${esc(it.price)}" inputmode="decimal" placeholder="${esc(S.rate)}"></td>
       <td><input data-k="amount" value="${esc(it.amount)}" inputmode="decimal" placeholder="${itemAmount(it)?itemAmount(it).toFixed(2):''}"></td>
-      <td><button class="x" data-del="${i}" title="Remove line" aria-label="Remove line">×</button></td>
+      <td style="white-space:nowrap"><button class="nci${it.nci?' on':''}" data-nci="${i}" title="Non-cargo item (empty box, supplies…) — NOT counted as a piece on the WMS label">NCI</button><button class="x" data-del="${i}" title="Remove line" aria-label="Remove line">×</button></td>
     </tr>`).join('');
   $('#orderTotal').textContent = money(orderTotal(draft));
 }
@@ -896,7 +899,8 @@ $('#btnMakeEbl').addEventListener('click', async()=>{
       body: JSON.stringify({
         orderInv: draft.inv, blNo: draft.container || '',
         trackNo: draft.trackNo || '',
-        pieces: Math.max(1, Math.round(draft.items.reduce((s2,it)=>s2+(parseFloat(it.qty)||0),0)) || 1),
+        /* NCI lines (empty boxes, supplies) don't count as cargo pieces */
+        pieces: Math.max(1, Math.round(draft.items.filter(it=>!it.nci).reduce((s2,it)=>s2+(parseFloat(it.qty)||0),0)) || 1),
         cargo: draft.items.map(i=>i.desc).filter(Boolean).join(', ') || 'Shipping services',
         quantity: parseInt(draft.items[0] && draft.items[0].qty,10) || 1,
         destination: draft.co.city || '',
@@ -1148,6 +1152,14 @@ $('#itemRows').addEventListener('change',e=>{
   }
 });
 $('#itemRows').addEventListener('click',e=>{
+  const n=e.target.dataset.nci;
+  if(n!==undefined){
+    /* non-cargo item: empty box, supplies, a fee — real thing on the invoice,
+       but NOT a piece of cargo, so it never counts toward "1 of N pieces" */
+    draft.items[+n].nci=!draft.items[+n].nci;
+    renderItems(); renderPreview();
+    return;
+  }
   const d=e.target.dataset.del; if(d===undefined) return;
   draft.items.splice(+d,1);
   if(!draft.items.length) draft.items.push(blankItem());
