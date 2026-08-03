@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCS WMS — Warehouse Management</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ FCS WMS — its own machine, its own skin ============ */
+:root{--bg:#0F1620;--panel:#18222F;--line:#28374A;--ink:#E8EEF5;--dim:#8CA0B5;
+  --amber:#FFB020;--green:#2ECC71;--red:#FF5A48;--blue:#4DA3FF;
+  --mono:'IBM Plex Mono',monospace;--body:'Archivo',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-bottom:5.5rem}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:1rem}
+a{color:inherit}
+/* header */
+header{background:#0A0F16;border-bottom:2px solid var(--amber);padding:.7rem 1rem;
+  display:flex;align-items:center;gap:.9rem;position:sticky;top:0;z-index:10}
+.wms-logo{display:flex;align-items:center;gap:.6rem;text-decoration:none}
+.wms-mark{width:40px;height:40px;border:2.5px solid var(--amber);border-radius:6px;display:grid;
+  grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;padding:5px}
+.wms-mark i{background:var(--amber);border-radius:1.5px}
+.wms-mark i:nth-child(4){background:var(--dim)}
+.wms-t{font-family:var(--mono);font-weight:700;font-size:1.15rem;letter-spacing:.06em}
+.wms-t b{color:var(--amber)}
+.wms-t small{display:block;font-size:.56rem;letter-spacing:.3em;color:var(--dim);font-weight:400}
+.eco{margin-left:auto;display:flex;gap:.5rem}
+.eco a{font-family:var(--mono);font-size:.72rem;color:var(--dim);text-decoration:none;
+  border:1px solid var(--line);border-radius:6px;padding:.4rem .7rem}
+.eco a:hover{color:var(--ink);border-color:var(--dim)}
+main{max-width:860px;margin:0 auto;padding:1.1rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.2rem;margin-bottom:1rem}
+h2{font-family:var(--mono);font-size:.95rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:.9rem}
+label{display:block;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:.8rem 0 .3rem}
+input[type=text],input[type=date],input[type=number],select,textarea{width:100%;border:1.5px solid var(--line);border-radius:8px;
+  padding:.75rem .85rem;background:#0D141D;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-color:var(--amber)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;background:var(--amber);color:#14100A;
+  border:none;border-radius:8px;font-weight:900;padding:.85rem 1.4rem;font-size:.95rem;width:100%;margin-top:1rem;
+  letter-spacing:.03em;text-transform:uppercase}
+.btn:active{transform:translateY(1px)}
+.btn.sm{width:auto;padding:.5rem .9rem;font-size:.78rem;margin-top:.5rem}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.green{background:var(--green);color:#06130B}
+.btn.blue{background:var(--blue);color:#071018}
+.btn.red{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.msg{font-family:var(--mono);font-size:.8rem;margin-top:.7rem}
+.msg.err{color:var(--red)}.msg.ok{color:var(--green)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+/* tabs */
+.tabs{position:fixed;bottom:0;left:0;right:0;background:#0A0F16;border-top:1px solid var(--line);display:flex;z-index:10}
+.tabs button{flex:1;background:none;border:none;padding:1rem .2rem 1.2rem;font-family:var(--mono);font-size:.68rem;
+  font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+.tabs button.on{color:var(--amber);box-shadow:inset 0 3px 0 var(--amber)}
+.view{display:none}.view.on{display:block}
+/* stats */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem;cursor:pointer;text-align:left;color:var(--ink)}
+.stat .n{font-family:var(--mono);font-size:1.9rem;font-weight:700;color:var(--amber);line-height:1.1}
+.stat .l{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-top:.3rem}
+.stat.wide{grid-column:1/-1;cursor:default}
+.stat .sub{font-size:.85rem;color:var(--dim);margin-top:.25rem}
+.abc{display:flex;gap:.6rem;margin-top:.4rem}
+.abc span{font-family:var(--mono);font-size:.78rem;border:1px solid var(--line);border-radius:6px;padding:.15rem .55rem}
+.abc b{color:var(--amber)}
+/* items */
+.item{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:.7rem}
+.item .top{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+.lno{font-family:var(--mono);font-weight:700;font-size:1.02rem}
+.pill{font-family:var(--mono);font-size:.64rem;font-weight:700;border-radius:999px;padding:.2rem .7rem;text-transform:uppercase;letter-spacing:.06em}
+.pill.expected{background:#3A2E10;color:var(--amber)}
+.pill.in_warehouse{background:#0F3A24;color:var(--green)}
+.pill.shipped{background:#122B47;color:var(--blue)}
+.pill.open{background:#3A2E10;color:var(--amber)}
+.pill.departed{background:#122B47;color:var(--blue)}
+.pill.arrived{background:#0F3A24;color:var(--green)}
+.pill.closed{background:#222;color:var(--dim)}
+.meta{font-family:var(--mono);font-size:.72rem;color:var(--dim);margin-top:.35rem}
+.sector-chip{display:inline-flex;width:26px;height:26px;border-radius:6px;background:var(--amber);color:#14100A;
+  font-family:var(--mono);font-weight:700;align-items:center;justify-content:center;font-size:.9rem}
+/* scan */
+.scan-box{display:flex;gap:.6rem}
+.scan-box input{flex:1}
+.scan-box .btn{width:auto;margin-top:0}
+#video{width:100%;border-radius:12px;border:1px solid var(--line);margin-top:1rem;display:none}
+/* the big instruction screen */
+.direct{position:fixed;inset:0;z-index:100;background:var(--bg);overflow-y:auto;padding:1rem;display:none}
+.direct.on{display:block}
+.direct .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+.direct .banner{border-radius:14px;padding:1.1rem 1.3rem;font-weight:900;font-size:1.25rem;text-transform:uppercase;
+  letter-spacing:.03em;text-align:center;margin-bottom:1rem}
+.direct .banner.green{background:var(--green);color:#06130B}
+.direct .banner.blue{background:var(--blue);color:#071018}
+.direct .banner.amber{background:var(--amber);color:#14100A}
+.direct .lbig{font-family:var(--mono);text-align:center;font-size:1rem;color:var(--dim);margin-bottom:.6rem}
+/* warehouse map */
+.mapwrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem}
+.map-svg{width:100%;height:auto;display:block}
+.zone{fill:#0D141D;stroke:var(--line);stroke-width:2}
+.zone.hot{fill:#2A2410;stroke:var(--amber);stroke-width:3;animation:zoneflash 1.2s ease-in-out infinite}
+@keyframes zoneflash{0%,100%{fill-opacity:1}50%{fill-opacity:.55}}
+.zlabel{font-family:var(--mono);font-weight:700;fill:var(--dim);font-size:15px}
+.zlabel.hot{fill:var(--amber)}
+.zsub{font-family:var(--mono);fill:var(--dim);font-size:9px;letter-spacing:.1em}
+.shelf{fill:#101A26;stroke:var(--line);stroke-width:1.5}
+.route{fill:none;stroke:var(--amber);stroke-width:4;stroke-dasharray:10 8;stroke-linecap:round;
+  animation:march 1s linear infinite}
+@keyframes march{to{stroke-dashoffset:-18}}
+.pin{animation:pinbounce 1s ease-in-out infinite}
+@keyframes pinbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.zcount{font-family:var(--mono);font-weight:700;fill:var(--ink);font-size:13px}
+#loginView{max-width:420px;margin:8vh auto 0;padding:1.2rem}
+.note{font-family:var(--mono);font-size:.7rem;color:var(--dim);margin-top:.8rem}
+/* ============ 4×6 label ============ */
+#labelRoot{display:none}
+@media print{
+  body>*:not(#labelRoot){display:none!important}
+  body{padding:0;background:#fff}
+  #labelRoot{display:block!important}
+  @page{size:4in 6in;margin:0}
+}
+.label{width:4in;height:6in;background:#fff;color:#000;padding:.22in;font-family:var(--body);
+  display:flex;flex-direction:column;align-items:center;text-align:center}
+.label .lb-head{font-family:var(--mono);font-weight:700;font-size:13pt;letter-spacing:.08em;
+  border-bottom:2.5px solid #000;width:100%;padding-bottom:4pt}
+.label .lb-qr{margin:10pt 0 6pt}
+.label .lb-qr img,.label .lb-qr canvas{width:2.45in!important;height:2.45in!important}
+.label .lb-no{font-family:var(--mono);font-weight:700;font-size:16pt;letter-spacing:.03em}
+.label .lb-sec{font-size:64pt;font-weight:900;line-height:1;border:4px solid #000;border-radius:10px;
+  padding:2pt 18pt;margin:6pt 0 4pt}
+.label .lb-dest{font-weight:900;font-size:13pt;text-transform:uppercase}
+.label .lb-meta{font-family:var(--mono);font-size:8.5pt;margin-top:5pt;line-height:1.55}
+.label .lb-foot{margin-top:auto;font-family:var(--mono);font-size:7.5pt;border-top:1.5px solid #000;
+  width:100%;padding-top:4pt}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="wms-logo" href="/admin/wms/">
+    <span class="wms-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="wms-t">FCS<b>·WMS</b><small>WAREHOUSE MGMT</small></span>
+  </a>
+  <div class="eco">
+    <a href="/admin/">← Admin</a>
+    <a href="/admin/orders/">Order Entry</a>
+  </div>
+</header>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginView">
+  <div class="card">
+    <h2>Warehouse sign-in</h2>
+    <label>Email</label><input type="text" id="loginEmail" autocomplete="username">
+    <label>Password</label><input type="password" id="loginPass" autocomplete="current-password"
+      style="width:100%;border:1.5px solid var(--line);border-radius:8px;padding:.75rem .85rem;background:#0D141D;color:var(--ink)">
+    <button class="btn" id="loginBtn">Sign in</button>
+    <p class="msg" id="loginMsg"></p>
+    <p class="note">Same staff account as the admin dashboard.</p>
+  </div>
+</div>
+
+<main id="app" hidden>
+
+  <!-- Dashboard -->
+  <div class="view on" id="view-dash">
+    <div class="stat-grid">
+      <button class="stat" data-go="loads"><div class="n" id="dExpected">—</div><div class="l">Expected (not yet scanned)</div></button>
+      <button class="stat" data-go="loads"><div class="n" id="dInWh">—</div><div class="l">In warehouse now</div></button>
+      <div class="stat wide">
+        <div class="l">In warehouse by sector</div>
+        <div class="abc"><span>A · Vieux-Fort <b id="dA">0</b></span><span>B · Castries <b id="dB">0</b></span><span>C · Other <b id="dC">0</b></span></div>
+      </div>
+      <button class="stat" data-go="ships"><div class="n" id="dOpenShips">—</div><div class="l">Open shipments</div></button>
+      <button class="stat" data-go="ships"><div class="n" id="dNextDep" style="font-size:1.05rem">—</div><div class="l">Next departure</div></button>
+      <div class="stat wide">
+        <div class="l">Next expected arrival (inbound)</div>
+        <div class="sub" id="dNextArr">—</div>
+      </div>
+    </div>
+    <button class="btn" data-go="scan" style="margin-top:1rem">SCAN CARGO</button>
+    <div class="card" style="margin-top:1rem">
+      <h2>Latest activity</h2>
+      <div id="dashActivity"><p class="msg">—</p></div>
+    </div>
+  </div>
+
+  <!-- Scan -->
+  <div class="view" id="view-scan">
+    <div class="card">
+      <h2>Scan a load</h2>
+      <p class="note" style="margin:0 0 .7rem">Point any phone camera at the label QR — it opens this screen by itself. Or type the load number, or use the camera below on a warehouse device.</p>
+      <div class="scan-box">
+        <input type="text" id="scanInput" placeholder="LOAD-2026-0001" autocomplete="off">
+        <button class="btn sm" id="scanGo" style="margin:0">Go</button>
+      </div>
+      <button class="btn ghost sm" id="camBtn">Start camera scanner</button>
+      <video id="video" playsinline muted></video>
+      <canvas id="qrCanvas" hidden></canvas>
+      <p class="msg" id="scanMsg"></p>
+    </div>
+  </div>
+
+  <!-- Loads -->
+  <div class="view" id="view-loads">
+    <div class="card">
+      <h2>New / expected load</h2>
+      <p class="note" style="margin:0 0 .4rem">Billing an order in Order Entry creates its load automatically — use this for expectant cargo arriving without one.</p>
+      <label>Customer</label><input type="text" id="nlCustomer">
+      <label>Cargo</label><input type="text" id="nlCargo" placeholder="e.g. Barrel × 2">
+      <div class="row2">
+        <div><label>Destination</label>
+          <select id="nlDest"><option>Vieux-Fort</option><option>Port Castries</option><option>Other island</option></select></div>
+        <div><label>EB/L (optional)</label><input type="text" id="nlEbl" placeholder="EBL-2026-0000"></div>
+      </div>
+      <button class="btn sm" id="nlCreate">Create load + label</button>
+      <p class="msg" id="nlMsg"></p>
+    </div>
+    <div class="card">
+      <h2>Find loads</h2>
+      <input type="text" id="loadSearch" placeholder="Load nº, EB/L, customer, destination…">
+    </div>
+    <div id="loadList"></div>
+  </div>
+
+  <!-- Shipments -->
+  <div class="view" id="view-ships">
+    <div class="card">
+      <h2>New shipment</h2>
+      <div class="row2">
+        <div><label>Direction</label>
+          <select id="nsDir"><option value="outbound">Outbound (sailing out)</option><option value="inbound">Inbound (expectant arrival)</option></select></div>
+        <div><label>Vessel / carrier</label><input type="text" id="nsVessel" placeholder="M/V Caribbean Star"></div>
+      </div>
+      <div class="row2">
+        <div><label>Departs</label><input type="date" id="nsDeparts"></div>
+        <div><label>Expected arrival</label><input type="date" id="nsArrival"></div>
+      </div>
+      <label>Notes</label><input type="text" id="nsNotes" placeholder="optional">
+      <button class="btn sm" id="nsCreate">Create shipment nº</button>
+      <p class="msg" id="nsMsg"></p>
+    </div>
+    <div id="shipList"></div>
+  </div>
+
+  <!-- Map -->
+  <div class="view" id="view-map">
+    <div class="mapwrap">
+      <h2 style="margin-bottom:.6rem">Warehouse map — live occupancy</h2>
+      <div id="mapHolder"></div>
+      <p class="note">A = Vieux-Fort · B = Castries · C = other islands. Numbers show loads currently in each sector.</p>
+    </div>
+  </div>
+</main>
+
+<!-- big scan instruction overlay -->
+<div class="direct" id="direct">
+  <div class="head">
+    <span class="wms-t" style="font-size:1rem">FCS<b>·WMS</b></span>
+    <button class="btn ghost sm" id="directClose" style="margin:0">Close ✕</button>
+  </div>
+  <div id="directBody"></div>
+</div>
+
+<!-- 4×6 label print root -->
+<div id="labelRoot"></div>
+
+<nav class="tabs" id="tabs" hidden>
+  <button data-view="dash" class="on">Home</button>
+  <button data-view="scan">Scan</button>
+  <button data-view="loads">Loads</button>
+  <button data-view="ships">Shipments</button>
+  <button data-view="map">Map</button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="/admin/config.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const C = window.ADMIN_CONFIG || {};
+  const db = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fdt = (iso) => iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+  const fd = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+
+  const SECTORS = { A: 'Vieux-Fort', B: 'Castries', C: 'Other Islands' };
+  function sectorFor(dest) {
+    const d = String(dest || '').toLowerCase();
+    if (d.includes('vieux')) return 'A';
+    if (d.includes('castries')) return 'B';
+    return 'C';
+  }
+
+  /* ---------- auth ---------- */
+  async function refreshAuth() {
+    const { data: { session } } = await db.auth.getSession();
+    const inApp = Boolean(session);
+    $('loginView').hidden = inApp;
+    $('app').hidden = !inApp;
+    $('tabs').hidden = !inApp;
+    if (inApp) {
+      loadDash(); loadLoads(); loadShips(); drawMap();
+      handleDeepLink();
+    }
+  }
+  $('loginBtn').addEventListener('click', async () => {
+    const { error } = await db.auth.signInWithPassword({
+      email: $('loginEmail').value.trim(), password: $('loginPass').value });
+    if (error) { $('loginMsg').textContent = error.message; $('loginMsg').className = 'msg err'; return; }
+    refreshAuth();
+  });
+  $('loginPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
+
+  /* ---------- tabs ---------- */
+  function showView(name) {
+    document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.view === name));
+    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('on', v.id === 'view-' + name));
+    if (name === 'dash') loadDash();
+    if (name === 'map') drawMap();
+    if (name === 'loads') loadLoads();
+    if (name === 'ships') loadShips();
+  }
+  document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+  document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => showView(b.dataset.go)));
+
+  /* ---------- dashboard ---------- */
+  async function loadDash() {
+    try {
+      const cnt = (q) => q.then((r) => (r.count == null ? '—' : r.count));
+      const [exp, inWh, a, b, c, ships] = await Promise.all([
+        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'expected')),
+        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse')),
+        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'A')),
+        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'B')),
+        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'C')),
+        cnt(db.from('wms_shipments').select('id', { count: 'exact', head: true }).eq('status', 'open')),
+      ]);
+      $('dExpected').textContent = exp; $('dInWh').textContent = inWh;
+      $('dA').textContent = a; $('dB').textContent = b; $('dC').textContent = c;
+      $('dOpenShips').textContent = ships;
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: dep } = await db.from('wms_shipments').select('*')
+        .eq('direction', 'outbound').neq('status', 'closed').gte('departs', today).order('departs').limit(1);
+      $('dNextDep').textContent = dep && dep[0] ? `${fd(dep[0].departs)} · ${dep[0].shipment_no}` : 'none set';
+      const { data: arr } = await db.from('wms_shipments').select('*')
+        .eq('direction', 'inbound').neq('status', 'closed').order('expected_arrival').limit(1);
+      $('dNextArr').textContent = arr && arr[0]
+        ? `${arr[0].shipment_no} · ${arr[0].vessel || ''} · expected ${fd(arr[0].expected_arrival)}` : 'none expected';
+      const { data: act } = await db.from('wms_loads').select('*')
+        .not('scanned_in_at', 'is', null).order('scanned_in_at', { ascending: false }).limit(8);
+      $('dashActivity').innerHTML = (act || []).map((l) => `<div class="meta" style="margin-top:.5rem">
+          <b style="color:var(--ink)">${esc(l.load_no)}</b> · ${l.scanned_out_at ? 'OUT ' + fdt(l.scanned_out_at) : 'IN ' + fdt(l.scanned_in_at)}
+          · Sector ${esc(l.sector || '?')} · ${esc(l.destination || '')}</div>`).join('') ||
+        '<p class="msg">No scans yet — print a label and scan it in.</p>';
+    } catch (e) {
+      $('dashActivity').innerHTML = `<p class="msg err">${esc(e.message)} — run supabase/wms.sql first.</p>`;
+    }
+  }
+
+  /* ---------- warehouse map (per the office sketch) ---------- */
+  function mapSVG(target, counts) {
+    const hot = (s) => (target === s ? 'hot' : '');
+    const c = counts || {};
+    return `<svg class="map-svg" viewBox="0 0 420 540" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="6" width="408" height="528" rx="10" fill="none" stroke="var(--line)" stroke-width="2"/>
+      <!-- Sector A — top-left (Vieux-Fort) -->
+      <g id="zoneA"><rect class="zone ${hot('A')}" x="18" y="18" width="188" height="150" rx="8"/>
+        <text class="zlabel ${hot('A')}" x="34" y="48">SECTOR A</text>
+        <text class="zsub" x="34" y="66">VIEUX-FORT</text>
+        <text class="zcount" x="34" y="150">${c.A != null ? c.A + ' loads' : ''}</text></g>
+      <!-- Sector B — top-right (Castries) -->
+      <g id="zoneB"><rect class="zone ${hot('B')}" x="214" y="18" width="188" height="150" rx="8"/>
+        <text class="zlabel ${hot('B')}" x="230" y="48">SECTOR B</text>
+        <text class="zsub" x="230" y="66">CASTRIES</text>
+        <text class="zcount" x="230" y="150">${c.B != null ? c.B + ' loads' : ''}</text></g>
+      <!-- Sector C — right side storage racks (other islands) -->
+      <g id="zoneC"><rect class="zone ${hot('C')}" x="214" y="188" width="188" height="250" rx="8"/>
+        <text class="zlabel ${hot('C')}" x="230" y="216">SECTOR C</text>
+        <text class="zsub" x="230" y="232">OTHER ISLANDS · STORAGE</text>
+        <rect class="shelf" x="228" y="244" width="160" height="30" rx="3"/>
+        <rect class="shelf" x="228" y="284" width="160" height="30" rx="3"/>
+        <rect class="shelf" x="228" y="324" width="160" height="30" rx="3"/>
+        <rect class="shelf" x="228" y="364" width="160" height="30" rx="3"/>
+        <text class="zcount" x="230" y="424">${c.C != null ? c.C + ' loads' : ''}</text></g>
+      <!-- open floor / aisle -->
+      <text class="zsub" x="60" y="330">OPEN FLOOR / AISLE</text>
+      <!-- entrance -->
+      <rect x="18" y="500" width="190" height="22" rx="4" fill="none" stroke="var(--dim)" stroke-dasharray="6 5"/>
+      <text class="zsub" x="52" y="515">ROLL-UP DOOR · ENTRANCE</text>
+      ${target ? routeFor(target) : ''}
+    </svg>`;
+  }
+  function routeFor(s) {
+    const dests = { A: [112, 100, 'M112,498 L112,100'],
+                    B: [308, 100, 'M112,498 L112,340 L308,340 L308,100'],
+                    C: [308, 310, 'M112,498 L112,340 L240,340 L308,310'] };
+    const [x, y, d] = dests[s];
+    return `<path class="route" d="${d}"/>
+      <g class="pin" style="transform-origin:${x}px ${y}px">
+        <circle cx="${x}" cy="${y}" r="14" fill="var(--amber)"/>
+        <circle cx="${x}" cy="${y}" r="5" fill="#14100A"/>
+      </g>`;
+  }
+  async function drawMap(target) {
+    let counts = {};
+    try {
+      const g = (s) => db.from('wms_loads').select('id', { count: 'exact', head: true })
+        .eq('status', 'in_warehouse').eq('sector', s).then((r) => r.count || 0);
+      counts = { A: await g('A'), B: await g('B'), C: await g('C') };
+    } catch (e) { /* map still draws */ }
+    $('mapHolder').innerHTML = mapSVG(target, counts);
+  }
+
+  /* ---------- scanning ---------- */
+  function extractLoadNo(text) {
+    const m = String(text || '').toUpperCase().match(/LOAD-\d{4}-\d{3,6}/);
+    return m ? m[0] : null;
+  }
+  $('scanGo').addEventListener('click', () => handleCode($('scanInput').value));
+  $('scanInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCode($('scanInput').value); });
+
+  async function handleCode(raw) {
+    const no = extractLoadNo(raw);
+    const msg = $('scanMsg'); msg.className = 'msg';
+    if (!no) { msg.textContent = 'That doesn’t look like a load number (LOAD-2026-0001).'; msg.className = 'msg err'; return; }
+    msg.textContent = 'Looking up ' + no + '…';
+    const { data, error } = await db.from('wms_loads').select('*').eq('load_no', no).maybeSingle();
+    if (error || !data) { msg.textContent = 'Load not found' + (error ? ': ' + error.message : '') + '.'; msg.className = 'msg err'; return; }
+    msg.textContent = '';
+    openDirect(data);
+  }
+
+  /* the big anybody-can-do-this instruction screen */
+  async function openDirect(load) {
+    const d = $('directBody');
+    const sec = load.sector || sectorFor(load.destination);
+    if (load.status === 'expected') {
+      d.innerHTML = `
+        <div class="banner amber">SCAN IN — ${esc(load.load_no)}</div>
+        <p class="lbig">${esc(load.cargo || 'Cargo')} · ${esc(load.customer_name || '')}</p>
+        <div class="mapwrap">${mapSVG(sec)}</div>
+        <div class="banner green" style="margin-top:1rem">TAKE IT TO SECTOR ${sec} — ${esc(SECTORS[sec])}</div>
+        <button class="btn green" id="doIn">✓ IT’S IN SECTOR ${sec} — CONFIRM SCAN-IN</button>
+        <button class="btn ghost" id="doLabel">Print 4×6 label</button>`;
+      $('doIn').addEventListener('click', async () => {
+        const { error } = await db.from('wms_loads').update({
+          status: 'in_warehouse', sector: sec, scanned_in_at: new Date().toISOString() }).eq('id', load.id);
+        if (error) { alert(error.message); return; }
+        d.innerHTML = `<div class="banner green">✓ SCANNED IN — SECTOR ${sec}</div>
+          <p class="lbig">${esc(load.load_no)} is now in the warehouse.</p>
+          <button class="btn" id="dirDone">Done</button>`;
+        $('dirDone').addEventListener('click', closeDirect);
+        loadDash(); loadLoads();
+      });
+      $('doLabel').addEventListener('click', () => printLabel(load));
+    } else if (load.status === 'in_warehouse') {
+      const { data: ships } = await db.from('wms_shipments').select('*')
+        .eq('direction', 'outbound').eq('status', 'open').order('departs');
+      d.innerHTML = `
+        <div class="banner blue">SCAN OUT — ${esc(load.load_no)}</div>
+        <p class="lbig">In Sector ${esc(load.sector || '?')} since ${fdt(load.scanned_in_at)}</p>
+        <label style="margin-top:.6rem">Loading onto shipment</label>
+        <select id="outShip">${(ships || []).map((s) =>
+          `<option value="${s.id}">${esc(s.shipment_no)} · ${esc(s.vessel || '')} · departs ${fd(s.departs)}</option>`).join('')}
+          <option value="">— no shipment yet —</option></select>
+        <button class="btn blue" id="doOut">✓ CONFIRM SCAN-OUT (LOADED)</button>
+        <button class="btn ghost" id="doLabel2">Reprint 4×6 label</button>`;
+      $('doOut').addEventListener('click', async () => {
+        const { error } = await db.from('wms_loads').update({
+          status: 'shipped', scanned_out_at: new Date().toISOString(),
+          shipment_id: $('outShip').value || null }).eq('id', load.id);
+        if (error) { alert(error.message); return; }
+        d.innerHTML = `<div class="banner blue">✓ SCANNED OUT — LOADED FOR DEPARTURE</div>
+          <p class="lbig">${esc(load.load_no)} is on its way.</p>
+          <button class="btn" id="dirDone">Done</button>`;
+        $('dirDone').addEventListener('click', closeDirect);
+        loadDash(); loadLoads(); loadShips();
+      });
+      $('doLabel2').addEventListener('click', () => printLabel(load));
+    } else {
+      d.innerHTML = `<div class="banner blue">ALREADY SHIPPED</div>
+        <p class="lbig">${esc(load.load_no)} · scanned out ${fdt(load.scanned_out_at)}</p>
+        <button class="btn" id="dirDone">Done</button>`;
+      $('dirDone').addEventListener('click', closeDirect);
+    }
+    $('direct').classList.add('on');
+  }
+  function closeDirect() { $('direct').classList.remove('on'); }
+  $('directClose').addEventListener('click', closeDirect);
+
+  /* QR deep link: phone camera scans → /admin/wms/?load=LOAD-... */
+  function handleDeepLink() {
+    const p = new URLSearchParams(location.search).get('load');
+    if (p) { history.replaceState({}, '', '/admin/wms/'); handleCode(p); showView('scan'); }
+  }
+
+  /* built-in camera scanner (jsQR) for a dedicated device */
+  let stream = null, scanning = false;
+  $('camBtn').addEventListener('click', async () => {
+    if (scanning) { stopCam(); return; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const v = $('video'); v.srcObject = stream; v.style.display = 'block'; await v.play();
+      scanning = true; $('camBtn').textContent = 'Stop camera';
+      tickCam();
+    } catch (e) { $('scanMsg').textContent = 'Camera unavailable: ' + e.message; $('scanMsg').className = 'msg err'; }
+  });
+  function stopCam() {
+    scanning = false;
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    $('video').style.display = 'none'; $('camBtn').textContent = 'Start camera scanner';
+  }
+  function tickCam() {
+    if (!scanning) return;
+    const v = $('video'), cv = $('qrCanvas');
+    if (v.readyState === v.HAVE_ENOUGH_DATA) {
+      cv.width = v.videoWidth; cv.height = v.videoHeight;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(v, 0, 0);
+      const img = ctx.getImageData(0, 0, cv.width, cv.height);
+      const code = window.jsQR && jsQR(img.data, img.width, img.height);
+      if (code && extractLoadNo(code.data)) { stopCam(); handleCode(code.data); return; }
+    }
+    requestAnimationFrame(tickCam);
+  }
+
+  /* ---------- loads ---------- */
+  async function loadLoads() {
+    let q = db.from('wms_loads').select('*, wms_shipments(shipment_no)').order('created_at', { ascending: false }).limit(40);
+    const term = $('loadSearch').value.trim();
+    if (term) q = q.or(`load_no.ilike.%${term}%,ebl_no.ilike.%${term}%,customer_name.ilike.%${term}%,destination.ilike.%${term}%`);
+    const { data, error } = await q;
+    if (error) { $('loadList').innerHTML = `<p class="msg err">${esc(error.message)} — run supabase/wms.sql first.</p>`; return; }
+    $('loadList').innerHTML = (data || []).map((l) => `<div class="item">
+        <div class="top"><span class="lno">${esc(l.load_no)}</span>
+          <span style="display:flex;gap:.5rem;align-items:center">
+            <span class="sector-chip">${esc(l.sector || sectorFor(l.destination))}</span>
+            <span class="pill ${esc(l.status)}">${esc(l.status.replace('_', ' '))}</span></span></div>
+        <div class="meta">${esc(l.cargo || '—')} · ${esc(l.customer_name || '—')} → ${esc(l.destination || '—')}</div>
+        <div class="meta">EB/L ${esc(l.ebl_no || '—')}${l.order_inv ? ' · Inv ' + esc(l.order_inv) : ''}${l.wms_shipments ? ' · ' + esc(l.wms_shipments.shipment_no) : ''}</div>
+        <div class="meta">In: ${fdt(l.scanned_in_at)} · Out: ${fdt(l.scanned_out_at)}</div>
+        <button class="btn ghost sm" data-lbl="${l.id}">4×6 label</button>
+        <button class="btn sm" data-open="${esc(l.load_no)}">Scan / move</button>
+      </div>`).join('') || '<p class="msg">No loads yet — bill an order or create one above.</p>';
+    document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => handleCode(b.dataset.open)));
+    document.querySelectorAll('[data-lbl]').forEach((b) => b.addEventListener('click', async () => {
+      const { data: l } = await db.from('wms_loads').select('*').eq('id', b.dataset.lbl).single();
+      if (l) printLabel(l);
+    }));
+  }
+  let lsTimer; $('loadSearch').addEventListener('input', () => { clearTimeout(lsTimer); lsTimer = setTimeout(loadLoads, 300); });
+
+  $('nlCreate').addEventListener('click', async () => {
+    const msg = $('nlMsg'); msg.className = 'msg';
+    try {
+      const { data: no, error: eNo } = await db.rpc('generate_load_no');
+      if (eNo) throw eNo;
+      const dest = $('nlDest').value;
+      const { data, error } = await db.from('wms_loads').insert({
+        load_no: no, customer_name: $('nlCustomer').value.trim() || null,
+        cargo: $('nlCargo').value.trim() || null, destination: dest,
+        ebl_no: $('nlEbl').value.trim().toUpperCase() || null,
+        sector: sectorFor(dest), status: 'expected',
+      }).select().single();
+      if (error) throw error;
+      msg.textContent = no + ' created — printing label.'; msg.className = 'msg ok';
+      ['nlCustomer', 'nlCargo', 'nlEbl'].forEach((id) => ($(id).value = ''));
+      loadLoads(); printLabel(data);
+    } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
+  });
+
+  /* ---------- shipments ---------- */
+  async function loadShips() {
+    const { data, error } = await db.from('wms_shipments').select('*, wms_loads(id,load_no,status)')
+      .order('created_at', { ascending: false }).limit(25);
+    if (error) { $('shipList').innerHTML = `<p class="msg err">${esc(error.message)}</p>`; return; }
+    const NEXT = { open: 'departed', departed: 'arrived', arrived: 'closed' };
+    $('shipList').innerHTML = (data || []).map((s) => {
+      const loads = s.wms_loads || [];
+      return `<div class="item">
+        <div class="top"><span class="lno">${esc(s.shipment_no)}</span>
+          <span style="display:flex;gap:.5rem"><span class="pill ${s.direction === 'inbound' ? 'expected' : 'shipped'}">${esc(s.direction)}</span>
+          <span class="pill ${esc(s.status)}">${esc(s.status)}</span></span></div>
+        <div class="meta">${esc(s.vessel || '—')} · departs ${fd(s.departs)} · expected ${fd(s.expected_arrival)}</div>
+        <div class="meta">${loads.length} load${loads.length === 1 ? '' : 's'}: ${loads.map((l) => esc(l.load_no)).join(', ') || '—'}</div>
+        ${s.notes ? `<div class="meta">${esc(s.notes)}</div>` : ''}
+        ${NEXT[s.status] ? `<button class="btn ghost sm" data-adv="${s.id}" data-next="${NEXT[s.status]}">Mark ${NEXT[s.status]}</button>` : ''}
+      </div>`;
+    }).join('') || '<p class="msg">No shipments yet.</p>';
+    document.querySelectorAll('[data-adv]').forEach((b) => b.addEventListener('click', async () => {
+      await db.from('wms_shipments').update({ status: b.dataset.next }).eq('id', b.dataset.adv);
+      loadShips(); loadDash();
+    }));
+  }
+  $('nsCreate').addEventListener('click', async () => {
+    const msg = $('nsMsg'); msg.className = 'msg';
+    try {
+      const { data: no, error: eNo } = await db.rpc('generate_shipment_no');
+      if (eNo) throw eNo;
+      const { error } = await db.from('wms_shipments').insert({
+        shipment_no: no, direction: $('nsDir').value, vessel: $('nsVessel').value.trim() || null,
+        departs: $('nsDeparts').value || null, expected_arrival: $('nsArrival').value || null,
+        notes: $('nsNotes').value.trim() || null,
+      });
+      if (error) throw error;
+      msg.textContent = no + ' created.'; msg.className = 'msg ok';
+      loadShips(); loadDash();
+    } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
+  });
+
+  /* ---------- 4×6 label ---------- */
+  function printLabel(load) {
+    const sec = load.sector || sectorFor(load.destination);
+    const root = $('labelRoot');
+    root.innerHTML = `<div class="label">
+        <div class="lb-head">FCS·WMS &nbsp;WAREHOUSE LABEL</div>
+        <div class="lb-qr" id="lbQr"></div>
+        <div class="lb-no">${esc(load.load_no)}</div>
+        <div class="lb-sec">${sec}</div>
+        <div class="lb-dest">${esc(SECTORS[sec])}${load.destination && !SECTORS[sec].toLowerCase().includes(String(load.destination).toLowerCase()) ? ' · ' + esc(load.destination) : ''}</div>
+        <div class="lb-meta">${esc(load.customer_name || '')}<br>${esc(load.cargo || '')}<br>EB/L: ${esc(load.ebl_no || '—')}${load.order_inv ? ' · Inv ' + esc(load.order_inv) : ''}</div>
+        <div class="lb-foot">Scan with any phone camera · fcsshipping.com · ${new Date().toLocaleDateString()}</div>
+      </div>`;
+    /* the QR opens the WMS scan screen directly — any camera app works */
+    new QRCode(document.getElementById('lbQr'), {
+      text: `https://fcsshipping.com/admin/wms/?load=${encodeURIComponent(load.load_no)}`,
+      width: 236, height: 236, correctLevel: QRCode.CorrectLevel.M,
+    });
+    setTimeout(() => window.print(), 350);
+  }
+
+  db.auth.onAuthStateChange(() => refreshAuth());
+  refreshAuth();
+})();
+</script>
+</body>
+</html>
