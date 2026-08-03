@@ -399,6 +399,18 @@ table.list tbody tr:hover{background:#fafcfd}
                   <div id="billState" style="font-size:17px;font-weight:700"></div>
                 </div>
               </div>
+              <!-- WMS QR — appears the moment the EB/L is created; scan it with any phone -->
+              <div id="billQrWrap" hidden>
+                <div style="margin-top:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#0F1620;border:1.5px solid #FFB020;border-radius:10px;padding:12px 14px">
+                  <div id="billQr" style="background:#fff;padding:8px;border-radius:8px;line-height:0"></div>
+                  <div style="font-size:12.5px;line-height:1.7;color:#E8EEF5">
+                    <b style="font-family:ui-monospace,monospace;color:#FFB020;font-size:15px" id="billQrNo"></b><br>
+                    <b id="billQrSec"></b><br>
+                    Scan with any phone camera → opens <b style="color:#FFB020">FCS·WMS</b> on this load.<br>
+                    Print the 4×6 and stick it on the cargo.
+                  </div>
+                </div>
+              </div>
               <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
                 <button class="btn" id="btnPaid">Mark PAID</button>
                 <button class="btn ghost" id="btnUnpaid">Mark NOT paid</button>
@@ -794,13 +806,27 @@ function renderBilling(){
   $('#billMsg').textContent = (draft && !draft.id)
     ? 'Save the order to enable billing.' : '';
   if(has){
-    $('#billEbl').textContent = draft.eblNo + (draft.loadNo ? '  ·  '+draft.loadNo+' (Sector '+(draft.sector||'?')+')' : '');
+    $('#billEbl').textContent = draft.eblNo + (draft.loadNo ? '  ·  '+draft.loadNo : '');
     $('#billQb').textContent = draft.qbInvoiceNo ? 'Invoice '+draft.qbInvoiceNo : 'not posted';
     const st = $('#billState');
     st.textContent = draft.paid ? 'PAID' : 'NOT PAID';
     st.style.color = draft.paid ? '#177245' : '#B45309';
   }
   $('#btnWmsLabel').hidden = !(draft && draft.loadNo);
+  /* inline WMS QR — auto-connected: scanning opens the WMS on this load */
+  const qw = $('#billQrWrap');
+  if(has && draft.loadNo && window.QRCode){
+    qw.hidden = false;
+    const qr = $('#billQr');
+    if(qr.dataset.load !== draft.loadNo){
+      qr.innerHTML=''; qr.dataset.load = draft.loadNo;
+      new QRCode(qr, { text:'https://fcsshipping.com/admin/wms/?load='+encodeURIComponent(draft.loadNo),
+        width:128, height:128, correctLevel:QRCode.CorrectLevel.M });
+    }
+    const SEC={A:'Vieux-Fort',B:'Castries',C:'Other islands'};
+    $('#billQrNo').textContent = draft.loadNo;
+    $('#billQrSec').textContent = 'SECTOR '+(draft.sector||'?')+' · '+(SEC[draft.sector]||'');
+  } else { qw.hidden = true; }
 }
 
 /* ---- 4×6 WMS warehouse label: prints in its own window so the label's
