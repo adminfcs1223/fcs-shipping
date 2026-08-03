@@ -401,7 +401,11 @@ details.cust>summary::-webkit-details-marker{display:none}
           <div class="meta">${esc(e.cargo)} → ${esc(e.destination || '—')} · $${(e.price_cents / 100).toLocaleString()}</div>
         </summary>
         <div style="border-top:1px solid var(--line);margin-top:.7rem;padding-top:.7rem">
-          ${item ? `<div class="meta" style="margin-top:0"><b>${item.pieces || 1} pc</b> · Sector ${esc(item.sector || '?')} · ${load ? esc(load.load_no) : 'no load'}${shipNo ? ' · ' + esc(shipNo) : ''}</div>` : '<div class="meta" style="margin-top:0">Not in the warehouse system.</div>'}
+          ${item ? `<div class="meta" style="margin-top:0"><b>${item.pieces || 1} pc</b> · Sector ${esc(item.sector || '?')} · ${load ? esc(load.load_no) : 'no load'}${shipNo ? ' · ' + esc(shipNo) : ''}</div>`
+            : `<div class="meta" style="margin-top:0;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">Not in the warehouse system.
+                <button class="btn sm sea" style="margin:0" data-addwms="${e.id}" data-ebl="${esc(e.ebl_no)}" data-dest="${esc(e.destination || 'Other')}"
+                  data-pcs="${Math.max(1, (o && (o.items || []).reduce((s2, it2) => s2 + (Math.round(parseFloat(it2.qty)) || 0), 0)) || e.quantity || 1)}"
+                  data-name="${esc(name)}" data-cargo="${esc(e.cargo || '')}" data-inv="${esc((o && o.inv) || e.order_inv || '')}">+ Add to WMS</button></div>`}
           <div style="display:flex;gap:.9rem;align-items:flex-start;margin-top:.6rem;flex-wrap:wrap">
             <div class="custqr"></div>
             <div style="display:flex;gap:.45rem;flex-wrap:wrap;flex:1;min-width:210px;align-content:flex-start">
@@ -492,6 +496,23 @@ details.cust>summary::-webkit-details-marker{display:none}
       const { error: e1 } = await db.from('shipments').update({ status: b.dataset.next }).eq('id', b.dataset.adv);
       if (!e1) await db.from('shipment_events').insert({ shipment_id: b.dataset.adv, status: b.dataset.next, note });
       loadCustomers(); loadDash();
+    }));
+    /* put an existing EB/L into the warehouse: joins the open load for its destination */
+    document.querySelectorAll('[data-addwms]').forEach((b) => b.addEventListener('click', async () => {
+      b.disabled = true;
+      try {
+        const { data: li, error: eA } = await db.rpc('wms_assign_load', { p_dest: b.dataset.dest });
+        if (eA) throw eA;
+        const { error: eI } = await db.from('wms_items').insert({
+          ebl_no: b.dataset.ebl, order_inv: b.dataset.inv || null,
+          customer_name: b.dataset.name || null, cargo: b.dataset.cargo || null,
+          pieces: Math.max(1, parseInt(b.dataset.pcs, 10) || 1),
+          destination: b.dataset.dest, sector: li.sector, load_id: li.id, status: 'expected',
+        });
+        if (eI) throw eI;
+        alert('Added to ' + li.load_no + ' (Sector ' + li.sector + ') — expected in the warehouse. Print the 4×6 label from the WMS.');
+      } catch (e) { alert('Could not add: ' + e.message); }
+      loadCustomers();
     }));
     document.querySelectorAll('[data-wmsnext]').forEach((b) => b.addEventListener('click', async () => {
       await db.from('wms_items').update(JSON.parse(b.dataset.upd)).eq('id', b.dataset.wmsnext);
