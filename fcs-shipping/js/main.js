@@ -369,6 +369,13 @@
       : state.item === 'amazon'
         ? "Tell us what's on the way and who it's for."
         : "Tell us where to come and we'll take it from there.";
+    /* destination is already answered — show it, don't ask again */
+    const d = state.dest;
+    $('mDestLine').textContent = d && !d.call
+      ? `${flagFor(d.country)} ${d.name}, ${d.country || cfg.arrivalCountry || 'St. Lucia'}`
+      : state.suppliesOnly ? 'Supplies — Brooklyn pickup or delivery'
+      : state.item === 'amazon' ? 'Our Brooklyn warehouse → the island'
+      : '—';
     $('mErr').hidden = true;
     openModal('mForm');
     setTimeout(() => $('pName').focus(), 150);
@@ -414,8 +421,10 @@
             date: $('pDate').value,
           },
           consignee: {
-            name: $('cName').value.trim(), address: $('cAddress').value.trim(),
-            country: $('cCountry').value.trim(),
+            name: $('cName').value.trim(),
+            /* filled from what they already chose — no need to ask twice */
+            address: state.dest && !state.dest.call ? state.dest.name : '',
+            country: state.dest && !state.dest.call ? (state.dest.country || cfg.arrivalCountry || 'St. Lucia') : '',
             phone: $('cPhone').value.trim(), phone2: $('cPhone2').value.trim(),
             email: $('ccEmail').value.trim(),
           },
