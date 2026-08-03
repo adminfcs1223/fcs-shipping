@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/styles.css?v=9">
+<link rel="stylesheet" href="/css/styles.css?v=10">
 </head>
 <body>
 
@@ -51,7 +51,7 @@
   <div class="hero-bottom">
     <p class="lede" id="heroLede"><b id="rotWord">Barrel</b> Shipping Simplified</p>
     <div class="hero-ctas">
-      <a class="btn btn-white" href="#quote">Get a Quote</a>
+      <a class="btn btn-white" href="#quote">Request a Pickup</a>
       <a class="btn btn-dark" href="#track">Track a shipment</a>
     </div>
     <div class="next-sail">
@@ -77,96 +77,73 @@
   </div>
 </div>
 
-<!-- ============ QUOTE ============ -->
+<!-- ============ REQUEST A PICKUP ============ -->
 <section id="quote">
-  <div class="sec-head reveal">
-    <div class="eyebrow">Instant estimate</div>
-    <h2>Build your quote, watch the waybill fill in</h2>
-    <p>Pick what you're shipping and where it's going. Your estimate updates live — no phone call needed (though we love to talk: <span id="quotePhone">(718) 483-8006</span>).</p>
+  <div class="sec-head reveal" style="text-align:center;max-width:none">
+    <h2>Request a Pickup</h2>
   </div>
   <div class="quote-grid">
-    <form class="reveal" id="quoteForm" aria-label="Quote builder">
-      <div class="field">
-        <label>What are you shipping? (mix &amp; match)</label>
-        <div id="cargoList"></div>
-        <div class="chip-row" style="margin-top:.6rem">
-          <button type="button" class="chip" id="eblChip" aria-pressed="false">I have an EB/L number</button>
+    <div class="reveal" id="wizard">
+
+      <!-- Step 1 · what are you shipping -->
+      <div class="wz-step on" id="wzStep1">
+        <div class="wz-grid">
+          <button type="button" class="wz-card" data-pick="barrel">
+            <img src="/assets/pick-barrel.webp" alt="Shipping barrels"><span>Barrel</span>
+          </button>
+          <button type="button" class="wz-card" data-pick="bin">
+            <img src="/assets/pick-bin.webp" alt="Commercial bin"><span>Commercial Bin</span>
+          </button>
+          <button type="button" class="wz-card" data-pick="box">
+            <img src="/assets/pick-box.webp" alt="Box"><span>Box</span>
+          </button>
+          <button type="button" class="wz-card" data-pick="amazon">
+            <img src="/assets/pick-amazon.webp" alt="Online order package"><span>Amazon / Online Order</span>
+          </button>
+        </div>
+        <div class="wz-links">
+          <button type="button" id="wzSuppliesOnly">Just need empty barrels or bins? →</button>
+          <button type="button" id="wzHaveEbl">Have an EB/L number? Pay it here →</button>
         </div>
       </div>
-      <div class="field" id="dimsField" hidden>
-        <label>Box measurements (inches)</label>
-        <div class="dims-row">
-          <input type="number" id="dimL" min="1" placeholder="Length">
-          <span>×</span>
-          <input type="number" id="dimW" min="1" placeholder="Width">
-          <span>×</span>
-          <input type="number" id="dimH" min="1" placeholder="Height">
-        </div>
-        <p class="dims-note" id="dimsNote">= enter all three to calculate cubic feet</p>
+
+      <!-- Step 2 · destination -->
+      <div class="wz-step" id="wzStep2">
+        <button type="button" class="wz-back" data-back="1">← Back</button>
+        <h3 class="wz-q">Where is it sailing to?</h3>
+        <div class="wz-grid" id="wzDestGrid"></div>
       </div>
-      <div class="field" id="eblField" hidden>
-        <label for="eblInput">Your EB/L number</label>
+
+      <!-- Step 3 · extras -->
+      <div class="wz-step" id="wzStep3">
+        <button type="button" class="wz-back" data-back="2">← Back</button>
+        <h3 class="wz-q" id="wzExtrasTitle">Anything extra?</h3>
+        <div class="wz-extras">
+          <div id="wzSupplies"></div>
+          <label class="wz-check" id="wzDeliverWrap" hidden>
+            <input type="checkbox" id="wzDeliver"> Deliver supplies to my home
+          </label>
+          <button type="button" class="wz-toggle" id="wzInsurance" aria-pressed="false">
+            <span class="tick"></span> Add insurance <b id="wzInsPrice"></b>
+          </button>
+          <button type="button" class="wz-toggle ghosted" id="wzNoThanks">No thank you — just the pickup</button>
+        </div>
+        <button type="button" class="btn wz-request" id="wzRequest">Request Pickup →</button>
+      </div>
+
+      <!-- EB/L payment (side path) -->
+      <div class="wz-step" id="wzStepEbl">
+        <button type="button" class="wz-back" data-back="1">← Back</button>
+        <h3 class="wz-q">Pay your EB/L</h3>
         <div class="ebl-row">
           <input type="text" id="eblInput" placeholder="EBL-2026-0000">
           <button type="button" class="btn btn-dark" id="eblLoad">Load</button>
         </div>
         <p class="dims-note" id="eblMsg">Enter the EB/L number our team gave you — your exact price loads automatically.</p>
+        <button type="button" class="btn btn-dark" id="eblPay" hidden>Pay now →</button>
       </div>
-      <div class="field">
-        <label for="dest">Destination port</label>
-        <select id="dest"></select>
-        <p class="dims-note" id="destNote" hidden>Call <a href="tel:+17184838006">(718) 483-8006</a> for exact rates to other islands.</p>
-      </div>
-      <div class="field">
-        <label>Extras</label>
-        <div class="chip-row" id="extraChips"></div>
-      </div>
-      <div class="field">
-        <label>Need empty barrels or bins?</label>
-        <div id="suppliesList"></div>
-        <div class="chip-row" id="supplyDeliveryWrap" hidden>
-          <button type="button" class="chip" id="supplyDelivery" aria-pressed="false">Deliver supplies to my home +$5</button>
-        </div>
-      </div>
-      <button type="button" class="btn btn-dark" id="lockBtn">Lock in this rate →</button>
 
-      <!-- Phase 2: quote request panel -->
-      <div class="lockin-panel" id="lockPanel">
-        <div class="field">
-          <label for="qName">Your name</label>
-          <input type="text" id="qName" autocomplete="name" required>
-        </div>
-        <div class="field">
-          <label for="qPhone">Phone</label>
-          <input type="tel" id="qPhone" autocomplete="tel" required>
-        </div>
-        <div class="field">
-          <label for="qEmail">Email</label>
-          <input type="email" id="qEmail" autocomplete="email" required>
-        </div>
-        <div class="field">
-          <label for="qAddress">Address <small style="text-transform:none;letter-spacing:0">(optional — even just a street or neighborhood helps)</small></label>
-          <input type="text" id="qAddress" autocomplete="street-address" placeholder="e.g. 123 Flatbush Ave, Brooklyn">
-        </div>
-        <div class="field">
-          <label for="slotSel">Pickup / drop-off time <small style="text-transform:none;letter-spacing:0">(optional)</small></label>
-          <select id="slotSel"><option value="">Choose a time…</option></select>
-          <p class="dims-note slot-lock" id="slotMsg" hidden></p>
-        </div>
-        <!-- honeypot: humans never see this -->
-        <div class="hp" aria-hidden="true">
-          <label for="qWebsite">Website</label>
-          <input type="text" id="qWebsite" tabindex="-1" autocomplete="off">
-        </div>
-        <button type="submit" class="btn btn-dark" id="sendQuoteBtn">Send quote request</button>
-        <p class="form-msg" id="quoteMsg" role="status"></p>
-        <!-- Phase 3: pay deposit -->
-        <div class="pay-panel" id="payPanel">
-          <button type="button" class="btn btn-dark" id="payBtn">Pay deposit by card →</button>
-          <div class="testmode" id="testModeBadge" hidden>Test mode — no real charge</div>
-        </div>
-      </div>
-    </form>
+    </div>
 
     <div class="wb-col reveal">
     <div class="waybill" aria-live="polite">
@@ -245,18 +222,29 @@
   </div>
 </section>
 
-<!-- ============ SCHEDULE ============ -->
+<!-- ============ SHIP IT YOUR WAY ============ -->
 <section id="schedule">
   <div class="sec-head reveal">
-    <div class="eyebrow">Sailing schedule</div>
-    <h2>Upcoming departures</h2>
-    <p>Cargo cut-off is two days before each sailing. Drop off at the warehouse or book a pickup.</p>
+    <div class="eyebrow">Ship it your way</div>
+    <h2>Three easy ways to get it home</h2>
+    <p>However your things reach our Brooklyn warehouse, they leave on the next Thursday sailing.</p>
   </div>
-  <div class="sched-wrap reveal">
-    <table class="sched">
-      <thead><tr><th>Vessel</th><th>Departs</th><th>Arrives <span id="arrCountry">St. Lucia</span></th><th>Cut-off</th><th>Status</th></tr></thead>
-      <tbody id="schedBody"></tbody>
-    </table>
+  <div class="how-grid reveal">
+    <article class="how-card">
+      <img src="/assets/pick-amazon.webp" alt="Online orders shipped to our warehouse" loading="lazy">
+      <h3>Mail it straight to us</h3>
+      <p>Shopping online? Put our warehouse down as your delivery address — <b>9502 Ditmas Ave, Building 4, Brooklyn NY 11236</b> — and your Amazon, Walmart, or SHEIN orders come straight to us. We sign for them, keep them safe, and load them on the next vessel. No box is too small; a single package is enough to start.</p>
+    </article>
+    <article class="how-card">
+      <img src="/assets/pick-barrel.webp" alt="Empty barrels ready to pack" loading="lazy">
+      <h3>Pack your own barrel</h3>
+      <p>Buy an empty barrel or bin right from us, take it home, or pack it at the warehouse — Monday to Friday, 9 to 5. Bring the rice, the oil, the school clothes, the little luxuries; take your time and pack it your way. When the lid goes on, we band it, label it, and it's manifested for the island the same day.</p>
+    </article>
+    <article class="how-card">
+      <img src="/assets/founder-og.jpg" alt="The FCS team packing customer cargo" loading="lazy">
+      <h3>Or let our hands do it</h3>
+      <p>Been doing this since 2017 — nobody packs a barrel tighter. Drop your things off loose or request a pickup, and our team packs, seals, and manifests everything for you. You get a tracking number on the spot and a call the moment it lands in St. Lucia.</p>
+    </article>
   </div>
 </section>
 
@@ -326,8 +314,81 @@
   <p style="margin-top:.6rem"><a href="/legal/terms/" style="color:var(--sea);text-decoration:none">Terms of Service</a> · <a href="/legal/privacy/" style="color:var(--sea);text-decoration:none">Privacy Policy</a></p>
 </footer>
 
+<!-- ===== modals (blur the world behind them) ===== -->
+    <div class="modal-back" id="mBack" hidden>
+      <!-- You're almost done -->
+      <div class="modal" id="mForm" hidden>
+        <button type="button" class="m-x" data-close>&times;</button>
+        <h3 class="m-title">You're almost done</h3>
+        <p class="m-sub" id="mFormSub">Tell us where to come and we'll take it from there.</p>
+        <div class="m-cols">
+          <div>
+            <h4>Pickup from</h4>
+            <input type="text" id="pName" placeholder="Sender's name" autocomplete="name">
+            <input type="text" id="pStreet" placeholder="Street address (pickup)" autocomplete="street-address">
+            <input type="text" id="pApt" placeholder="Apt #, suite, floor">
+            <div class="m-row">
+              <input type="text" id="pCity" placeholder="City">
+              <input type="text" id="pState" placeholder="State" value="NY" style="max-width:80px">
+              <input type="text" id="pZip" placeholder="Zip" style="max-width:110px">
+            </div>
+            <div class="m-row">
+              <input type="tel" id="pPhone" placeholder="Phone 1" autocomplete="tel">
+              <input type="tel" id="pPhone2" placeholder="Phone 2">
+            </div>
+            <input type="email" id="pEmail" placeholder="E-mail" autocomplete="email">
+            <label class="m-lbl">Pickup date</label>
+            <input type="date" id="pDate">
+          </div>
+          <div>
+            <h4>Going to</h4>
+            <input type="text" id="cName" placeholder="Receiver's name">
+            <textarea id="cAddress" placeholder="Address (destination)" rows="3"></textarea>
+            <input type="text" id="cCountry" placeholder="Country">
+            <div class="m-row">
+              <input type="tel" id="cPhone" placeholder="Phone 1">
+              <input type="tel" id="cPhone2" placeholder="Phone 2">
+            </div>
+            <input type="email" id="cEmail" placeholder="E-mail">
+          </div>
+        </div>
+        <div class="hp" aria-hidden="true"><input type="text" id="pWebsite" tabindex="-1" autocomplete="off"></div>
+        <p class="m-err" id="mErr" hidden></p>
+        <button type="button" class="btn wz-request" id="mSubmit">Request Pickup</button>
+      </div>
+
+      <!-- Amazon mail-in -->
+      <div class="modal" id="mAmazon" hidden>
+        <button type="button" class="m-x" data-close>&times;</button>
+        <h3 class="m-title">Shop online, ship home</h3>
+        <p class="m-sub">You can now send your Amazon, Walmart, SHEIN — any online order — directly to our warehouse, and we'll take it from there.</p>
+        <div class="m-addr">
+          <span id="mAddrText">Your Name — c/o FCS Shipping LLC<br>9502 Ditmas Ave, Building 4<br>Brooklyn, NY 11236</span>
+          <button type="button" class="btn btn-dark" id="mCopyAddr">Copy address</button>
+        </div>
+        <button type="button" class="btn wz-request" id="mNotify">Notify us of an incoming shipment →</button>
+      </div>
+
+      <!-- Other island → call us -->
+      <div class="modal m-small" id="mCall" hidden>
+        <button type="button" class="m-x" data-close>&times;</button>
+        <h3 class="m-title">Let's talk it through</h3>
+        <p class="m-sub">Rates beyond St. Lucia change with the season — give us a quick call and we'll price it on the spot.</p>
+        <a class="btn btn-dark" href="tel:+17184838006" style="width:100%;justify-content:center">Call (718) 483-8006</a>
+      </div>
+
+      <!-- Done -->
+      <div class="modal m-small" id="mDone" hidden>
+        <div class="m-check"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-17"/></svg></div>
+        <h3 class="m-title" style="text-align:center">Request received!</h3>
+        <p class="m-sub" style="text-align:center" id="mDoneText">You will receive a call from us shortly.</p>
+        <button type="button" class="btn btn-dark" data-close style="width:100%;justify-content:center">Done</button>
+      </div>
+    </div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/admin/config.js"></script>
-<script src="/js/main.js?v=5"></script>
+<script src="/js/main.js?v=6"></script>
 </body>
 </html>
