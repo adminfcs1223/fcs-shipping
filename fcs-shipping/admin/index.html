@@ -18,6 +18,15 @@ header{background:var(--ink);color:#fff;padding:.9rem 1.2rem;display:flex;align-
 header .t{font-weight:900;text-transform:uppercase;letter-spacing:.04em}
 header .t small{display:block;font-family:var(--mono);font-weight:400;font-size:.6rem;letter-spacing:.2em;color:#BCD3E2}
 #logoutBtn{background:none;border:1px solid #444;color:#ccc;border-radius:6px;padding:.4rem .9rem;font-size:.8rem}
+/* the WMS is its own machine — its badge sits top-left, styled like nothing else here */
+#wmsBtn{display:flex;align-items:center;gap:.45rem;text-decoration:none;background:#0F1620;
+  border:1.5px solid #FFB020;border-radius:8px;padding:.35rem .6rem;margin-right:.75rem}
+#wmsBtn .wms-mark{width:22px;height:22px;border:1.5px solid #FFB020;border-radius:4px;display:grid;
+  grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:3px}
+#wmsBtn .wms-mark i{background:#FFB020;border-radius:1px}
+#wmsBtn .wms-mark i:nth-child(4){background:#5a6b7d}
+#wmsBtn .wms-txt{font-family:var(--mono);font-weight:700;font-size:.78rem;color:#E8EEF5;letter-spacing:.04em}
+#wmsBtn .wms-txt b{color:#FFB020}
 #ordersLink{margin-left:auto;margin-right:.6rem;color:#BCD3E2;text-decoration:none;font-size:.82rem;font-weight:700;border:1px solid #2f6a8c;border-radius:6px;padding:.4rem .8rem}
 #ordersLink:hover{background:#0B5C8A;color:#fff}
 main{max-width:760px;margin:0 auto;padding:1.2rem}
@@ -79,6 +88,10 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
 <body>
 
 <header>
+  <a id="wmsBtn" href="/admin/wms/" hidden aria-label="Open FCS WMS">
+    <span class="wms-mark"><i></i><i></i><i></i><i></i></span>
+    <span class="wms-txt">FCS<b>·WMS</b></span>
+  </a>
   <div class="t">FCS Admin<small>Staff dashboard</small></div>
   <a id="ordersLink" href="/admin/orders/" hidden>Order entry →</a>
   <button id="logoutBtn" hidden>Log out</button>
@@ -282,6 +295,7 @@ input:focus,select:focus{outline:2px solid var(--sea);border-color:var(--sea)}
     $('tabs').hidden = !inApp;
     $('logoutBtn').hidden = !inApp;
     $('ordersLink').hidden = !inApp;
+    $('wmsBtn').hidden = !inApp;
     if (inApp) { loadDash(); loadShipments(); loadQuotes(); loadSailings(); loadPrices(); loadEbls(); loadTestimonials(); loadCal(); }
   }
   $('loginBtn').addEventListener('click', async () => {
