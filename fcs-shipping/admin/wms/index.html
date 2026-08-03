@@ -80,6 +80,12 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
 .pill.arrived{background:#0F3A24;color:var(--green)}
 .pill.closed{background:#222;color:var(--dim)}
 .meta{font-family:var(--mono);font-size:.72rem;color:var(--dim);margin-top:.35rem}
+details.hier{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:.7rem;overflow:hidden}
+details.hier>summary{cursor:pointer;padding:1rem;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+details.hier>summary::-webkit-details-marker{display:none}
+details.hier .inner{padding:0 1rem 1rem}
+details.hier details.hier{background:#101A26}
+.pieces-big{font-size:1.5rem;font-weight:900;color:var(--amber);font-family:var(--mono)}
 .sector-chip{display:inline-flex;width:26px;height:26px;border-radius:6px;background:var(--amber);color:#14100A;
   font-family:var(--mono);font-weight:700;align-items:center;justify-content:center;font-size:.9rem}
 /* scan */
@@ -132,6 +138,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
 .label .lb-qr{margin:10pt 0 6pt}
 .label .lb-qr img,.label .lb-qr canvas{width:2.45in!important;height:2.45in!important}
 .label .lb-no{font-family:var(--mono);font-weight:700;font-size:16pt;letter-spacing:.03em}
+.label .lb-pieces{font-size:26pt;font-weight:900;letter-spacing:.02em;margin-top:2pt}
 .label .lb-sec{font-size:64pt;font-weight:900;line-height:1;border:4px solid #000;border-radius:10px;
   padding:2pt 18pt;margin:6pt 0 4pt}
 .label .lb-dest{font-weight:900;font-size:13pt;text-transform:uppercase}
@@ -213,18 +220,19 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
       <h2>New / expected load</h2>
       <p class="note" style="margin:0 0 .4rem">Billing an order in Order Entry creates its load automatically — use this for expectant cargo arriving without one.</p>
       <label>Customer</label><input type="text" id="nlCustomer">
-      <label>Cargo</label><input type="text" id="nlCargo" placeholder="e.g. Barrel × 2">
+      <label>Cargo</label><input type="text" id="nlCargo" placeholder="e.g. Barrel + box">
       <div class="row2">
-        <div><label>Destination</label>
-          <select id="nlDest"><option>Vieux-Fort</option><option>Port Castries</option><option>Other island</option></select></div>
+        <div><label>Pieces</label><input type="number" id="nlPieces" min="1" value="1"></div>
         <div><label>EB/L (optional)</label><input type="text" id="nlEbl" placeholder="EBL-2026-0000"></div>
       </div>
-      <button class="btn sm" id="nlCreate">Create load + label</button>
+      <label>Destination</label>
+      <select id="nlDest"><option>Vieux-Fort</option><option>Port Castries</option><option>Other island</option></select>
+      <button class="btn sm" id="nlCreate">Add to load + print label</button>
       <p class="msg" id="nlMsg"></p>
     </div>
     <div class="card">
-      <h2>Find loads</h2>
-      <input type="text" id="loadSearch" placeholder="Load nº, EB/L, customer, destination…">
+      <h2>Shipments → Loads → EB/Ls</h2>
+      <input type="text" id="loadSearch" placeholder="EB/L, load nº, customer…">
     </div>
     <div id="loadList"></div>
   </div>
@@ -334,16 +342,16 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
   document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
   document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => showView(b.dataset.go)));
 
-  /* ---------- dashboard ---------- */
+  /* ---------- dashboard (counts from individual EB/L items) ---------- */
   async function loadDash() {
     try {
       const cnt = (q) => q.then((r) => (r.count == null ? '—' : r.count));
       const [exp, inWh, a, b, c, ships] = await Promise.all([
-        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'expected')),
-        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse')),
-        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'A')),
-        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'B')),
-        cnt(db.from('wms_loads').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'C')),
+        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'expected')),
+        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse')),
+        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'A')),
+        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'B')),
+        cnt(db.from('wms_items').select('id', { count: 'exact', head: true }).eq('status', 'in_warehouse').eq('sector', 'C')),
         cnt(db.from('wms_shipments').select('id', { count: 'exact', head: true }).eq('status', 'open')),
       ]);
       $('dExpected').textContent = exp; $('dInWh').textContent = inWh;
@@ -357,14 +365,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
         .eq('direction', 'inbound').neq('status', 'closed').order('expected_arrival').limit(1);
       $('dNextArr').textContent = arr && arr[0]
         ? `${arr[0].shipment_no} · ${arr[0].vessel || ''} · expected ${fd(arr[0].expected_arrival)}` : 'none expected';
-      const { data: act } = await db.from('wms_loads').select('*')
+      const { data: act } = await db.from('wms_items').select('*')
         .not('scanned_in_at', 'is', null).order('scanned_in_at', { ascending: false }).limit(8);
       $('dashActivity').innerHTML = (act || []).map((l) => `<div class="meta" style="margin-top:.5rem">
-          <b style="color:var(--ink)">${esc(l.load_no)}</b> · ${l.scanned_out_at ? 'OUT ' + fdt(l.scanned_out_at) : 'IN ' + fdt(l.scanned_in_at)}
-          · Sector ${esc(l.sector || '?')} · ${esc(l.destination || '')}</div>`).join('') ||
-        '<p class="msg">No scans yet — print a label and scan it in.</p>';
+          <b style="color:var(--ink)">${esc(l.ebl_no || l.customer_name || 'item')}</b> · ${l.pieces} pc ·
+          ${l.scanned_out_at ? 'OUT ' + fdt(l.scanned_out_at) : 'IN ' + fdt(l.scanned_in_at)}
+          · Sector ${esc(l.sector || '?')}</div>`).join('') ||
+        '<p class="msg">No scans yet — bill an order and scan its label in.</p>';
     } catch (e) {
-      $('dashActivity').innerHTML = `<p class="msg err">${esc(e.message)} — run supabase/wms.sql first.</p>`;
+      $('dashActivity').innerHTML = `<p class="msg err">${esc(e.message)} — run supabase/wms2.sql first.</p>`;
     }
   }
 
@@ -415,93 +424,131 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
   async function drawMap(target) {
     let counts = {};
     try {
-      const g = (s) => db.from('wms_loads').select('id', { count: 'exact', head: true })
+      const g = (s) => db.from('wms_items').select('id', { count: 'exact', head: true })
         .eq('status', 'in_warehouse').eq('sector', s).then((r) => r.count || 0);
       counts = { A: await g('A'), B: await g('B'), C: await g('C') };
     } catch (e) { /* map still draws */ }
     $('mapHolder').innerHTML = mapSVG(target, counts);
   }
 
-  /* ---------- scanning ---------- */
-  function extractLoadNo(text) {
-    const m = String(text || '').toUpperCase().match(/LOAD-\d{4}-\d{3,6}/);
-    return m ? m[0] : null;
+  /* ---------- scanning: labels carry the EB/L; old labels carry LOAD ---------- */
+  function extractCode(text) {
+    const t = String(text || '').toUpperCase();
+    const e = t.match(/EBL-\d{4}-\d{3,6}/); if (e) return { kind: 'ebl', no: e[0] };
+    const l = t.match(/LOAD-\d{4}-\d{3,6}/); if (l) return { kind: 'load', no: l[0] };
+    return null;
   }
+  function extractLoadNo(text) { const c = extractCode(text); return c ? c.no : null; }
   $('scanGo').addEventListener('click', () => handleCode($('scanInput').value));
   $('scanInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCode($('scanInput').value); });
 
   async function handleCode(raw) {
-    const no = extractLoadNo(raw);
+    const code = extractCode(raw);
     const msg = $('scanMsg'); msg.className = 'msg';
-    if (!no) { msg.textContent = 'That doesn’t look like a load number (LOAD-2026-0001).'; msg.className = 'msg err'; return; }
-    msg.textContent = 'Looking up ' + no + '…';
-    const { data, error } = await db.from('wms_loads').select('*').eq('load_no', no).maybeSingle();
-    if (error || !data) { msg.textContent = 'Load not found' + (error ? ': ' + error.message : '') + '.'; msg.className = 'msg err'; return; }
-    msg.textContent = '';
-    openDirect(data);
+    if (!code) { msg.textContent = 'That doesn\u2019t look like an EB/L or load number.'; msg.className = 'msg err'; return; }
+    msg.textContent = 'Looking up ' + code.no + '\u2026';
+    if (code.kind === 'ebl') {
+      const { data, error } = await db.from('wms_items').select('*, wms_loads(load_no,sector,destination)')
+        .eq('ebl_no', code.no).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (error || !data) { msg.textContent = 'No cargo found for ' + code.no + '.'; msg.className = 'msg err'; return; }
+      msg.textContent = ''; openDirectItem(data);
+    } else {
+      const { data: load, error } = await db.from('wms_loads').select('*, wms_items(*)')
+        .eq('load_no', code.no).maybeSingle();
+      if (error || !load) { msg.textContent = 'Load not found.'; msg.className = 'msg err'; return; }
+      msg.textContent = ''; openDirectLoad(load);
+    }
   }
 
-  /* the big anybody-can-do-this instruction screen */
-  async function openDirect(load) {
+  /* one EB/L (one label on the cargo): "ARE ALL X PIECES IN SECTOR A?" */
+  async function openDirectItem(item) {
     const d = $('directBody');
-    const sec = load.sector || sectorFor(load.destination);
-    if (load.status === 'expected') {
+    const sec = item.sector || sectorFor(item.destination);
+    const loadNo = item.wms_loads ? item.wms_loads.load_no : '';
+    const pcs = item.pieces || 1;
+    if (item.status === 'expected') {
       d.innerHTML = `
-        <div class="banner amber">SCAN IN — ${esc(load.load_no)}</div>
-        <p class="lbig">${esc(load.cargo || 'Cargo')} · ${esc(load.customer_name || '')}</p>
+        <div class="banner amber">SCAN IN \u2014 ${pcs} PIECE${pcs === 1 ? '' : 'S'}</div>
+        <p class="lbig">${esc(item.customer_name || '')} \u00B7 ${esc(item.ebl_no || '')} \u00B7 ${esc(loadNo)}</p>
         <div class="mapwrap">${mapSVG(sec)}</div>
-        <div class="banner green" style="margin-top:1rem">TAKE IT TO SECTOR ${sec} — ${esc(SECTORS[sec])}</div>
-        <button class="btn green" id="doIn">✓ IT’S IN SECTOR ${sec} — CONFIRM SCAN-IN</button>
-        <button class="btn ghost" id="doLabel">Print 4×6 label</button>`;
+        <div class="banner green" style="margin-top:1rem">TAKE TO SECTOR ${sec} \u2014 ${esc(SECTORS[sec])}</div>
+        <button class="btn green" id="doIn">\u2713 ARE ALL ${pcs} PIECE${pcs === 1 ? '' : 'S'} IN SECTOR ${sec}? \u2014 CONFIRM</button>
+        <button class="btn ghost" id="doLabel">Print 4\u00D76 label</button>`;
       $('doIn').addEventListener('click', async () => {
-        const { error } = await db.from('wms_loads').update({
-          status: 'in_warehouse', sector: sec, scanned_in_at: new Date().toISOString() }).eq('id', load.id);
+        const { error } = await db.from('wms_items').update({
+          status: 'in_warehouse', sector: sec, scanned_in_at: new Date().toISOString() }).eq('id', item.id);
         if (error) { alert(error.message); return; }
-        d.innerHTML = `<div class="banner green">✓ SCANNED IN — SECTOR ${sec}</div>
-          <p class="lbig">${esc(load.load_no)} is now in the warehouse.</p>
+        d.innerHTML = `<div class="banner green">\u2713 SCANNED IN \u2014 SECTOR ${sec}</div>
+          <p class="lbig">${pcs} piece${pcs === 1 ? '' : 's'} on ${esc(loadNo)}.</p>
           <button class="btn" id="dirDone">Done</button>`;
         $('dirDone').addEventListener('click', closeDirect);
         loadDash(); loadLoads();
       });
-      $('doLabel').addEventListener('click', () => printLabel(load));
-    } else if (load.status === 'in_warehouse') {
+      $('doLabel').addEventListener('click', () => printLabel(item, loadNo));
+    } else if (item.status === 'in_warehouse') {
       const { data: ships } = await db.from('wms_shipments').select('*')
         .eq('direction', 'outbound').eq('status', 'open').order('departs');
       d.innerHTML = `
-        <div class="banner blue">SCAN OUT — ${esc(load.load_no)}</div>
-        <p class="lbig">In Sector ${esc(load.sector || '?')} since ${fdt(load.scanned_in_at)}</p>
-        <label style="margin-top:.6rem">Loading onto shipment</label>
-        <select id="outShip">${(ships || []).map((s) =>
-          `<option value="${s.id}">${esc(s.shipment_no)} · ${esc(s.vessel || '')} · departs ${fd(s.departs)}</option>`).join('')}
-          <option value="">— no shipment yet —</option></select>
-        <button class="btn blue" id="doOut">✓ CONFIRM SCAN-OUT (LOADED)</button>
-        <button class="btn ghost" id="doLabel2">Reprint 4×6 label</button>`;
+        <div class="banner blue">SCAN OUT \u2014 ${pcs} PIECE${pcs === 1 ? '' : 'S'}</div>
+        <p class="lbig">Sector ${esc(item.sector || '?')} since ${fdt(item.scanned_in_at)} \u00B7 ${esc(loadNo)}</p>
+        <label style="margin-top:.6rem">This load ships on</label>
+        <select id="outShip">${(ships || []).map((sh) =>
+          `<option value="${sh.id}">${esc(sh.shipment_no)} \u00B7 ${esc(sh.vessel || '')} \u00B7 departs ${fd(sh.departs)}</option>`).join('')}
+          <option value="">\u2014 no shipment yet \u2014</option></select>
+        <button class="btn blue" id="doOut">\u2713 CONFIRM SCAN-OUT (LOADED)</button>
+        <button class="btn ghost" id="doLabel2">Reprint 4\u00D76 label</button>`;
       $('doOut').addEventListener('click', async () => {
-        const { error } = await db.from('wms_loads').update({
-          status: 'shipped', scanned_out_at: new Date().toISOString(),
-          shipment_id: $('outShip').value || null }).eq('id', load.id);
+        const shipId = $('outShip').value || null;
+        const { error } = await db.from('wms_items').update({
+          status: 'shipped', scanned_out_at: new Date().toISOString() }).eq('id', item.id);
         if (error) { alert(error.message); return; }
-        d.innerHTML = `<div class="banner blue">✓ SCANNED OUT — LOADED FOR DEPARTURE</div>
-          <p class="lbig">${esc(load.load_no)} is on its way.</p>
+        if (shipId && item.load_id) {
+          await db.from('wms_loads').update({ shipment_id: shipId }).eq('id', item.load_id);
+        }
+        d.innerHTML = `<div class="banner blue">\u2713 SCANNED OUT \u2014 LOADED FOR DEPARTURE</div>
+          <p class="lbig">${pcs} piece${pcs === 1 ? '' : 's'} on the way.</p>
           <button class="btn" id="dirDone">Done</button>`;
         $('dirDone').addEventListener('click', closeDirect);
         loadDash(); loadLoads(); loadShips();
       });
-      $('doLabel2').addEventListener('click', () => printLabel(load));
+      $('doLabel2').addEventListener('click', () => printLabel(item, loadNo));
     } else {
       d.innerHTML = `<div class="banner blue">ALREADY SHIPPED</div>
-        <p class="lbig">${esc(load.load_no)} · scanned out ${fdt(load.scanned_out_at)}</p>
+        <p class="lbig">${esc(item.ebl_no || '')} \u00B7 scanned out ${fdt(item.scanned_out_at)}</p>
         <button class="btn" id="dirDone">Done</button>`;
       $('dirDone').addEventListener('click', closeDirect);
     }
     $('direct').classList.add('on');
   }
-  function closeDirect() { $('direct').classList.remove('on'); }
-  $('directClose').addEventListener('click', closeDirect);
+
+  /* a whole load (old-style labels): scan in every expected EB/L at once */
+  function openDirectLoad(load) {
+    const d = $('directBody');
+    const sec = load.sector || 'C';
+    const items = load.wms_items || [];
+    const waiting = items.filter((i) => i.status === 'expected');
+    const totalPcs = waiting.reduce((s2, i) => s2 + (i.pieces || 1), 0);
+    d.innerHTML = `
+      <div class="banner amber">${esc(load.load_no)} \u2014 SECTOR ${sec}</div>
+      <p class="lbig">${items.length} EB/L${items.length === 1 ? '' : 's'} on this load</p>
+      <div class="mapwrap">${mapSVG(sec)}</div>
+      ${waiting.length ? `<button class="btn green" id="doInAll">\u2713 ARE ALL ${totalPcs} PIECES IN SECTOR ${sec}? \u2014 SCAN IN ${waiting.length} EB/L${waiting.length === 1 ? '' : 'S'}</button>` : '<p class="lbig" style="margin-top:1rem">Everything on this load is already scanned in.</p>'}
+      <button class="btn" id="dirDone">Done</button>`;
+    if (waiting.length) $('doInAll').addEventListener('click', async () => {
+      const { error } = await db.from('wms_items').update({
+        status: 'in_warehouse', sector: sec, scanned_in_at: new Date().toISOString() })
+        .eq('load_id', load.id).eq('status', 'expected');
+      if (error) { alert(error.message); return; }
+      closeDirect(); loadDash(); loadLoads();
+    });
+    $('dirDone').addEventListener('click', closeDirect);
+    $('direct').classList.add('on');
+  }
 
   /* QR deep link: phone camera scans → /admin/wms/?load=LOAD-... */
   function handleDeepLink() {
-    const p = new URLSearchParams(location.search).get('load');
+    const q = new URLSearchParams(location.search);
+    const p = q.get('ebl') || q.get('load');
     if (p) { history.replaceState({}, '', '/admin/wms/'); handleCode(p); showView('scan'); }
   }
 
@@ -535,48 +582,103 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
     requestAnimationFrame(tickCam);
   }
 
-  /* ---------- loads ---------- */
+  /* ---------- Shipments \u2192 Loads \u2192 EB/Ls hierarchy ---------- */
+  function itemRow(i) {
+    return `<div class="item" style="margin-top:.6rem">
+      <div class="top"><span class="lno">${esc(i.ebl_no || '(no EB/L)')}</span>
+        <span style="display:flex;gap:.5rem;align-items:center">
+          <span class="pieces-big">${i.pieces || 1} pc</span>
+          <span class="pill ${esc(i.status)}">${esc(i.status.replace('_', ' '))}</span></span></div>
+      <div class="meta">${esc(i.customer_name || '\u2014')} \u00B7 ${esc(i.cargo || '\u2014')}${i.order_inv ? ' \u00B7 Inv ' + esc(i.order_inv) : ''}</div>
+      <div class="meta">In: ${fdt(i.scanned_in_at)} \u00B7 Out: ${fdt(i.scanned_out_at)}</div>
+      <button class="btn ghost sm" data-lbl="${i.id}">4\u00D76 label</button>
+      ${i.ebl_no ? `<button class="btn sm" data-open="${esc(i.ebl_no)}">Scan / move</button>` : ''}
+    </div>`;
+  }
+  function loadBlock(l, openShips) {
+    const items = l.wms_items || [];
+    const pcs = items.reduce((a, i) => a + (i.pieces || 1), 0);
+    return `<details class="hier">
+      <summary><span class="lno">${esc(l.load_no)}</span>
+        <span style="display:flex;gap:.5rem;align-items:center">
+          <span class="sector-chip">${esc(l.sector || '?')}</span>
+          <span class="meta" style="margin:0">${items.length} EB/L${items.length === 1 ? '' : 's'} \u00B7 ${pcs} pcs</span>
+          <span class="pill ${esc(l.status)}">${esc(l.status)}</span></span></summary>
+      <div class="inner">
+        <div class="meta">${esc(l.destination || SECTORS[l.sector] || '')}</div>
+        ${!l.shipment_id && openShips && openShips.length ? `
+          <div style="display:flex;gap:.5rem;margin-top:.6rem;align-items:center">
+            <select data-shipsel="${l.id}" style="flex:1">${openShips.map((sh) =>
+              `<option value="${sh.id}">${esc(sh.shipment_no)} \u00B7 departs ${fd(sh.departs)}</option>`).join('')}</select>
+            <button class="btn sm" data-attach="${l.id}" style="margin:0">Attach</button>
+          </div>` : ''}
+        ${items.map(itemRow).join('') || '<p class="msg" style="margin-top:.6rem">Empty load \u2014 EB/Ls land here as orders are billed.</p>'}
+      </div>
+    </details>`;
+  }
   async function loadLoads() {
-    let q = db.from('wms_loads').select('*, wms_shipments(shipment_no)').order('created_at', { ascending: false }).limit(40);
-    const term = $('loadSearch').value.trim();
-    if (term) q = q.or(`load_no.ilike.%${term}%,ebl_no.ilike.%${term}%,customer_name.ilike.%${term}%,destination.ilike.%${term}%`);
-    const { data, error } = await q;
-    if (error) { $('loadList').innerHTML = `<p class="msg err">${esc(error.message)} — run supabase/wms.sql first.</p>`; return; }
-    $('loadList').innerHTML = (data || []).map((l) => `<div class="item">
-        <div class="top"><span class="lno">${esc(l.load_no)}</span>
-          <span style="display:flex;gap:.5rem;align-items:center">
-            <span class="sector-chip">${esc(l.sector || sectorFor(l.destination))}</span>
-            <span class="pill ${esc(l.status)}">${esc(l.status.replace('_', ' '))}</span></span></div>
-        <div class="meta">${esc(l.cargo || '—')} · ${esc(l.customer_name || '—')} → ${esc(l.destination || '—')}</div>
-        <div class="meta">EB/L ${esc(l.ebl_no || '—')}${l.order_inv ? ' · Inv ' + esc(l.order_inv) : ''}${l.wms_shipments ? ' · ' + esc(l.wms_shipments.shipment_no) : ''}</div>
-        <div class="meta">In: ${fdt(l.scanned_in_at)} · Out: ${fdt(l.scanned_out_at)}</div>
-        <button class="btn ghost sm" data-lbl="${l.id}">4×6 label</button>
-        <button class="btn sm" data-open="${esc(l.load_no)}">Scan / move</button>
-      </div>`).join('') || '<p class="msg">No loads yet — bill an order or create one above.</p>';
+    const term = $('loadSearch').value.trim().toLowerCase();
+    const { data: ships, error: e1 } = await db.from('wms_shipments')
+      .select('*, wms_loads(*, wms_items(*))').order('created_at', { ascending: false }).limit(20);
+    const { data: floating, error: e2 } = await db.from('wms_loads')
+      .select('*, wms_items(*)').is('shipment_id', null).order('created_at', { ascending: false }).limit(30);
+    if (e1 || e2) { $('loadList').innerHTML = `<p class="msg err">${esc((e1 || e2).message)} \u2014 run supabase/wms2.sql first.</p>`; return; }
+    const { data: openShips } = await db.from('wms_shipments').select('id,shipment_no,departs')
+      .eq('direction', 'outbound').eq('status', 'open').order('departs');
+    const match = (l) => !term || JSON.stringify(l).toLowerCase().includes(term);
+    let html = '';
+    if (floating && floating.length) {
+      html += `<details class="hier" open><summary><span class="lno">OPEN LOADS \u2014 building now</span>
+        <span class="meta" style="margin:0">${floating.length} load${floating.length === 1 ? '' : 's'} not yet on a shipment</span></summary>
+        <div class="inner">${floating.filter(match).map((l) => loadBlock(l, openShips)).join('')}</div></details>`;
+    }
+    html += (ships || []).map((sh) => {
+      const loads = (sh.wms_loads || []).filter(match);
+      if (term && !loads.length && !JSON.stringify(sh).toLowerCase().includes(term)) return '';
+      const pcs = (sh.wms_loads || []).reduce((a, l) => a + (l.wms_items || []).reduce((x, i) => x + (i.pieces || 1), 0), 0);
+      return `<details class="hier"><summary><span class="lno">${esc(sh.shipment_no)}</span>
+        <span style="display:flex;gap:.5rem;align-items:center">
+          <span class="meta" style="margin:0">${esc(sh.vessel || '')} \u00B7 ${(sh.wms_loads || []).length} loads \u00B7 ${pcs} pcs \u00B7 departs ${fd(sh.departs)}</span>
+          <span class="pill ${esc(sh.status)}">${esc(sh.status)}</span></span></summary>
+        <div class="inner">${loads.map((l) => loadBlock(l, null)).join('') || '<p class="msg" style="margin-top:.6rem">No loads attached yet.</p>'}</div>
+      </details>`;
+    }).join('');
+    $('loadList').innerHTML = html || '<p class="msg">Nothing yet \u2014 bill an order or add expected cargo above.</p>';
     document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => handleCode(b.dataset.open)));
     document.querySelectorAll('[data-lbl]').forEach((b) => b.addEventListener('click', async () => {
-      const { data: l } = await db.from('wms_loads').select('*').eq('id', b.dataset.lbl).single();
-      if (l) printLabel(l);
+      const { data: i } = await db.from('wms_items').select('*, wms_loads(load_no)').eq('id', b.dataset.lbl).single();
+      if (i) printLabel(i, i.wms_loads ? i.wms_loads.load_no : '');
+    }));
+    document.querySelectorAll('[data-attach]').forEach((b) => b.addEventListener('click', async () => {
+      const sel = document.querySelector(`[data-shipsel="${b.dataset.attach}"]`);
+      if (!sel || !sel.value) return;
+      await db.from('wms_loads').update({ shipment_id: sel.value }).eq('id', b.dataset.attach);
+      loadLoads(); loadShips();
     }));
   }
   let lsTimer; $('loadSearch').addEventListener('input', () => { clearTimeout(lsTimer); lsTimer = setTimeout(loadLoads, 300); });
 
+  /* new expected cargo \u2192 lands on the right open load automatically */
   $('nlCreate').addEventListener('click', async () => {
     const msg = $('nlMsg'); msg.className = 'msg';
     try {
-      const { data: no, error: eNo } = await db.rpc('generate_load_no');
-      if (eNo) throw eNo;
       const dest = $('nlDest').value;
-      const { data, error } = await db.from('wms_loads').insert({
-        load_no: no, customer_name: $('nlCustomer').value.trim() || null,
-        cargo: $('nlCargo').value.trim() || null, destination: dest,
+      const { data: li, error: eA } = await db.rpc('wms_assign_load', { p_dest: dest });
+      if (eA) throw eA;
+      const pcs = Math.max(1, parseInt($('nlPieces').value, 10) || 1);
+      const { data, error } = await db.from('wms_items').insert({
+        customer_name: $('nlCustomer').value.trim() || null,
+        cargo: $('nlCargo').value.trim() || null,
+        pieces: pcs, destination: dest,
         ebl_no: $('nlEbl').value.trim().toUpperCase() || null,
-        sector: sectorFor(dest), status: 'expected',
+        sector: li.sector, load_id: li.id, status: 'expected',
       }).select().single();
       if (error) throw error;
-      msg.textContent = no + ' created — printing label.'; msg.className = 'msg ok';
+      msg.textContent = `${pcs} pc added to ${li.load_no} (Sector ${li.sector}) \u2014 printing label.`;
+      msg.className = 'msg ok';
       ['nlCustomer', 'nlCargo', 'nlEbl'].forEach((id) => ($(id).value = ''));
-      loadLoads(); printLabel(data);
+      $('nlPieces').value = 1;
+      loadLoads(); printLabel(data, li.load_no);
     } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
   });
 
@@ -619,25 +721,27 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);border-co
     } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
   });
 
-  /* ---------- 4×6 label ---------- */
-  function printLabel(load) {
-    const sec = load.sector || sectorFor(load.destination);
+  /* ---------- 4\u00D76 label: piece count up front, detail lives in the WMS ---------- */
+  function printLabel(item, loadNo) {
+    const sec = item.sector || sectorFor(item.destination);
+    const pcs = item.pieces || 1;
+    const code = item.ebl_no || loadNo || item.load_no || '';
     const root = $('labelRoot');
     root.innerHTML = `<div class="label">
-        <div class="lb-head"><img src="/assets/fcs-logo.png" alt="FCS"><span>FCS·WMS &nbsp;WAREHOUSE LABEL</span></div>
+        <div class="lb-head"><img src="/assets/fcs-logo.png" alt="FCS"><span>FCS\u00B7WMS &nbsp;WAREHOUSE LABEL</span></div>
         <div class="lb-qr" id="lbQr"></div>
-        <div class="lb-no">${esc(load.load_no)}</div>
+        <div class="lb-no">${esc(loadNo || item.load_no || '')}</div>
+        <div class="lb-pieces">${pcs} PIECE${pcs === 1 ? '' : 'S'}</div>
         <div class="lb-sec">${sec}</div>
-        <div class="lb-dest">${esc(SECTORS[sec])}${load.destination && !SECTORS[sec].toLowerCase().includes(String(load.destination).toLowerCase()) ? ' · ' + esc(load.destination) : ''}</div>
-        <div class="lb-meta">${esc(load.customer_name || '')}<br>${esc(load.cargo || '')}<br>EB/L: ${esc(load.ebl_no || '—')}${load.order_inv ? ' · Inv ' + esc(load.order_inv) : ''}</div>
-        <div class="lb-foot">Scan with any phone camera · fcsshipping.com · ${new Date().toLocaleDateString()}</div>
+        <div class="lb-dest">${esc(SECTORS[sec])}</div>
+        <div class="lb-meta">${esc(item.customer_name || '')}<br>EB/L: ${esc(item.ebl_no || '\u2014')}${item.order_inv ? ' \u00B7 Inv ' + esc(item.order_inv) : ''}</div>
+        <div class="lb-foot">Scan with any phone camera \u00B7 fcsshipping.com \u00B7 ${new Date().toLocaleDateString()}</div>
       </div>`;
-    /* the QR opens the WMS scan screen directly — any camera app works */
     new QRCode(document.getElementById('lbQr'), {
-      text: `https://fcsshipping.com/admin/wms/?load=${encodeURIComponent(load.load_no)}`,
+      text: `https://fcsshipping.com/admin/wms/?ebl=${encodeURIComponent(code)}`,
       width: 236, height: 236, correctLevel: QRCode.CorrectLevel.M,
     });
-    setTimeout(() => window.print(), 550);  /* give the logo + QR a beat to render */
+    setTimeout(() => window.print(), 550);
   }
 
   db.auth.onAuthStateChange(() => refreshAuth());
