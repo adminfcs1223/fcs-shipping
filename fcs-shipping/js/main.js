@@ -107,7 +107,6 @@
     setTimeout(layout, 350);
     setTimeout(layout, 1800);  /* once fonts + animations have settled */
   })();
-  $('quotePhone').textContent = co.phones[0];
   $('trackPhone').textContent = co.phones[0];
   $('cAddr').textContent = co.address;
   $('cHours').textContent = co.hoursLong;
@@ -191,439 +190,325 @@
   const departDate = nextThursday();
   const departStr = departDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  /* ---------- quote builder state (v4: multiple cargo types at once) ---------- */
-  const CARGO_ITEMS = cfg.cargo.filter((c) => !c.ebl);
+  /* ==================================================================
+     REQUEST-A-PICKUP WIZARD
+     Step 1 icons → destination (admin-driven, flags) → extras → modal.
+     The waybill (desktop) fills in live as choices are made.
+     ================================================================== */
   const state = {
-    counts: {},             /* cargoId -> quantity */
-    dest: cfg.destinations[0],
-    extras: [],
-    dims: { l: 0, w: 0, h: 0 },
+    item: null,             /* 'barrel' | 'bin' | 'box' | 'amazon' */
+    dest: null,             /* destination object from cfg */
+    insurance: false,
     supplies: {},           /* id -> qty */
     supplyDelivery: false,
-    ebl: null,              /* loaded EB/L record */
-    eblMode: false,
-    slotId: null,           /* held pickup slot */
+    suppliesOnly: false,
+    ebl: null,
   };
-  CARGO_ITEMS.forEach((c) => (state.counts[c.id] = 0));
-  state.counts[CARGO_ITEMS[0].id] = 1;
   cfg.supplies.forEach((s) => (state.supplies[s.id] = 0));
-
   const cargoById = (id) => cfg.cargo.find((c) => c.id === id);
-  const chosenItems = () => CARGO_ITEMS
-    .filter((c) => state.counts[c.id] > 0)
-    .map((c) => ({ cargoId: c.id, quantity: state.counts[c.id], dims: c.custom ? state.dims : undefined }));
+  const insuranceExtra = cfg.extras.find((x) => x.id === 'insurance') || { price: 25, label: 'Insurance' };
 
-  $('cargoList').innerHTML = CARGO_ITEMS
-    .map((c) => `<div class="supply-row">
-        <div class="sl">${c.label}<small>${c.custom ? 'you enter the size' : (c.cuft || 0) + ' cu ft each'}</small></div>
-        <button type="button" class="qty-btn" data-cminus="${c.id}" aria-label="Fewer">−</button>
-        <span class="sqty" id="cqty-${c.id}">${state.counts[c.id]}</span>
-        <button type="button" class="qty-btn" data-cplus="${c.id}" aria-label="More">+</button>
-      </div>`)
-    .join('');
-  $('dest').innerHTML = cfg.destinations
-    .map((d) => `<option value="${d.name}">${d.name}${d.country ? `, ${d.country}` : ''}</option>`)
-    .join('');
-  $('extraChips').innerHTML = cfg.extras
-    .map((x) => `<button type="button" class="chip extra" data-id="${x.id}" aria-pressed="false">${x.buttonText}</button>`)
-    .join('');
-  $('suppliesList').innerHTML = cfg.supplies
-    .map((s) => `<div class="supply-row">
-        <div class="sl">${s.label}<small>$${s.price} each</small></div>
-        <button type="button" class="qty-btn" data-sminus="${s.id}" aria-label="Fewer">−</button>
-        <span class="sqty" id="sqty-${s.id}">0</span>
-        <button type="button" class="qty-btn" data-splus="${s.id}" aria-label="More">+</button>
-      </div>`)
-    .join('');
+  const ITEM_LABELS = { barrel: 'Barrel', bin: 'Commercial Bin', box: 'Box', amazon: 'Amazon / online order' };
 
-  /* ---------- pricing (mirrors the server; server always recomputes) ---------- */
-  /* a cargo type can carry flat per-destination prices; falls back to cu ft × rate */
-  function flatPrice(c, destName) {
-    return c && c.prices && c.prices[destName] != null ? Number(c.prices[destName]) : null;
+  function flagFor(country) {
+    const c = String(country || '').toLowerCase();
+    const MAP = [['lucia','\u{1F1F1}\u{1F1E8}'],['jamaica','\u{1F1EF}\u{1F1F2}'],['trinidad','\u{1F1F9}\u{1F1F9}'],
+      ['barbados','\u{1F1E7}\u{1F1E7}'],['grenada','\u{1F1EC}\u{1F1E9}'],['vincent','\u{1F1FB}\u{1F1E8}'],
+      ['dominican','\u{1F1E9}\u{1F1F4}'],['dominica','\u{1F1E9}\u{1F1F2}'],['haiti','\u{1F1ED}\u{1F1F9}'],
+      ['guyana','\u{1F1EC}\u{1F1FE}'],['antigua','\u{1F1E6}\u{1F1EC}'],['kitts','\u{1F1F0}\u{1F1F3}'],
+      ['bahamas','\u{1F1E7}\u{1F1F8}'],['cuba','\u{1F1E8}\u{1F1FA}'],['puerto','\u{1F1F5}\u{1F1F7}']];
+    for (const [k, f] of MAP) if (c.includes(k)) return f;
+    return '\u{1F30E}';
   }
 
-  function boxCuft() {
-    const { l, w, h } = state.dims;
-    if (l > 0 && w > 0 && h > 0) return Math.max(1, Math.round((l * w * h) / 1728 * 10) / 10);
-    return 0;
+  /* ---------- steps ---------- */
+  function showStep(n) {
+    ['wzStep1', 'wzStep2', 'wzStep3', 'wzStepEbl'].forEach((id) =>
+      $(id).classList.toggle('on', id === 'wzStep' + n));
+    renderBill();
   }
+  document.querySelectorAll('.wz-back').forEach((b) =>
+    b.addEventListener('click', () => showStep(b.dataset.back)));
 
-  function renderBill() {
-    $('wbDeparting').textContent = departStr + ' (every Thursday)';
-    const country = (state.dest && state.dest.country) || cfg.arrivalCountry || 'St. Lucia';
-    $('wbSave').hidden = true;
+  /* step 1: pick an item */
+  document.querySelectorAll('[data-pick]').forEach((card) =>
+    card.addEventListener('click', () => {
+      state.suppliesOnly = false;
+      state.item = card.dataset.pick;
+      state.ebl = null;
+      if (state.item === 'amazon') { openModal('mAmazon'); renderBill(); return; }
+      buildDestGrid();
+      showStep(2);
+    }));
 
-    /* EB/L mode: show the pre-priced bill from the office */
-    if (state.eblMode && state.ebl) {
-      const e = state.ebl;
-      $('wbNoLabel').textContent = 'EB/L Nº';
-      $('wbNo').textContent = e.ebl_no;
-      $('wbItem').textContent = `${e.cargo}${e.quantity > 1 ? ' × ' + e.quantity : ''}`;
-      $('wbVolume').textContent = e.cuft ? e.cuft + ' cu ft' : '—';
-      $('wbDest').textContent = e.destination ? `${e.destination}, ${cfg.arrivalCountry || 'St. Lucia'}` : '—';
-      $('wbBase').textContent = fmt(e.price_cents);
-      $('wbExtras').textContent = '—';
-      $('wbSupplies').textContent = '—';
-      $('wbTotalLabel').textContent = 'TOTAL DUE';
-      $('wbTotal').textContent = fmt(e.price_cents);
-      $('wbNote').hidden = true;
-      $('lockBtn').textContent = 'Pay now →';
-      return;
-    }
-
-    $('wbNoLabel').textContent = 'EB/L Nº';
-    $('wbNo').textContent = 'PENDING';
-    $('wbTotalLabel').textContent = 'ESTIMATED TOTAL';
-    $('wbNote').hidden = false;
-    $('lockBtn').textContent = 'Lock in this rate →';
-
-    if (state.eblMode) {
-      $('wbItem').textContent = 'Enter your EB/L number';
-      $('wbVolume').textContent = '—';
-      $('wbDest').textContent = '—';
-      $('wbBase').textContent = '—';
-      $('wbExtras').textContent = '—';
-      $('wbSupplies').textContent = '—';
-      $('wbTotal').textContent = '—';
-      return;
-    }
-
-    /* v4: sum every chosen cargo line (barrel + bin + box together) */
-    const rate = state.dest.rate || 0;
-    const callMode = Boolean(state.dest.call);
-    let freight = 0, cuftTotal = 0, saveCents = 0, needDims = false;
-    const labels = [], baseBits = [];
-    chosenItems().forEach((it) => {
-      const c = cargoById(it.cargoId);
-      const cuft = c.custom ? boxCuft() : (c.cuft || 0);
-      if (c.custom && !cuft) needDims = true;
-      const flat = flatPrice(c, state.dest.name);
-      const line = flat != null
-        ? Math.round(flat * it.quantity * 100)
-        : Math.round(cuft * rate * it.quantity * 100);
-      freight += line;
-      cuftTotal += cuft * it.quantity;
-      if (flat != null && rate && cuft) {
-        const ref = Math.round(cuft * rate * it.quantity * 100);
-        if (ref > line) saveCents += ref - line;
+  /* step 2: destination cards from the admin-controlled destinations list */
+  function buildDestGrid() {
+    $('wzDestGrid').innerHTML = cfg.destinations.map((d, i) => {
+      if (d.call) {
+        return `<button type="button" class="wz-card wz-dest" data-dest="${i}" data-call="1">
+          <span class="big">\u260E\uFE0F</span><span>Other island</span><small>call us for rates</small></button>`;
       }
-      labels.push(`${c.label} × ${it.quantity}`);
-      if (flat != null) baseBits.push(`$${flat} flat`);
-    });
+      return `<button type="button" class="wz-card wz-dest" data-dest="${i}">
+        <div class="flag">${flagFor(d.country)}</div>
+        <span class="big">\u2693</span><span>${d.name}</span><small>${d.country || ''}</small></button>`;
+    }).join('');
+    document.querySelectorAll('[data-dest]').forEach((b) =>
+      b.addEventListener('click', () => {
+        if (b.dataset.call) { openModal('mCall'); return; }
+        state.dest = cfg.destinations[+b.dataset.dest];
+        buildExtras();
+        showStep(3);
+      }));
+  }
 
-    if (!callMode && saveCents > 0) {
-      $('wbSaveAmt').textContent = '$' + Math.round(saveCents / 100).toLocaleString();
-      $('wbSave').hidden = false;
+  /* step 3: extras */
+  function buildExtras() {
+    $('wzExtrasTitle').textContent = state.suppliesOnly ? 'What do you need?' : 'Anything extra?';
+    $('wzInsurance').style.display = state.suppliesOnly ? 'none' : '';
+    $('wzInsPrice').textContent = insuranceExtra.price ? `+$${insuranceExtra.price}` : '';
+    $('wzSupplies').innerHTML =
+      `<p class="dims-note" style="margin-bottom:.5rem">${state.suppliesOnly ? 'Empty barrels & bins, delivered or picked up:' : 'Need empty barrels or bins with that?'}</p>` +
+      cfg.supplies.map((sp) => `<div class="supply-row">
+          <div class="sl">${sp.label}<small>$${sp.price} each</small></div>
+          <button type="button" class="qty-btn" data-sminus="${sp.id}" aria-label="Fewer">\u2212</button>
+          <span class="sqty" id="sqty-${sp.id}">${state.supplies[sp.id]}</span>
+          <button type="button" class="qty-btn" data-splus="${sp.id}" aria-label="More">+</button>
+        </div>`).join('');
+    document.querySelectorAll('[data-splus]').forEach((b) => b.addEventListener('click', () => bumpSupply(b.dataset.splus, 1)));
+    document.querySelectorAll('[data-sminus]').forEach((b) => b.addEventListener('click', () => bumpSupply(b.dataset.sminus, -1)));
+    syncDeliver();
+  }
+  function bumpSupply(id, d) {
+    state.supplies[id] = Math.min(50, Math.max(0, state.supplies[id] + d));
+    $('sqty-' + id).textContent = state.supplies[id];
+    syncDeliver(); renderBill();
+  }
+  function syncDeliver() {
+    const any = Object.values(state.supplies).some((n) => n > 0);
+    $('wzDeliverWrap').hidden = !any;
+    if (!any) { state.supplyDelivery = false; $('wzDeliver').checked = false; }
+  }
+  $('wzDeliver').addEventListener('change', () => { state.supplyDelivery = $('wzDeliver').checked; renderBill(); });
+  $('wzInsurance').addEventListener('click', () => {
+    state.insurance = !state.insurance;
+    $('wzInsurance').setAttribute('aria-pressed', String(state.insurance));
+    renderBill();
+  });
+  $('wzNoThanks').addEventListener('click', () => {
+    state.insurance = false; $('wzInsurance').setAttribute('aria-pressed', 'false');
+    cfg.supplies.forEach((sp) => (state.supplies[sp.id] = 0));
+    state.supplyDelivery = false;
+    renderBill();
+    openPickupModal();
+  });
+  $('wzRequest').addEventListener('click', openPickupModal);
+
+  /* side paths */
+  $('wzSuppliesOnly').addEventListener('click', () => {
+    state.suppliesOnly = true; state.item = null; state.dest = null; state.insurance = false;
+    buildExtras(); showStep(3);
+  });
+  $('wzHaveEbl').addEventListener('click', () => showStep('Ebl'));
+
+  /* ---------- modals ---------- */
+  function openModal(id) {
+    $('mBack').hidden = false;
+    ['mForm', 'mAmazon', 'mCall', 'mDone'].forEach((m) => ($(m).hidden = m !== id));
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    $('mBack').hidden = true;
+    document.body.style.overflow = '';
+  }
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeModal));
+  $('mBack').addEventListener('click', (e) => { if (e.target === $('mBack')) closeModal(); });
+
+  function openPickupModal() {
+    $('mFormSub').textContent = state.suppliesOnly
+      ? 'Tell us who you are and where the supplies are headed.'
+      : state.item === 'amazon'
+        ? "Tell us what's on the way and who it's for."
+        : "Tell us where to come and we'll take it from there.";
+    $('mErr').hidden = true;
+    openModal('mForm');
+    setTimeout(() => $('pName').focus(), 150);
+  }
+
+  /* amazon flow */
+  $('mCopyAddr').addEventListener('click', async () => {
+    const txt = ($('pName').value.trim() || 'Your Name') +
+      ' — c/o FCS Shipping LLC\n9502 Ditmas Ave, Building 4\nBrooklyn, NY 11236';
+    try { await navigator.clipboard.writeText(txt); $('mCopyAddr').textContent = 'Copied \u2713'; }
+    catch { prompt('Copy this address:', txt); }
+    setTimeout(() => ($('mCopyAddr').textContent = 'Copy address'), 2000);
+  });
+  $('mNotify').addEventListener('click', () => { state.item = 'amazon'; openPickupModal(); });
+
+  /* submit */
+  $('mSubmit').addEventListener('click', async () => {
+    const name = $('pName').value.trim();
+    const phone = $('pPhone').value.trim();
+    if (!name || !phone) {
+      $('mErr').textContent = 'Just need your name and a phone number so we can reach you.';
+      $('mErr').hidden = false;
+      return;
     }
-
-    const extrasC = state.extras.reduce((s, x) => s + x.price * 100, 0);
-    let suppliesC = 0, suppliesN = 0;
-    cfg.supplies.forEach((s) => {
-      suppliesC += s.price * 100 * state.supplies[s.id];
-      suppliesN += state.supplies[s.id];
-    });
-    if (suppliesN > 0 && state.supplyDelivery) suppliesC += (cfg.suppliesDeliveryFee || 5) * 100;
-
-    $('wbItem').textContent = labels.length ? labels.join(', ') : 'add an item above';
-    $('wbVolume').textContent = cuftTotal
-      ? `${cuftTotal.toLocaleString()} cu ft`
-      : (needDims ? 'enter box measurements' : '—');
-    $('wbDest').textContent = callMode ? state.dest.name : `${state.dest.name}, ${country}`;
-    $('wbBase').textContent = callMode
-      ? 'call us'
-      : (freight ? fmt(freight) + (baseBits.length ? ` (${baseBits.join(', ')})` : ` ($${rate}/cu ft)`) : (needDims ? 'enter measurements' : '—'));
-    $('wbExtras').textContent = state.extras.length
-      ? state.extras.map((x) => x.label + (x.price ? '' : ' (FREE)')).join(', ') + (extrasC ? '  ' + fmt(extrasC) : '')
-      : '—';
-    $('wbSupplies').textContent = suppliesN
-      ? cfg.supplies.filter((s) => state.supplies[s.id]).map((s) => `${s.label} × ${state.supplies[s.id]}`).join(', ')
-        + (state.supplyDelivery ? ' + delivery' : '') + '  ' + fmt(suppliesC)
-      : '—';
-    $('wbTotal').textContent = callMode
-      ? 'Call us'
-      : (freight || suppliesC ? '$' + Math.round((freight + extrasC + suppliesC) / 100).toLocaleString() : '—');
-  }
-
-  /* ---------- cargo quantity steppers ---------- */
-  function bumpCargo(id, delta) {
-    state.counts[id] = Math.min(50, Math.max(0, state.counts[id] + delta));
-    $('cqty-' + id).textContent = state.counts[id];
-    const box = CARGO_ITEMS.find((c) => c.custom);
-    $('dimsField').hidden = state.eblMode || !(box && state.counts[box.id] > 0);
-    renderBill();
-  }
-  document.querySelectorAll('[data-cplus]').forEach((b) => b.addEventListener('click', () => bumpCargo(b.dataset.cplus, 1)));
-  document.querySelectorAll('[data-cminus]').forEach((b) => b.addEventListener('click', () => bumpCargo(b.dataset.cminus, -1)));
-
-  /* ---------- EB/L mode toggle ---------- */
-  $('eblChip').addEventListener('click', () => {
-    state.eblMode = !state.eblMode;
-    $('eblChip').setAttribute('aria-pressed', String(state.eblMode));
-    $('eblField').hidden = !state.eblMode;
-    $('cargoList').style.display = state.eblMode ? 'none' : '';
-    const box = CARGO_ITEMS.find((c) => c.custom);
-    $('dimsField').hidden = state.eblMode || !(box && state.counts[box.id] > 0);
-    if (!state.eblMode) state.ebl = null;
-    renderBill();
+    const btn = $('mSubmit');
+    btn.disabled = true; btn.textContent = 'Sending\u2026';
+    try {
+      const res = await fetch(`${FN}/pickup-request`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: state.suppliesOnly ? 'supplies' : (state.item === 'amazon' ? 'amazon' : 'pickup'),
+          item: state.item,
+          destination: state.dest ? state.dest.name : '',
+          insurance: state.insurance,
+          supplies: state.supplies,
+          supplyDelivery: state.supplyDelivery,
+          sender: {
+            name, phone,
+            phone2: $('pPhone2').value.trim(), email: $('pEmail').value.trim(),
+            street: $('pStreet').value.trim(), apt: $('pApt').value.trim(),
+            city: $('pCity').value.trim(), state: $('pState').value.trim(), zip: $('pZip').value.trim(),
+            date: $('pDate').value,
+          },
+          consignee: {
+            name: $('cName').value.trim(), address: $('cAddress').value.trim(),
+            country: $('cCountry').value.trim(),
+            phone: $('cPhone').value.trim(), phone2: $('cPhone2').value.trim(),
+            email: $('cEmail').value.trim(),
+          },
+          website: $('pWebsite').value,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
+      $('mDoneText').textContent = 'You will receive a call from us shortly.';
+      openModal('mDone');
+    } catch (err) {
+      $('mErr').textContent = `Couldn't send right now \u2014 call us at ${co.phones[0]} and we'll set it up.`;
+      $('mErr').hidden = false;
+    }
+    btn.disabled = false; btn.textContent = 'Request Pickup';
   });
 
-  /* box measurements */
-  ['dimL', 'dimW', 'dimH'].forEach((id, i) => {
-    $(id).addEventListener('input', () => {
-      state.dims[['l', 'w', 'h'][i]] = Math.max(0, Number($(id).value) || 0);
-      const cuft = boxCuft();
-      $('dimsNote').textContent = cuft
-        ? `= ${cuft} cu ft per box`
-        : '= enter all three to calculate cubic feet';
-      renderBill();
-    });
-  });
-
-  /* EB/L lookup */
+  /* ---------- EB/L: load + pay ---------- */
   $('eblLoad').addEventListener('click', async () => {
     const no = $('eblInput').value.trim().toUpperCase();
     const msg = $('eblMsg');
     if (!no) return;
-    msg.textContent = 'Looking up ' + no + '…';
+    msg.textContent = 'Looking up ' + no + '\u2026';
     try {
       const res = await fetch(`${FN}/ebl?no=${encodeURIComponent(no)}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Not found');
-      if (data.status === 'paid') { msg.textContent = 'This EB/L is already paid — thank you! Call us with any questions.'; return; }
+      if (data.status === 'paid') { msg.textContent = 'This EB/L is already paid \u2014 thank you!'; return; }
       state.ebl = data;
-      msg.textContent = 'Loaded! Review your bill of lading and hit Pay now.';
+      $('eblPay').hidden = false;
+      msg.textContent = 'Loaded! Review the bill and hit Pay now.';
       renderBill();
     } catch (e) {
-      state.ebl = null;
+      state.ebl = null; $('eblPay').hidden = true;
       msg.textContent = `Couldn't find that EB/L number. Double-check it or call ${co.phones[0]}.`;
       renderBill();
     }
   });
   $('eblInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('eblLoad').click(); } });
-
-  /* destination */
-  $('dest').addEventListener('change', (e) => {
-    state.dest = cfg.destinations.find((d) => d.name === e.target.value) || cfg.destinations[0];
-    $('destNote').hidden = !state.dest.call;
-    renderBill();
-  });
-
-  /* extras */
-  document.querySelectorAll('.chip.extra').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      const on = chip.getAttribute('aria-pressed') === 'true';
-      chip.setAttribute('aria-pressed', String(!on));
-      const x = cfg.extras.find((e) => e.id === chip.dataset.id);
-      if (on) state.extras = state.extras.filter((e) => e.id !== x.id);
-      else state.extras.push(x);
-      renderBill();
-    });
-  });
-
-  /* supplies steppers */
-  function bumpSupply(id, delta) {
-    state.supplies[id] = Math.min(50, Math.max(0, state.supplies[id] + delta));
-    $('sqty-' + id).textContent = state.supplies[id];
-    const any = Object.values(state.supplies).some((n) => n > 0);
-    $('supplyDeliveryWrap').hidden = !any;
-    if (!any) { state.supplyDelivery = false; $('supplyDelivery').setAttribute('aria-pressed', 'false'); }
-    renderBill();
-  }
-  document.querySelectorAll('[data-splus]').forEach((b) => b.addEventListener('click', () => bumpSupply(b.dataset.splus, 1)));
-  document.querySelectorAll('[data-sminus]').forEach((b) => b.addEventListener('click', () => bumpSupply(b.dataset.sminus, -1)));
-  $('supplyDelivery').addEventListener('click', () => {
-    state.supplyDelivery = !state.supplyDelivery;
-    $('supplyDelivery').setAttribute('aria-pressed', String(state.supplyDelivery));
-    renderBill();
-  });
-
-  renderBill();
-
-  /* ---------- lock in / pay ---------- */
-  let lastQuoteId = null;
-
-  function quotePayload() {
-    return {
-      items: chosenItems(),
-      destination: state.dest.name,
-      extras: state.extras.map((x) => x.id),
-      supplies: state.supplies,
-      supplyDelivery: state.supplyDelivery,
-      address: ($('qAddress') && $('qAddress').value.trim()) || '',
-      slotId: state.slotId || null,
-    };
-  }
-
-  /* ---------- pickup time slots (15-minute hold) ---------- */
-  let slotsLoaded = false, holdTimer = null;
-  async function loadSlots() {
-    const sel = $('slotSel');
-    try {
-      const list = await fetch(`${FN}/slots`).then((r) => (r.ok ? r.json() : []));
-      const fmtS = (s) => new Date(s.slot_date + 'T12:00:00')
-        .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + s.slot_time;
-      if (!list.length) {
-        sel.innerHTML = '<option value="">No online times right now — we\'ll call you to schedule</option>';
-        sel.disabled = true;
-        return;
-      }
-      sel.disabled = false;
-      sel.innerHTML = '<option value="">Choose a time…</option>' +
-        list.map((s) => `<option value="${s.id}">${fmtS(s)}</option>`).join('');
-    } catch {
-      sel.innerHTML = '<option value="">Scheduling unavailable — we\'ll call you</option>';
-      sel.disabled = true;
-    }
-  }
-  $('slotSel').addEventListener('change', async () => {
-    const id = $('slotSel').value;
-    const msg = $('slotMsg');
-    clearInterval(holdTimer);
-    state.slotId = null;
-    msg.hidden = true;
-    if (!id) return;
-    msg.hidden = false;
-    msg.textContent = 'Locking this time for you…';
-    try {
-      const res = await fetch(`${FN}/slot-hold`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slotId: id }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'That time was just taken.');
-      state.slotId = id;
-      const until = new Date(data.holdUntil).getTime();
-      const tick = () => {
-        const left = until - Date.now();
-        if (left <= 0) {
-          clearInterval(holdTimer);
-          state.slotId = null;
-          msg.textContent = 'Your 15-minute hold expired — pick the time again to re-lock it.';
-          return;
-        }
-        const m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
-        msg.textContent = `✓ This time is locked for you for ${m}:${String(s).padStart(2, '0')} — send your quote to keep it.`;
-      };
-      tick();
-      holdTimer = setInterval(tick, 1000);
-    } catch (e) {
-      msg.textContent = `${e.message} Refreshing available times…`;
-      $('slotSel').value = '';
-      loadSlots();
-    }
-  });
-
-  $('lockBtn').addEventListener('click', async () => {
-    /* EB/L: straight to payment */
-    if (state.eblMode && state.ebl) {
-      $('lockBtn').disabled = true;
-      $('lockBtn').textContent = 'Opening secure checkout…';
-      try {
-        const res = await fetch(`${FN}/create-checkout`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eblNo: state.ebl.ebl_no }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.url) throw new Error(data.error || 'Checkout unavailable');
-        window.location.href = data.url;
-      } catch (err) {
-        alert(`Online payment isn't available right now — call ${co.phones[0]} to pay.`);
-        $('lockBtn').disabled = false;
-        $('lockBtn').textContent = 'Pay now →';
-      }
-      return;
-    }
-    if (state.eblMode) { $('eblMsg').textContent = 'Enter your EB/L number above first, then hit Load.'; return; }
-    if (state.dest.call) { $('destNote').hidden = false; return; }
-    if (!chosenItems().length) {
-      $('wbItem').textContent = 'add an item above';
-      document.querySelector('#cargoList').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    $('lockPanel').classList.add('show');
-    $('lockBtn').style.display = 'none';
-    if (!slotsLoaded) { slotsLoaded = true; loadSlots(); }
-    $('qName').focus();
-  });
-
-  $('quoteForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const msg = $('quoteMsg');
-    msg.className = 'form-msg';
-    const name = $('qName').value.trim();
-    const phone = $('qPhone').value.trim();
-    const email = $('qEmail').value.trim();
-    if (!name || !phone || !email) {
-      msg.textContent = 'Please fill in your name, phone, and email.';
-      msg.classList.add('err');
-      return;
-    }
-    const btn = $('sendQuoteBtn');
-    btn.disabled = true;
-    btn.textContent = 'Sending…';
-    try {
-      const res = await fetch(`${FN}/quote-request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.assign({ name, phone, email, website: $('qWebsite').value }, quotePayload())),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
-      lastQuoteId = data.quoteId || null;
-      msg.textContent = `Got it! Your quote (${'$' + (data.total / 100).toLocaleString()}) is on its way to our team — we'll call you to confirm.`;
-      msg.classList.add('ok');
-      $('payPanel').classList.add('show');
-      if (data.testMode) $('testModeBadge').hidden = false;
-      btn.textContent = 'Sent ✓';
-    } catch (err) {
-      console.error(err);
-      msg.textContent = `Couldn't send right now — please call ${co.phones[0]} or email ${co.email}.`;
-      msg.classList.add('err');
-      btn.disabled = false;
-      btn.textContent = 'Send quote request';
-    }
-  });
-
-  $('payBtn').addEventListener('click', async () => {
-    const btn = $('payBtn');
-    btn.disabled = true;
-    btn.textContent = 'Opening secure checkout…';
+  $('eblPay').addEventListener('click', async () => {
+    if (!state.ebl) return;
+    const btn = $('eblPay');
+    btn.disabled = true; btn.textContent = 'Opening secure checkout\u2026';
     try {
       const res = await fetch(`${FN}/create-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.assign({ quoteId: lastQuoteId, email: $('qEmail').value.trim() }, quotePayload())),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eblNo: state.ebl.ebl_no }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data.error || 'Checkout unavailable');
       window.location.href = data.url;
     } catch (err) {
-      console.error(err);
-      const msg = $('quoteMsg');
-      msg.textContent = `Online payment isn't set up yet — call ${co.phones[0]} to pay your deposit.`;
-      msg.className = 'form-msg err';
-      btn.disabled = false;
-      btn.textContent = 'Pay deposit by card →';
+      alert(`Online payment isn't available right now \u2014 call ${co.phones[0]} to pay.`);
+      btn.disabled = false; btn.textContent = 'Pay now \u2192';
     }
   });
 
-  /* payment redirect results */
+  /* ---------- waybill (desktop) ---------- */
+  function flatPrice(c, destName) {
+    return c && c.prices && c.prices[destName] != null ? Number(c.prices[destName]) : null;
+  }
+
+  function renderBill() {
+    if (!$('wbDeparting')) return;
+    $('wbDeparting').textContent = departStr + ' (every Thursday)';
+    $('wbSave').hidden = true;
+
+    /* EB/L mode */
+    if (state.ebl && $('wzStepEbl').classList.contains('on')) {
+      const e = state.ebl;
+      $('wbNoLabel').textContent = 'EB/L N\u00BA';
+      $('wbNo').textContent = e.ebl_no;
+      $('wbItem').textContent = `${e.cargo}${e.quantity > 1 ? ' \u00D7 ' + e.quantity : ''}`;
+      $('wbVolume').textContent = e.cuft ? e.cuft + ' cu ft' : '\u2014';
+      $('wbDest').textContent = e.destination ? `${e.destination}, ${cfg.arrivalCountry || 'St. Lucia'}` : '\u2014';
+      $('wbBase').textContent = fmt(e.price_cents);
+      $('wbExtras').textContent = '\u2014';
+      $('wbSupplies').textContent = '\u2014';
+      $('wbTotalLabel').textContent = 'TOTAL DUE';
+      $('wbTotal').textContent = fmt(e.price_cents);
+      $('wbNote').hidden = true;
+      return;
+    }
+    $('wbNoLabel').textContent = 'EB/L N\u00BA';
+    $('wbNo').textContent = 'PENDING';
+    $('wbTotalLabel').textContent = 'ESTIMATED TOTAL';
+    $('wbNote').hidden = false;
+
+    const c = state.item ? cargoById(state.item) : null;
+    const d = state.dest;
+    let freight = 0, cuft = 0, boxLater = false;
+    if (c && d && !d.call) {
+      cuft = c.cuft || 0;
+      const flat = flatPrice(c, d.name);
+      if (flat != null) {
+        freight = Math.round(flat * 100);
+        if (d.rate && cuft) {
+          const ref = Math.round(cuft * d.rate * 100);
+          if (ref > freight) { $('wbSaveAmt').textContent = '$' + Math.round((ref - freight) / 100).toLocaleString(); $('wbSave').hidden = false; }
+        }
+      } else if (c.custom) { boxLater = true; }
+      else if (d.rate && cuft) { freight = Math.round(cuft * d.rate * 100); }
+    }
+    let suppliesC = 0, suppliesN = 0;
+    const supplyBits = [];
+    cfg.supplies.forEach((sp) => {
+      const n = state.supplies[sp.id];
+      if (n > 0) { suppliesC += sp.price * 100 * n; suppliesN += n; supplyBits.push(`${sp.label} \u00D7 ${n}`); }
+    });
+    if (suppliesN > 0 && state.supplyDelivery) suppliesC += (cfg.suppliesDeliveryFee || 5) * 100;
+    const insC = state.insurance ? Math.round(insuranceExtra.price * 100) : 0;
+
+    $('wbItem').textContent = state.suppliesOnly ? 'Empty supplies order'
+      : state.item === 'amazon' ? 'Online orders \u2192 our warehouse'
+      : c ? c.label : 'pick an item to begin';
+    $('wbVolume').textContent = cuft ? cuft + ' cu ft' : (boxLater ? 'measured at pickup' : '\u2014');
+    $('wbDest').textContent = d && !d.call ? `${d.name}, ${d.country || cfg.arrivalCountry || 'St. Lucia'}` : '\u2014';
+    $('wbBase').textContent = freight ? fmt(freight) + (flatPrice(c, d && d.name) != null ? ' (flat)' : '')
+      : (boxLater ? 'priced at pickup' : '\u2014');
+    $('wbExtras').textContent = state.insurance ? `${insuranceExtra.label}  ${fmt(insC)}` : '\u2014';
+    $('wbSupplies').textContent = suppliesN
+      ? supplyBits.join(', ') + (state.supplyDelivery ? ' + delivery' : '') + '  ' + fmt(suppliesC)
+      : '\u2014';
+    const total = freight + insC + suppliesC;
+    $('wbTotal').textContent = total ? '$' + Math.round(total / 100).toLocaleString() : '\u2014';
+  }
+
+  renderBill();
+
+  /* payment redirect results (EB/L payments) */
   const params = new URLSearchParams(location.search);
   if (params.get('paid') === '1') {
-    const msg = $('quoteMsg');
-    $('lockPanel').classList.add('show');
-    $('lockBtn').style.display = 'none';
-    msg.textContent = 'Payment received — thank you! We\'ll call you to arrange drop-off or pickup.';
-    msg.className = 'form-msg ok';
-    document.getElementById('quote').scrollIntoView();
-  } else if (params.get('canceled') === '1') {
-    const msg = $('quoteMsg');
-    $('lockPanel').classList.add('show');
-    $('lockBtn').style.display = 'none';
-    msg.textContent = 'Checkout canceled — no charge was made. Call us anytime.';
-    msg.className = 'form-msg err';
+    $('mDoneText').textContent = 'Payment received \u2014 thank you! We\u2019ll call you to arrange the details.';
+    openModal('mDone');
   }
 
   /* ---------- tracking (B/L) ---------- */
@@ -711,21 +596,7 @@
     track(DEMO_TRACKING.waybill_no);
   });
 
-  /* ---------- sailing schedule (live with config fallback) ---------- */
-  function renderSchedule(sailings) {
-    const f = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const TAGS = {
-      open: '<span class="tag open">Accepting cargo</span>',
-      closing: '<span class="tag closing">Closing soon</span>',
-      closed: '<span class="tag closed">Cut-off passed</span>',
-      sailed: '<span class="tag sailed">Sailed</span>',
-    };
-    $('schedBody').innerHTML = sailings
-      .map((s) => `<tr><td>${s.vessel}</td><td>${f(s.departs)}</td><td>${f(s.arrives)} (est.)</td><td>${f(s.cutoff)}</td><td>${TAGS[s.status] || TAGS.open}</td></tr>`)
-      .join('');
-    startCountdown(sailings);
-  }
-
+  /* ---------- next-sailing countdown (schedule table retired) ---------- */
   function startCountdown(sailings) {
     const next = sailings
       .filter((s) => s.status !== 'sailed' && new Date(s.departs + 'T12:00:00') > new Date())
@@ -748,11 +619,11 @@
       const res = await fetch(`${FN}/sailings`);
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length) return renderSchedule(data);
+        if (Array.isArray(data) && data.length) return startCountdown(data);
       }
       throw new Error('fallback');
     } catch {
-      renderSchedule(cfg.sailings);
+      startCountdown(cfg.sailings);
     }
   })();
 
