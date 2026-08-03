@@ -847,14 +847,15 @@ function printWmsLabel(){
     w.document.write('<!doctype html><html><head><title>'+esc(draft.loadNo)+'</title><style>'+
       '@page{size:4in 6in;margin:0}body{margin:0;font-family:Archivo,Arial,sans-serif}'+
       '.label{width:4in;height:6in;padding:.22in;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center}'+
-      '.h{font-family:monospace;font-weight:700;font-size:13pt;letter-spacing:.08em;border-bottom:2.5px solid #000;width:100%;padding-bottom:4pt}'+
+      '.h{display:flex;align-items:center;justify-content:center;gap:8pt;font-family:monospace;font-weight:700;font-size:12pt;letter-spacing:.06em;border-bottom:2.5px solid #000;width:100%;padding-bottom:5pt}'+
+      '.h img{height:.34in;width:auto}'+
       'img{width:2.45in;height:2.45in;margin:10pt 0 6pt}'+
       '.no{font-family:monospace;font-weight:700;font-size:16pt}'+
       '.sec{font-size:64pt;font-weight:900;line-height:1;border:4px solid #000;border-radius:10px;padding:2pt 18pt;margin:6pt 0 4pt}'+
       '.dest{font-weight:900;font-size:13pt}.meta{font-family:monospace;font-size:8.5pt;margin-top:5pt;line-height:1.55}'+
       '.foot{margin-top:auto;font-family:monospace;font-size:7.5pt;border-top:1.5px solid #000;width:100%;padding-top:4pt}'+
       '<\/style><\/head><body><div class="label">'+
-      '<div class="h">FCS·WMS&nbsp; WAREHOUSE LABEL<\/div>'+
+      '<div class="h"><img src="https://fcsshipping.com/assets/fcs-logo.png" alt="FCS"><span>FCS·WMS&nbsp; WAREHOUSE LABEL<\/span><\/div>'+
       '<img src="'+dataUrl+'">'+
       '<div class="no">'+esc(draft.loadNo)+'<\/div><div class="sec">'+sec+'<\/div><div class="dest">'+SECTORS[sec]+'<\/div>'+
       '<div class="meta">'+esc(draft.sh.name||'')+'<br>'+esc(draft.items.map(i=>i.desc).filter(Boolean).join(', '))+
