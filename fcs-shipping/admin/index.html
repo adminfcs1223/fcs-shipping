@@ -129,7 +129,7 @@ details.cust>summary::-webkit-details-marker{display:none}
       <button class="stat" data-go="cust"><div class="n" id="dActiveShip">—</div><div class="l">Active shipments</div></button>
       <button class="stat" data-go="cust"><div class="n" id="dAtSea">—</div><div class="l">At sea right now</div></button>
       <button class="stat" data-go="cal"><div class="n" id="dPickups">—</div><div class="l">Pickups booked today</div></button>
-      <button class="stat" data-go="sail"><div class="n" id="dNextSail" style="font-size:1.35rem">—</div><div class="l">Next sailing</div><div class="sub" id="dNextSailSub"></div></button>
+      <div class="stat" style="cursor:default"><div class="n" id="dNextSail" style="font-size:1.35rem">—</div><div class="l">Next sailing</div><div class="sub" id="dNextSailSub"></div></div>
       <div class="stat wide" style="cursor:default">
         <div class="l">The flow</div>
         <div class="sub">Everything lives on <b>Customers</b> — the quote, "Create order", and after billing the customer's one card holds their <b>EB/L, QR, warehouse load, and tracking</b>. Advance it right there as it moves.</div>
@@ -197,22 +197,6 @@ details.cust>summary::-webkit-details-marker{display:none}
     <div id="calList"></div>
   </div>
 
-  <!-- Sailings -->
-  <div class="view" id="view-sail">
-    <div class="card">
-      <h2>Add sailing</h2>
-      <label>Vessel</label><input type="text" id="slVessel" value="M/V Caribbean Star">
-      <div class="row2">
-        <div><label>Departs Brooklyn</label><input type="date" id="slDeparts"></div>
-        <div><label>Arrives Castries</label><input type="date" id="slArrives"></div>
-      </div>
-      <label>Cargo cut-off</label><input type="date" id="slCutoff">
-      <button class="btn sm" id="slAdd">Add sailing</button>
-      <p class="msg" id="slMsg"></p>
-    </div>
-    <div id="sailList"></div>
-  </div>
-
   <!-- Prices -->
   <div class="view" id="view-prices">
     <div class="card">
@@ -244,7 +228,6 @@ details.cust>summary::-webkit-details-marker{display:none}
   <button data-view="home" class="on">Home</button>
   <button data-view="cust">Customers</button>
   <button data-view="cal">Calendar</button>
-  <button data-view="sail">Sailings</button>
   <button data-view="prices">Prices</button>
 </nav>
 
@@ -291,7 +274,7 @@ details.cust>summary::-webkit-details-marker{display:none}
     $('logoutBtn').hidden = !inApp;
     $('ordersLink').hidden = !inApp;
     $('wmsBtn').hidden = !inApp;
-    if (inApp) { loadDash(); loadCustomers(); loadSailings(); loadPrices(); loadTestimonials(); loadCal(); }
+    if (inApp) { loadDash(); loadCustomers(); loadPrices(); loadTestimonials(); loadCal(); }
   }
   $('loginBtn').addEventListener('click', async () => {
     if (!db) return;
@@ -338,15 +321,11 @@ details.cust>summary::-webkit-details-marker{display:none}
           .eq('status', 'booked').eq('slot_date', today);
         $('dPickups').textContent = pk == null ? '—' : pk;
       } catch { $('dPickups').textContent = '—'; }
-      const { data: sl } = await db.from('sailings').select('*')
-        .gte('departs', today).neq('status', 'sailed').order('departs').limit(1);
-      if (sl && sl[0]) {
-        $('dNextSail').textContent = fd(sl[0].departs) + ' — ' + sl[0].vessel;
-        $('dNextSailSub').textContent = `Cut-off ${fd(sl[0].cutoff)} · arrives ${fd(sl[0].arrives)} · ${sl[0].status}`;
-      } else {
-        $('dNextSail').textContent = 'None scheduled';
-        $('dNextSailSub').textContent = 'Add one on the Sailings tab.';
-      }
+      /* the boat leaves every Thursday — no table to maintain */
+      const th = new Date(); th.setHours(0, 0, 0, 0);
+      th.setDate(th.getDate() + ((4 - th.getDay() + 7) % 7));
+      $('dNextSail').textContent = th.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      $('dNextSailSub').textContent = 'Departs every Thursday';
     } catch (e) { $('dashMsg').textContent = e.message; $('dashMsg').className = 'msg err'; }
   }
 
@@ -683,52 +662,6 @@ details.cust>summary::-webkit-details-marker{display:none}
       }
     }));
   }
-
-  /* ---------- sailings ---------- */
-  const SAIL_NEXT = { open: 'closing', closing: 'closed', closed: 'sailed', sailed: 'open' };
-  async function loadSailings() {
-    const { data, error } = await db.from('sailings').select('*').order('departs', { ascending: true }).limit(20);
-    if (error) { $('sailList').innerHTML = `<p class="msg err">${esc(error.message)}</p>`; return; }
-    $('sailList').innerHTML = (data || []).map((s) => `<div class="item">
-        <div class="top"><b>${esc(s.vessel)}</b><span class="pill ${esc(s.status)}">${esc(s.status)}</span></div>
-        <div class="meta">Departs ${fd(s.departs)} · Arrives ${fd(s.arrives)} · Cut-off ${fd(s.cutoff)}</div>
-        <button class="btn sm ghost" data-cycle="${s.id}" data-next="${SAIL_NEXT[s.status]}">Set ${SAIL_NEXT[s.status]}</button>
-        <button class="btn sm ghost" data-del="${s.id}">Delete</button>
-      </div>`).join('') || '<p class="msg">No sailings yet — add one above.</p>';
-    document.querySelectorAll('[data-cycle]').forEach((b) =>
-      b.addEventListener('click', async () => {
-        await db.from('sailings').update({ status: b.dataset.next }).eq('id', b.dataset.cycle);
-        loadSailings();
-      }));
-    document.querySelectorAll('[data-del]').forEach((b) =>
-      b.addEventListener('click', async () => {
-        if (confirm('Delete this sailing?')) {
-          await db.from('sailings').delete().eq('id', b.dataset.del);
-          loadSailings();
-        }
-      }));
-  }
-  $('slDeparts').addEventListener('change', () => {
-    const d = $('slDeparts').value;
-    if (!d) return;
-    const dep = new Date(d + 'T12:00:00');
-    if (!$('slArrives').value) $('slArrives').value = new Date(dep.getTime() + 12 * 86400000).toISOString().slice(0, 10);
-    if (!$('slCutoff').value) $('slCutoff').value = new Date(dep.getTime() - 2 * 86400000).toISOString().slice(0, 10);
-  });
-  $('slAdd').addEventListener('click', async () => {
-    const msg = $('slMsg'); msg.className = 'msg';
-    if (!$('slVessel').value.trim() || !$('slDeparts').value || !$('slArrives').value || !$('slCutoff').value) {
-      msg.textContent = 'All fields are required.'; msg.className = 'msg err'; return;
-    }
-    const { error } = await db.from('sailings').insert({
-      vessel: $('slVessel').value.trim(), departs: $('slDeparts').value,
-      arrives: $('slArrives').value, cutoff: $('slCutoff').value, status: 'open',
-    });
-    if (error) { msg.textContent = error.message; msg.className = 'msg err'; return; }
-    msg.textContent = 'Sailing added.'; msg.className = 'msg ok';
-    ['slDeparts', 'slArrives', 'slCutoff'].forEach((id) => ($(id).value = ''));
-    loadSailings();
-  });
 
   /* ---------- prices (v4: EVERYTHING editable — add/remove cargo, destinations
         with countries, flat per-destination prices, extras, supplies, arrival
