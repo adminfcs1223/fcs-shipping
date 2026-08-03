@@ -29,13 +29,19 @@ exports.handler = async (event) => {
   const destination = S(b.destination, 80);
   const pricing = await getPricing();
 
-  /* server-side estimate when possible; never trusted from the client */
+  /* server-side estimate when possible; never trusted from the client.
+     b.items is an { id: qty } map — mix of barrels/bins/boxes with quantities. */
   let totalCents = 0, summaryBits = [];
   const ITEM_LABELS = { barrel: 'Barrel', bin: 'Commercial Bin', box: 'Box', amazon: 'Online-order mail-in' };
-  if (type === 'pickup' && item && destination) {
+  const itemsIn = (b.items && typeof b.items === 'object' && !Array.isArray(b.items)) ? b.items : (item ? { [item]: 1 } : {});
+  const itemArr = Object.entries(itemsIn)
+    .map(([id, n]) => ({ cargoId: S(id, 30), quantity: Math.min(Math.max(parseInt(n, 10) || 0, 0), 50) }))
+    .filter((x) => x.cargoId && x.quantity > 0);
+  const itemLabel = itemArr.map((x) => `${ITEM_LABELS[x.cargoId] || x.cargoId} × ${x.quantity}`).join(', ');
+  if (type === 'pickup' && itemArr.length && destination) {
     try {
       const q = computeQuote({
-        items: [{ cargoId: item, quantity: 1 }],
+        items: itemArr,
         destination,
         extras: b.insurance ? ['insurance'] : [],
         supplies: b.supplies || {},
@@ -44,7 +50,26 @@ exports.handler = async (event) => {
       totalCents = q.totalCents;
       summaryBits.push(q.summary);
     } catch (e) {
-      summaryBits.push(`${ITEM_LABELS[item] || item}${destination ? ' → ' + destination : ''} (priced at pickup)`);
+      /* boxes are measured at pickup — price whatever else CAN be priced */
+      const customIds = new Set((pricing.cargo || []).filter((c) => c.custom).map((c) => c.id));
+      const priceable = itemArr.filter((x) => !customIds.has(x.cargoId));
+      const unpriced = itemArr.filter((x) => customIds.has(x.cargoId))
+        .map((x) => `${ITEM_LABELS[x.cargoId] || x.cargoId} × ${x.quantity}`).join(', ');
+      let done = false;
+      if (priceable.length && priceable.length < itemArr.length) {
+        try {
+          const q2 = computeQuote({
+            items: priceable, destination,
+            extras: b.insurance ? ['insurance'] : [],
+            supplies: b.supplies || {},
+            supplyDelivery: Boolean(b.supplyDelivery),
+          }, pricing);
+          totalCents = q2.totalCents;
+          summaryBits.push(q2.summary + ` + ${unpriced} (priced at pickup)`);
+          done = true;
+        } catch (e2) { /* fall through */ }
+      }
+      if (!done) summaryBits.push(`${itemLabel}${destination ? ' → ' + destination : ''} (priced at pickup)`);
     }
   } else if (type === 'supplies') {
     const sIn = b.supplies || {};
@@ -77,7 +102,7 @@ exports.handler = async (event) => {
           address: address || null,
           pickup_slot: S(sender.date, 20) ? `Requested: ${S(sender.date, 20)}` : null,
           cargo: summaryBits.join(' | ').slice(0, 400),
-          quantity: 1,
+          quantity: Math.max(1, itemArr.reduce((s2, x) => s2 + x.quantity, 0)),
           destination: destination || (type === 'amazon' ? 'TBD (mail-in)' : 'TBD'),
           extras: [
             b.insurance ? 'Insurance' : null,
