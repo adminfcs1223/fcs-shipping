@@ -149,12 +149,14 @@ h2{font-weight:900;font-size:clamp(1.8rem,4vw,2.6rem);text-transform:uppercase;l
 .wz-card span{display:block;margin-top:.8rem;font-weight:800;font-size:1rem;letter-spacing:.02em;text-transform:uppercase}
 .wz-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(6,18,30,.14);border-color:var(--sea)}
 .wz-card:active{transform:translateY(-1px)}
-.wz-card .flag{position:absolute;top:.7rem;right:.7rem;width:34px;height:34px;border-radius:50%;
-  background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.15rem;
-  box-shadow:0 2px 8px rgba(6,18,30,.25)}
-.wz-card.wz-dest{padding:1.6rem 1rem 1.4rem}
-.wz-card.wz-dest .big{font-size:2rem;line-height:1;display:block}
-.wz-card.wz-dest span{margin-top:.6rem}
+.wz-card .q-mark{position:absolute;top:.8rem;right:.9rem;width:44px;height:44px;border-radius:50%;
+  background:var(--sea);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;font-weight:900;box-shadow:0 4px 12px rgba(6,18,30,.3)}
+.wz-card .flag-sm{display:inline-flex;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
+  background:#fff;align-items:center;justify-content:center;font-size:1.05rem;margin:0 auto .4rem;
+  box-shadow:0 2px 6px rgba(6,18,30,.15)}
+.wz-card.wz-dest{padding:1.1rem .9rem 1rem;display:flex;flex-direction:column;align-items:center}
+.wz-card.wz-dest span{margin-top:.1rem;font-size:.92rem}
 .wz-card.wz-dest small{display:block;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;
   text-transform:uppercase;color:var(--grey);margin-top:.3rem}
 .wz-links{margin-top:1.4rem;display:flex;flex-direction:column;gap:.4rem;align-items:flex-start}
@@ -222,6 +224,7 @@ h2{font-weight:900;font-size:clamp(1.8rem,4vw,2.6rem);text-transform:uppercase;l
   transition:transform .18s,box-shadow .18s}
 .how-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(6,18,30,.12)}
 .how-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.how-card img.contain{object-fit:contain;background:#fff;padding:1.4rem}
 .how-card h3{font-size:1.15rem;font-weight:900;text-transform:uppercase;letter-spacing:.02em;margin:1.1rem 1.3rem .5rem}
 .how-card p{color:var(--grey);font-size:.93rem;margin:0 1.3rem 1.3rem}
 
