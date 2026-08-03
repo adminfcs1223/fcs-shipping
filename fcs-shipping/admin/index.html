@@ -355,30 +355,34 @@ details.cust>summary::-webkit-details-marker{display:none}
   async function loadCustomers() {
     const list = $('custList');
     try {
-      const [qr, eb, sh, it] = await Promise.all([
+      const [qr, eb, sh, it, od] = await Promise.all([
         db.from('quote_requests').select('*').order('created_at', { ascending: false }).limit(40),
-        db.from('ebl').select('*').order('created_at', { ascending: false }).limit(40),
-        db.from('shipments').select('*').order('created_at', { ascending: false }).limit(40),
+        db.from('ebl').select('*').order('created_at', { ascending: false }).limit(60),
+        db.from('shipments').select('*').order('created_at', { ascending: false }).limit(60),
         db.from('wms_items').select('*, wms_loads(load_no,sector,wms_shipments(shipment_no))')
           .order('created_at', { ascending: false }).limit(80),
+        /* Order entry is the source of truth — its saved orders drive this list */
+        db.from('settings').select('value').eq('key', 'fcs:orders').maybeSingle(),
       ]);
       if (eb.error) throw eb.error;
-      custData = { quotes: qr.data || [], ebls: eb.data || [], ships: sh.data || [], items: it.data || [] };
+      custData = { quotes: qr.data || [], ebls: eb.data || [], ships: sh.data || [], items: it.data || [],
+        orders: (od.data && Array.isArray(od.data.value)) ? od.data.value : [] };
     } catch (e) { list.innerHTML = `<p class="msg err">${esc(e.message)}</p>`; return; }
     renderCustomers();
   }
   function renderCustomers() {
     if (!custData) return;
-    const { quotes, ebls, ships, items } = custData;
+    const { quotes, ebls, ships, items, orders } = custData;
     const term = $('custSearch').value.trim().toLowerCase();
     const hit = (o) => !term || JSON.stringify(o).toLowerCase().includes(term);
     const usedShip = new Set();
-    const eblCard = (e) => {
+    const usedEbl = new Set();
+    const eblCard = (e, o) => {
       const item = items.find((i) => i.ebl_no === e.ebl_no) || null;
       const ship = ships.find((s) => s.ebl_no === e.ebl_no || (e.bl_no && s.waybill_no === e.bl_no)) || null;
       if (ship) usedShip.add(ship.id);
-      if (!hit({ e, item, ship })) return '';
-      const name = (item && item.customer_name) || (ship && ship.customer_name) || e.customer_email || 'Customer';
+      if (!hit({ e, item, ship, o })) return '';
+      const name = (o && o.sh && o.sh.name) || (item && item.customer_name) || (ship && ship.customer_name) || e.customer_email || 'Customer';
       const load = item && item.wms_loads;
       const shipNo = load && load.wms_shipments && load.wms_shipments.shipment_no;
       const next = ship ? STATUS_CHAIN[STATUS_CHAIN.indexOf(ship.status) + 1] : null;
@@ -408,10 +412,26 @@ details.cust>summary::-webkit-details-marker{display:none}
               ${e.status === 'open' ? `<button class="btn sm cbtn" data-paid="${e.id}">Mark PAID</button>
                 <button class="btn sm ghost cbtn" data-void="${e.id}">Void</button>` : ''}
               ${e.status === 'paid' ? `<button class="btn sm ghost cbtn" data-unpaid="${e.id}">Reopen (not paid)</button>` : ''}
+              ${!o ? `<button class="btn sm ghost cbtn" data-delebl="${e.id}" data-eblno="${esc(e.ebl_no)}" style="color:#B03A2E;border-color:#E7C4BF">Delete record</button>` : ''}
             </div>
           </div>
         </div>
       </details>`;
+    };
+    /* an order from Order entry is the anchor — billed orders show the full
+       EB/L card, unbilled ones a light card. Delete the order, the card goes. */
+    const orderCard = (o) => {
+      if (o.eblNo) {
+        const e = ebls.find((x) => x.ebl_no === o.eblNo);
+        if (e) { usedEbl.add(e.id); return eblCard(e, o); }
+      }
+      if (!hit(o)) return '';
+      const total = (o.items || []).reduce((s2, it) => s2 + (parseFloat(it.amount) || 0), 0);
+      return `<div class="item">
+        <div class="top"><b>${esc((o.sh && o.sh.name) || 'Customer')}</b><span class="pill handled">order — not billed</span></div>
+        <div class="meta">Inv ${esc(o.inv)}${o.invDate ? ' · ' + fd(o.invDate) : ''}${total ? ' · $' + total.toLocaleString() : ''}</div>
+        <a class="btn sm sea" style="text-decoration:none;display:inline-block;text-align:center" href="/admin/orders/?inv=${encodeURIComponent(o.inv)}">Open in Order entry →</a>
+      </div>`;
     };
     const shipCard = (s) => {
       if (usedShip.has(s.id) || !hit(s)) return '';
@@ -421,6 +441,7 @@ details.cust>summary::-webkit-details-marker{display:none}
         <div class="meta"><span class="wb">${esc(s.waybill_no)}</span> · ${esc(s.customer_phone)}</div>
         <div class="meta">${esc(s.cargo)} → ${esc(s.destination)} · ${esc(s.vessel || '')}${s.eta ? ' · ETA ' + fd(s.eta) : ''}</div>
         ${next ? `<button class="btn sm sea" data-adv="${s.id}" data-next="${next}">Mark ${STATUS_LABEL[next]} →</button>` : ''}
+        <button class="btn sm ghost" data-delwalk="${s.id}" style="color:#B03A2E;border-color:#E7C4BF">Delete record</button>
       </div>`;
     };
     const quoteCard = (q) => !hit(q) ? '' : `<div class="item">
@@ -431,17 +452,23 @@ details.cust>summary::-webkit-details-marker{display:none}
         <div class="meta">${esc(q.cargo)} → ${esc(q.destination)} · $${(q.total_cents / 100).toLocaleString()} · ${new Date(q.created_at).toLocaleString()}</div>
         <a class="btn sm sea" style="text-decoration:none;display:inline-block;text-align:center" href="/admin/orders/?quote=${q.id}">Create order →</a>
         ${q.status === 'new' || q.status === 'deposit_paid' ? `<button class="btn sm ghost" data-handle="${q.id}">Mark handled</button>` : ''}
+        <button class="btn sm ghost" data-delq="${q.id}" style="color:#B03A2E;border-color:#E7C4BF">Delete</button>
       </div>`;
     const fresh = quotes.filter((q) => q.status === 'new' || q.status === 'deposit_paid');
     const old = quotes.filter((q) => q.status !== 'new' && q.status !== 'deposit_paid');
     const freshHtml = fresh.map(quoteCard).join('');
-    const eblHtml = ebls.map(eblCard).join('');
-    const shipHtml = ships.map(shipCard).join('');
+    /* main list = Order entry, newest first */
+    const orderHtml = orders.slice().reverse().map(orderCard).join('');
+    /* anything not tied to an order (old tests, manual EB/Ls, walk-ins) is tucked away */
+    const legacyEbls = ebls.filter((e) => !usedEbl.has(e.id));
+    const legacyHtml = legacyEbls.map((e) => eblCard(e, null)).join('') + ships.map(shipCard).join('');
+    const legacyCount = legacyEbls.length + ships.filter((s) => !usedShip.has(s.id)).length;
     const oldHtml = old.map(quoteCard).join('');
     $('custList').innerHTML = ((freshHtml ? `<h2 style="margin:.5rem 0 .7rem">New quotes</h2>${freshHtml}` : '') +
-      ((eblHtml || shipHtml) ? `<h2 style="margin:1.1rem 0 .7rem">Customers &amp; cargo</h2>${eblHtml}${shipHtml}` : '') +
+      (orderHtml ? `<h2 style="margin:1.1rem 0 .7rem">Customers &amp; cargo</h2>${orderHtml}` : '') +
+      (legacyHtml ? `<details style="margin-top:1rem"><summary class="note" style="cursor:pointer;margin-top:0">Not from Order entry — manual EB/Ls, walk-ins &amp; old records (${legacyCount})</summary><div style="margin-top:.7rem">${legacyHtml}</div></details>` : '') +
       (oldHtml ? `<details style="margin-top:1rem"><summary class="note" style="cursor:pointer;margin-top:0">Handled quotes (${old.length})</summary><div style="margin-top:.7rem">${oldHtml}</div></details>` : '')) ||
-      '<p class="msg">Nothing yet — website quotes and billed orders show up here.</p>';
+      '<p class="msg">Nothing yet — website quotes and Order entry orders show up here.</p>';
     /* QR renders the first time a card is opened — same deep link the warehouse labels use */
     document.querySelectorAll('#custList details[data-qr]').forEach((d) => d.addEventListener('toggle', () => {
       const box = d.querySelector('.custqr');
@@ -451,6 +478,12 @@ details.cust>summary::-webkit-details-marker{display:none}
     }));
     document.querySelectorAll('[data-handle]').forEach((b) => b.addEventListener('click', async () => {
       await db.from('quote_requests').update({ status: 'handled' }).eq('id', b.dataset.handle);
+      loadCustomers(); loadDash();
+    }));
+    document.querySelectorAll('[data-delq]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Delete this quote for good? This cannot be undone.')) return;
+      const { error } = await db.from('quote_requests').delete().eq('id', b.dataset.delq);
+      if (error) alert('Could not delete: ' + error.message);
       loadCustomers(); loadDash();
     }));
     document.querySelectorAll('[data-adv]').forEach((b) => b.addEventListener('click', async () => {
@@ -477,6 +510,25 @@ details.cust>summary::-webkit-details-marker{display:none}
         await db.from('ebl').update({ status: 'void' }).eq('id', b.dataset.void);
         loadCustomers(); loadDash();
       }
+    }));
+    /* full purge for records that don't belong to an Order entry order (tests, mistakes) */
+    document.querySelectorAll('[data-delebl]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Delete this record for good? Its EB/L, tracking, and warehouse entry all go. This cannot be undone.')) return;
+      const no = b.dataset.eblno;
+      await db.from('wms_items').delete().eq('ebl_no', no);
+      const { data: shs } = await db.from('shipments').select('id').eq('ebl_no', no);
+      for (const s of (shs || [])) await db.from('shipment_events').delete().eq('shipment_id', s.id);
+      await db.from('shipments').delete().eq('ebl_no', no);
+      const { error } = await db.from('ebl').delete().eq('id', b.dataset.delebl);
+      if (error) alert('Could not delete: ' + error.message);
+      loadCustomers(); loadDash();
+    }));
+    document.querySelectorAll('[data-delwalk]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Delete this shipment record for good? This cannot be undone.')) return;
+      await db.from('shipment_events').delete().eq('shipment_id', b.dataset.delwalk);
+      const { error } = await db.from('shipments').delete().eq('id', b.dataset.delwalk);
+      if (error) alert('Could not delete: ' + error.message);
+      loadCustomers(); loadDash();
     }));
   }
   let searchTimer;
