@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/styles.css?v=14">
+<link rel="stylesheet" href="/css/styles.css?v=15">
 </head>
 <body>
 
@@ -16,7 +16,7 @@
   <span id="tbPhone">☎ (718) 483-8006</span>
   <span id="tbEmail">✉ admin@fcsshipping.com</span>
   <span id="tbAddr">📍 9502 Ditmas Ave, Bldg 4, Brooklyn NY</span>
-  <span id="tbHours">Mon–Sat 9am–5pm</span>
+  <span id="tbHours">Mon–Fri 9am–5pm</span>
 </div>
 
 <nav>
@@ -88,19 +88,23 @@
       <!-- Step 1 · what are you shipping -->
       <div class="wz-step on" id="wzStep1">
         <div class="wz-grid">
-          <button type="button" class="wz-card" data-pick="barrel">
+          <div class="wz-card" role="button" tabindex="0" data-pick="barrel">
             <img src="/assets/pick-barrel.webp?v=2" alt="Shipping barrels"><span>Barrel</span>
-          </button>
-          <button type="button" class="wz-card" data-pick="bin">
+            <span class="wz-qty" hidden><button type="button" class="qb" data-iminus="barrel" aria-label="Fewer barrels">−</button><b id="iqty-barrel">0</b><button type="button" class="qb" data-iplus="barrel" aria-label="More barrels">+</button></span>
+          </div>
+          <div class="wz-card" role="button" tabindex="0" data-pick="bin">
             <img src="/assets/pick-bin.webp?v=2" alt="Commercial bin"><span>Commercial Bin</span>
-          </button>
-          <button type="button" class="wz-card" data-pick="box">
+            <span class="wz-qty" hidden><button type="button" class="qb" data-iminus="bin" aria-label="Fewer bins">−</button><b id="iqty-bin">0</b><button type="button" class="qb" data-iplus="bin" aria-label="More bins">+</button></span>
+          </div>
+          <div class="wz-card" role="button" tabindex="0" data-pick="box">
             <img src="/assets/pick-box.webp?v=2" alt="Box or anything else"><span class="q-mark">?</span><span>Box or Anything Else</span>
-          </button>
-          <button type="button" class="wz-card" data-pick="amazon">
+            <span class="wz-qty" hidden><button type="button" class="qb" data-iminus="box" aria-label="Fewer boxes">−</button><b id="iqty-box">0</b><button type="button" class="qb" data-iplus="box" aria-label="More boxes">+</button></span>
+          </div>
+          <div class="wz-card" role="button" tabindex="0" data-pick="amazon">
             <img src="/assets/pick-amazon.webp?v=2" alt="Online order package"><span>Amazon / Online Order</span>
-          </button>
+          </div>
         </div>
+        <button type="button" class="btn wz-request" id="wzContinue" hidden>Continue →</button>
         <div class="wz-links">
           <button type="button" id="wzSuppliesOnly">Just need empty barrels or bins? →</button>
           <button type="button" id="wzHaveEbl">Have an EB/L number? Pay it here →</button>
@@ -171,7 +175,7 @@
       <p class="wb-note" id="wbNote">Estimate only. Final rate confirmed at drop-off or pickup when cargo is weighed and manifested.</p>
     </div>
 
-    <div class="lucia-map" aria-label="Map of St. Lucia showing our ports">
+    <div class="lucia-map" id="luciaMap" hidden aria-label="Map of St. Lucia showing our ports">
       <svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" role="img">
         <path d="M96 12 C110 8 122 16 126 30 C130 43 140 50 142 64 C144 78 138 88 142 102
                  C146 116 152 128 148 144 C144 160 136 172 130 186 C124 200 118 214 104 222
@@ -267,7 +271,7 @@
     <div class="txt">
       <div class="eyebrow" style="color:#BCD3E2">In business since 2017</div>
       <h2>Professional, Reliable, Rapid Service!</h2>
-      <p>That's Felix — our founder — personally hauling customer barrels back when FCS was one man, one van, and a hand truck. Since 2017 we've grown into a license pending Caribbean freight operation moving thousands of barrels, bins, and vehicles a year, but the standard never changed: every shipment gets handled like the boss is still carrying it himself.</p>
+      <p>That's Felix — our founder — personally hauling customer barrels back when FCS was one man, one van, and a hand truck. Since 2017 we've grown into a fully licensed Caribbean freight operation moving thousands of barrels, bins, and vehicles a year, but the standard never changed: every shipment gets handled like the boss is still carrying it himself.</p>
       <div class="award">
         <img src="/assets/slhf-logo.png" alt="St. Lucia House Foundation">
         <span>St. Lucia House Foundation<b>Business Award Recipient</b></span>
@@ -389,6 +393,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/admin/config.js"></script>
-<script src="/js/main.js?v=9"></script>
+<script src="/js/main.js?v=10"></script>
 </body>
 </html>
