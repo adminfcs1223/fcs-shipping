@@ -376,6 +376,17 @@
       : state.suppliesOnly ? 'Supplies — Brooklyn pickup or delivery'
       : state.item === 'amazon' ? 'Our Brooklyn warehouse → the island'
       : '—';
+    /* boxes need a tape measure — one row of L×W×H per box */
+    const nBox = (!state.suppliesOnly && state.item !== 'amazon') ? (state.items.box || 0) : 0;
+    $('mBoxDims').hidden = nBox === 0;
+    if (nBox > 0) {
+      $('mBoxDimRows').innerHTML = Array.from({ length: Math.min(nBox, 10) }, (_, i) => `
+        <div class="m-row" style="margin-bottom:.5rem">
+          <input type="text" inputmode="decimal" data-bd="l" data-bi="${i}" placeholder="${nBox > 1 ? 'Box ' + (i + 1) + ' — ' : ''}Length">
+          <input type="text" inputmode="decimal" data-bd="w" data-bi="${i}" placeholder="Width">
+          <input type="text" inputmode="decimal" data-bd="h" data-bi="${i}" placeholder="Height">
+        </div>`).join('');
+    }
     $('mErr').hidden = true;
     openModal('mForm');
     setTimeout(() => $('pName').focus(), 150);
@@ -400,6 +411,23 @@
       $('mErr').hidden = false;
       return;
     }
+    /* boxes must come with measurements so we can price them */
+    const boxDims = [];
+    if (!$('mBoxDims').hidden) {
+      const rows = {};
+      document.querySelectorAll('#mBoxDimRows [data-bi]').forEach((f) => {
+        (rows[f.dataset.bi] = rows[f.dataset.bi] || {})[f.dataset.bd] = parseFloat(f.value) || 0;
+      });
+      for (const k of Object.keys(rows)) {
+        const d = rows[k];
+        if (!(d.l > 0 && d.w > 0 && d.h > 0)) {
+          $('mErr').textContent = 'Enter each box’s measurements (Length × Width × Height, in inches) so we can price it.';
+          $('mErr').hidden = false;
+          return;
+        }
+        boxDims.push(d);
+      }
+    }
     const btn = $('mSubmit');
     btn.disabled = true; btn.textContent = 'Sending\u2026';
     try {
@@ -409,6 +437,8 @@
           type: state.suppliesOnly ? 'supplies' : (state.item === 'amazon' ? 'amazon' : 'pickup'),
           item: state.item || ITEM_IDS.filter((id) => state.items[id] > 0).map((id) => id + '×' + state.items[id]).join(', '),
           items: state.items,
+          boxDims,
+          notes: $('pNotes').value.trim(),
           destination: state.dest ? state.dest.name : '',
           insurance: state.insurance,
           supplies: state.supplies,
