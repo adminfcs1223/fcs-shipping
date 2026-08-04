@@ -34,9 +34,25 @@ exports.handler = async (event) => {
   let totalCents = 0, summaryBits = [];
   const ITEM_LABELS = { barrel: 'Barrel', bin: 'Commercial Bin', box: 'Box', amazon: 'Online-order mail-in' };
   const itemsIn = (b.items && typeof b.items === 'object' && !Array.isArray(b.items)) ? b.items : (item ? { [item]: 1 } : {});
-  const itemArr = Object.entries(itemsIn)
-    .map(([id, n]) => ({ cargoId: S(id, 30), quantity: Math.min(Math.max(parseInt(n, 10) || 0, 0), 50) }))
-    .filter((x) => x.cargoId && x.quantity > 0);
+  const boxDims = (Array.isArray(b.boxDims) ? b.boxDims : []).slice(0, 10)
+    .map((d) => ({ l: Number(d && d.l) || 0, w: Number(d && d.w) || 0, h: Number(d && d.h) || 0 }))
+    .filter((d) => d.l > 0 && d.w > 0 && d.h > 0);
+  const notes = S(b.notes, 400);
+  const itemArr = [];
+  for (const [idRaw, nRaw] of Object.entries(itemsIn)) {
+    const id = S(idRaw, 30);
+    const n = Math.min(Math.max(parseInt(nRaw, 10) || 0, 0), 50);
+    if (!id || !n) continue;
+    if (id === 'box' && boxDims.length) {
+      /* each box priced from its own measurements */
+      for (let i = 0; i < n; i++) {
+        const d = boxDims[i] || boxDims[boxDims.length - 1];
+        itemArr.push({ cargoId: 'box', quantity: 1, dims: d });
+      }
+    } else {
+      itemArr.push({ cargoId: id, quantity: n });
+    }
+  }
   const itemLabel = itemArr.map((x) => `${ITEM_LABELS[x.cargoId] || x.cargoId} × ${x.quantity}`).join(', ');
   if (type === 'pickup' && itemArr.length && destination) {
     try {
@@ -106,6 +122,8 @@ exports.handler = async (event) => {
           destination: destination || (type === 'amazon' ? 'TBD (mail-in)' : 'TBD'),
           extras: [
             b.insurance ? 'Insurance' : null,
+            notes ? 'Note: ' + notes : null,
+            boxDims.length ? 'Box dims: ' + boxDims.map((d) => `${d.l}x${d.w}x${d.h}`).join(', ') : null,
             consigneeLine ? 'Consignee: ' + consigneeLine : null,
             S(sender.phone2, 40) ? 'Alt phone: ' + S(sender.phone2, 40) : null,
           ].filter(Boolean),
@@ -141,6 +159,8 @@ exports.handler = async (event) => {
             `Pickup date: ${S(sender.date, 20) || '(not given)'}`,
             '',
             `What:    ${summaryBits.join(' | ')}`,
+            boxDims.length ? `Box measurements: ${boxDims.map((d) => `${d.l}x${d.w}x${d.h}`).join(', ')}` : '',
+            notes ? `Special info: ${notes}` : '',
             `Destination: ${destination || '(not set)'}`,
             totalCents ? `Estimated total: $${(totalCents / 100).toFixed(2)}` : 'Estimate: to be priced',
             '',
