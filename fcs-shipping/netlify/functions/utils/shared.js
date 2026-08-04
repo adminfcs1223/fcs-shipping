@@ -159,7 +159,9 @@ function json(statusCode, body) {
 
 /* ---- naive in-memory rate limit (per warm function instance) ---- */
 const hits = new Map();
-function rateLimited(ip, max = 5, windowMs = 10 * 60 * 1000) {
+/* generous enough that no human ever hits it (offices/families share IPs);
+   still stops scripted floods cold */
+function rateLimited(ip, max = 30, windowMs = 10 * 60 * 1000) {
   const now = Date.now();
   const list = (hits.get(ip) || []).filter((t) => now - t < windowMs);
   list.push(now);
