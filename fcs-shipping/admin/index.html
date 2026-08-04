@@ -846,6 +846,16 @@ details.cust>summary::-webkit-details-marker{display:none}
     renderTst();
   });
 
+  /* the counter tablet sits on this page all day — pull fresh quotes/orders
+     every 60s (only while the tab is visible and someone is signed in) */
+  setInterval(() => {
+    if (!db || document.hidden || $('app').hidden) return;
+    loadDash();
+    const cur = document.querySelector('.view.on');
+    if (cur && cur.id === 'view-cust') loadCustomers();
+    if (cur && cur.id === 'view-cal') loadCal();
+  }, 60000);
+
   if (db) { db.auth.onAuthStateChange(() => refreshAuth()); refreshAuth(); }
 })();
 </script>
