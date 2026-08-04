@@ -436,7 +436,10 @@
       $('mDoneText').textContent = 'You will receive a call from us shortly.';
       openModal('mDone');
     } catch (err) {
-      $('mErr').textContent = `Couldn't send right now \u2014 call us at ${co.phones[0]} and we'll set it up.`;
+      /* show the server's actual reason when it has one (e.g. rate limit) */
+      $('mErr').textContent = (err && err.message && err.message !== 'Request failed')
+        ? err.message
+        : `Couldn't send right now \u2014 call us at ${co.phones[0]} and we'll set it up.`;
       $('mErr').hidden = false;
     }
     btn.disabled = false; btn.textContent = 'Request Pickup';
