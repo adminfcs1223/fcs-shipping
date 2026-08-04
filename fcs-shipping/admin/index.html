@@ -89,15 +89,22 @@ details.cust>summary::-webkit-details-marker{display:none}
 .custqr{width:92px;min-width:92px;height:92px;background:#fff;padding:4px;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center}
 .custqr img,.custqr canvas{max-width:100%;max-height:100%}
 .cbtn{margin-top:0 !important;text-decoration:none;text-align:center}
-/* daily pickup sheet */
-.pk-h{display:grid;grid-template-columns:1.05fr .85fr 1.35fr 1.25fr .5fr .5fr 62px;gap:.35rem;
-  font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--grey);
-  padding:.4rem 0;border-bottom:1px solid var(--line)}
-.pk-r{display:grid;grid-template-columns:1.05fr .85fr 1.35fr 1.25fr .5fr .5fr 62px;gap:.35rem;margin-top:.35rem;align-items:center}
-.pk-r input{padding:.5rem .55rem;font-size:.85rem}
-.pk-r.done input{text-decoration:line-through;color:#999;background:var(--bg-soft)}
-.pkbtn{width:27px;height:27px;border-radius:6px;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-size:.8rem;padding:0}
+/* daily pickup sheet — one clean card per pickup */
+.pk-r{position:relative;border:1px solid var(--line);border-radius:12px;padding:.8rem .9rem .7rem;margin-top:.7rem;
+  display:grid;grid-template-columns:1fr 1fr;gap:.45rem;background:#fff}
+.pk-r .pk-num{position:absolute;top:-.55rem;left:.8rem;background:var(--sea);color:#fff;font-family:var(--mono);
+  font-size:.62rem;font-weight:600;border-radius:999px;padding:.1rem .55rem;letter-spacing:.08em}
+.pk-r input{padding:.55rem .6rem;font-size:.88rem}
+.pk-r .pk-wide{grid-column:1/-1}
+.pk-r .pk-foot{grid-column:1/-1;display:flex;gap:.45rem;align-items:center}
+.pk-r .pk-foot input{max-width:110px}
+.pk-r .pk-foot .sp{flex:1}
+.pk-r.done{background:var(--bg-soft)}
+.pk-r.done input{text-decoration:line-through;color:#999;background:transparent}
+.pkbtn{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-size:.85rem;padding:0}
 .pkbtn.on{background:#1E6B3A;color:#fff;border-color:#1E6B3A}
+.pkbtn.del{color:#B03A2E}
+@media(max-width:520px){.pk-r{grid-template-columns:1fr}}
 /* workflow visualizer strip */
 .viz{display:flex;flex-wrap:wrap;align-items:center;gap:.18rem;margin-top:.55rem;
   font-family:var(--mono);font-size:.56rem;letter-spacing:.03em;text-transform:uppercase}
@@ -696,14 +703,26 @@ details.cust>summary::-webkit-details-marker{display:none}
   }
   function pkPersist() { clearTimeout(pkTimer); pkTimer = setTimeout(() => kvSave(pkKey(), pkRows), 500); }
   function renderPickups() {
-    $('pkHead').innerHTML = `<div class="pk-h"><span>Name</span><span>Telephone #</span><span>Address / cross st</span><span>Request</span><span>Paid</span><span>Bal</span><span></span></div>`;
+    const dayLabel = new Date($('pkDate').value + 'T12:00:00')
+      .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const open = pkRows.filter((r) => !r.done).length;
+    $('pkHead').innerHTML = `<div class="top" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem">
+        <b>${dayLabel}</b>
+        <span class="pill ${open ? 'open' : 'delivered'}">${pkRows.length ? `${open} to go · ${pkRows.length - open} done` : 'empty sheet'}</span></div>`;
     $('pkRows').innerHTML = pkRows.map((r, i) => `<div class="pk-r${r.done ? ' done' : ''}">
-        ${['name', 'phone', 'address', 'request', 'paid', 'bal'].map((k) =>
-          `<input data-pk="${i}" data-k="${k}" value="${esc(r[k] || '')}">`).join('')}
-        <span style="display:flex;gap:.25rem">
+        <span class="pk-num">#${i + 1}</span>
+        <input data-pk="${i}" data-k="name" placeholder="Name" value="${esc(r.name || '')}">
+        <input data-pk="${i}" data-k="phone" placeholder="Telephone #" inputmode="tel" value="${esc(r.phone || '')}">
+        <input class="pk-wide" data-pk="${i}" data-k="address" placeholder="Address / cross street" value="${esc(r.address || '')}">
+        <input class="pk-wide" data-pk="${i}" data-k="request" placeholder="Request (cargo → destination)" value="${esc(r.request || '')}">
+        <div class="pk-foot">
+          <input data-pk="${i}" data-k="paid" placeholder="Paid $" inputmode="decimal" value="${esc(r.paid || '')}">
+          <input data-pk="${i}" data-k="bal" placeholder="Bal $" inputmode="decimal" value="${esc(r.bal || '')}">
+          <span class="sp"></span>
           <button class="pkbtn${r.done ? ' on' : ''}" data-pkdone="${i}" title="Cross off — picked up">✓</button>
-          <button class="pkbtn" data-pkdel="${i}" title="Remove">✕</button></span>
-      </div>`).join('') || '<p class="msg">Nothing on this day’s sheet yet.</p>';
+          <button class="pkbtn del" data-pkdel="${i}" title="Remove">✕</button>
+        </div>
+      </div>`).join('') || '<p class="msg">Nothing on this day’s sheet yet — add a row below or send a quote over with “→ Pickup sheet”.</p>';
     document.querySelectorAll('[data-pk]').forEach((f) => f.addEventListener('input', () => {
       pkRows[+f.dataset.pk][f.dataset.k] = f.value; pkPersist();
     }));
