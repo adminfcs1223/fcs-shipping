@@ -89,6 +89,22 @@ details.cust>summary::-webkit-details-marker{display:none}
 .custqr{width:92px;min-width:92px;height:92px;background:#fff;padding:4px;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center}
 .custqr img,.custqr canvas{max-width:100%;max-height:100%}
 .cbtn{margin-top:0 !important;text-decoration:none;text-align:center}
+/* daily pickup sheet */
+.pk-h{display:grid;grid-template-columns:1.05fr .85fr 1.35fr 1.25fr .5fr .5fr 62px;gap:.35rem;
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--grey);
+  padding:.4rem 0;border-bottom:1px solid var(--line)}
+.pk-r{display:grid;grid-template-columns:1.05fr .85fr 1.35fr 1.25fr .5fr .5fr 62px;gap:.35rem;margin-top:.35rem;align-items:center}
+.pk-r input{padding:.5rem .55rem;font-size:.85rem}
+.pk-r.done input{text-decoration:line-through;color:#999;background:var(--bg-soft)}
+.pkbtn{width:27px;height:27px;border-radius:6px;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-size:.8rem;padding:0}
+.pkbtn.on{background:#1E6B3A;color:#fff;border-color:#1E6B3A}
+/* workflow visualizer strip */
+.viz{display:flex;flex-wrap:wrap;align-items:center;gap:.18rem;margin-top:.55rem;
+  font-family:var(--mono);font-size:.56rem;letter-spacing:.03em;text-transform:uppercase}
+.viz i{color:#C9C9C4;font-style:normal}
+.viz .vz{padding:.15rem .42rem;border-radius:999px;background:var(--bg-soft);color:#A9A9A4;white-space:nowrap}
+.viz .vz.done{background:#E7F2EA;color:#1E6B3A}
+.viz .vz.now{background:var(--sea);color:#fff}
 </style>
 </head>
 <body>
@@ -183,6 +199,26 @@ details.cust>summary::-webkit-details-marker{display:none}
     <div id="custList"></div>
   </div>
 
+  <!-- Daily pickup sheet — the clipboard, digitized -->
+  <div class="view" id="view-pick">
+    <div class="card">
+      <h2>Daily pick up sheet</h2>
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <button class="btn sm ghost" id="pkPrev" style="margin:0">←</button>
+        <input type="date" id="pkDate" style="flex:1;min-width:150px">
+        <button class="btn sm ghost" id="pkNext" style="margin:0">→</button>
+        <button class="btn sm sea" id="pkPrint" style="margin:0">Print sheet</button>
+      </div>
+      <p class="note">One sheet per day, same columns as the clipboard. "→ Pickup sheet" on any quote drops it here; the ✓ crosses a pickup off for everyone at once.</p>
+    </div>
+    <div class="card">
+      <div id="pkHead"></div>
+      <div id="pkRows"></div>
+      <button class="btn sm ghost" id="pkAdd">+ Add row</button>
+      <p class="msg" id="pkMsg"></p>
+    </div>
+  </div>
+
   <!-- Pickup calendar -->
   <div class="view" id="view-cal">
     <div class="card">
@@ -227,6 +263,7 @@ details.cust>summary::-webkit-details-marker{display:none}
 <nav class="tabs" id="tabs" hidden>
   <button data-view="home" class="on">Home</button>
   <button data-view="cust">Customers</button>
+  <button data-view="pick">Pickups</button>
   <button data-view="cal">Calendar</button>
   <button data-view="prices">Prices</button>
 </nav>
@@ -274,7 +311,7 @@ details.cust>summary::-webkit-details-marker{display:none}
     $('logoutBtn').hidden = !inApp;
     $('ordersLink').hidden = !inApp;
     $('wmsBtn').hidden = !inApp;
-    if (inApp) { loadDash(); loadCustomers(); loadPrices(); loadTestimonials(); loadCal(); }
+    if (inApp) { loadDash(); loadCustomers(); loadPrices(); loadTestimonials(); loadCal(); loadPickups(); }
   }
   $('loginBtn').addEventListener('click', async () => {
     if (!db) return;
@@ -295,6 +332,7 @@ details.cust>summary::-webkit-details-marker{display:none}
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('on', v.id === 'view-' + name));
     if (name === 'home') loadDash();
     if (name === 'cust') loadCustomers();
+    if (name === 'pick') loadPickups();
   }
   document.querySelectorAll('#tabs button').forEach((b) =>
     b.addEventListener('click', () => showView(b.dataset.view)));
@@ -356,6 +394,20 @@ details.cust>summary::-webkit-details-marker{display:none}
     const hit = (o) => !term || JSON.stringify(o).toLowerCase().includes(term);
     const usedShip = new Set();
     const usedEbl = new Set();
+    /* one strip tells the whole journey at a glance */
+    const STEPS = ['Quote', 'Order', 'Billed', 'Paid', 'Warehouse', 'Loaded', 'At sea', 'Delivered'];
+    const stageIdx = (o, e, item, ship) => {
+      let i = o || e ? 1 : 0;
+      if (e) i = 2;
+      if (e && e.status === 'paid') i = 3;
+      if (item && item.status === 'in_warehouse') i = Math.max(i, 4);
+      if (item && item.status === 'shipped') i = Math.max(i, 5);
+      if (ship && ship.status === 'at_sea') i = 6;
+      if (ship && ['arrived', 'ready', 'delivered'].includes(ship.status)) i = 7;
+      return i;
+    };
+    const vizStrip = (idx) => `<div class="viz">${STEPS.map((s, i) =>
+      `<span class="vz ${i <= idx ? 'done' : i === idx + 1 ? 'now' : ''}">${s}</span>`).join('<i>→</i>')}</div>`;
     const eblCard = (e, o) => {
       const item = items.find((i) => i.ebl_no === e.ebl_no) || null;
       const ship = ships.find((s) => s.ebl_no === e.ebl_no || (e.bl_no && s.waybill_no === e.bl_no)) || null;
@@ -378,6 +430,7 @@ details.cust>summary::-webkit-details-marker{display:none}
               <span class="pill ${esc(e.status)}">${esc(e.status)}</span></span></div>
           <div class="meta"><span class="wb">${esc(e.ebl_no)}</span>${e.order_inv ? ' · Inv ' + esc(e.order_inv) : ''}${ship ? ' · B/L ' + esc(ship.waybill_no) : ''}</div>
           <div class="meta">${esc(e.cargo)} → ${esc(e.destination || '—')} · $${(e.price_cents / 100).toLocaleString()}</div>
+          ${vizStrip(stageIdx(o, e, item, ship))}
         </summary>
         <div style="border-top:1px solid var(--line);margin-top:.7rem;padding-top:.7rem">
           ${item ? `<div class="meta" style="margin-top:0"><b>${item.pieces || 1} pc</b> · Sector ${esc(item.sector || '?')} · ${load ? esc(load.load_no) : 'no load'}${shipNo ? ' · ' + esc(shipNo) : ''}</div>`
@@ -406,15 +459,21 @@ details.cust>summary::-webkit-details-marker{display:none}
     const orderCard = (o) => {
       if (o.eblNo) {
         const e = ebls.find((x) => x.ebl_no === o.eblNo);
-        if (e) { usedEbl.add(e.id); return eblCard(e, o); }
+        if (e) {
+          usedEbl.add(e.id);
+          const item = items.find((i) => i.ebl_no === e.ebl_no) || null;
+          const ship = ships.find((s) => s.ebl_no === e.ebl_no || (e.bl_no && s.waybill_no === e.bl_no)) || null;
+          return { html: eblCard(e, o), idx: stageIdx(o, e, item, ship) };
+        }
       }
-      if (!hit(o)) return '';
+      if (!hit(o)) return { html: '', idx: 1 };
       const total = (o.items || []).reduce((s2, it) => s2 + (parseFloat(it.amount) || 0), 0);
-      return `<div class="item">
+      return { html: `<div class="item">
         <div class="top"><b>${esc((o.sh && o.sh.name) || 'Customer')}</b><span class="pill handled">order — not billed</span></div>
         <div class="meta">Inv ${esc(o.inv)}${o.invDate ? ' · ' + fd(o.invDate) : ''}${total ? ' · $' + total.toLocaleString() : ''}</div>
+        ${vizStrip(1)}
         <a class="btn sm sea" style="text-decoration:none;display:inline-block;text-align:center" href="/admin/orders/?inv=${encodeURIComponent(o.inv)}">Open in Order entry →</a>
-      </div>`;
+      </div>`, idx: 1 };
     };
     const shipCard = (s) => {
       if (usedShip.has(s.id) || !hit(s)) return '';
@@ -433,22 +492,35 @@ details.cust>summary::-webkit-details-marker{display:none}
         ${q.address ? `<div class="meta">Address: ${esc(q.address)}</div>` : ''}
         ${q.pickup_slot ? `<div class="meta"><b>Pickup booked: ${esc(q.pickup_slot)}</b></div>` : ''}
         <div class="meta">${esc(q.cargo)} → ${esc(q.destination)} · $${(q.total_cents / 100).toLocaleString()} · ${new Date(q.created_at).toLocaleString()}</div>
+        ${vizStrip(0)}
         <a class="btn sm sea" style="text-decoration:none;display:inline-block;text-align:center" href="/admin/orders/?quote=${q.id}">Create order →</a>
+        <button class="btn sm ghost" data-topick="${q.id}">→ Pickup sheet</button>
         ${q.status === 'new' || q.status === 'deposit_paid' ? `<button class="btn sm ghost" data-handle="${q.id}">Mark handled</button>` : ''}
         <button class="btn sm ghost" data-delq="${q.id}" style="color:#B03A2E;border-color:#E7C4BF">Delete</button>
       </div>`;
     const fresh = quotes.filter((q) => q.status === 'new' || q.status === 'deposit_paid');
     const old = quotes.filter((q) => q.status !== 'new' && q.status !== 'deposit_paid');
     const freshHtml = fresh.map(quoteCard).join('');
-    /* main list = Order entry, newest first */
-    const orderHtml = orders.slice().reverse().map(orderCard).join('');
+    /* main list = Order entry, newest first, GROUPED by how far along they are */
+    const BUCKETS = [
+      [1, 'Orders — not billed yet'], [2, 'Billed — awaiting payment'],
+      [3, 'Paid — cargo not in the warehouse yet'], [4, 'In the warehouse'],
+      [6, 'Loaded / on the water'], [7, 'Arrived & delivered']];
+    const bucketOf = (idx) => idx <= 1 ? 1 : idx === 2 ? 2 : idx === 3 ? 3 : idx === 4 ? 4 : idx <= 6 ? 6 : 7;
+    const bmap = {};
+    orders.slice().reverse().forEach((o) => {
+      const r = orderCard(o);
+      if (r.html) (bmap[bucketOf(r.idx)] = bmap[bucketOf(r.idx)] || []).push(r.html);
+    });
+    const orderHtml = BUCKETS.map(([b, label]) => bmap[b]
+      ? `<h2 style="margin:1.1rem 0 .7rem">${label} <span style="color:var(--grey);font-weight:400">(${bmap[b].length})</span></h2>${bmap[b].join('')}` : '').join('');
     /* anything not tied to an order (old tests, manual EB/Ls, walk-ins) is tucked away */
     const legacyEbls = ebls.filter((e) => !usedEbl.has(e.id));
     const legacyHtml = legacyEbls.map((e) => eblCard(e, null)).join('') + ships.map(shipCard).join('');
     const legacyCount = legacyEbls.length + ships.filter((s) => !usedShip.has(s.id)).length;
     const oldHtml = old.map(quoteCard).join('');
     $('custList').innerHTML = ((freshHtml ? `<h2 style="margin:.5rem 0 .7rem">New quotes</h2>${freshHtml}` : '') +
-      (orderHtml ? `<h2 style="margin:1.1rem 0 .7rem">Customers &amp; cargo</h2>${orderHtml}` : '') +
+      orderHtml +
       (legacyHtml ? `<details style="margin-top:1rem"><summary class="note" style="cursor:pointer;margin-top:0">Not from Order entry — manual EB/Ls, walk-ins &amp; old records (${legacyCount})</summary><div style="margin-top:.7rem">${legacyHtml}</div></details>` : '') +
       (oldHtml ? `<details style="margin-top:1rem"><summary class="note" style="cursor:pointer;margin-top:0">Handled quotes (${old.length})</summary><div style="margin-top:.7rem">${oldHtml}</div></details>` : '')) ||
       '<p class="msg">Nothing yet — website quotes and Order entry orders show up here.</p>';
@@ -462,6 +534,24 @@ details.cust>summary::-webkit-details-marker{display:none}
     document.querySelectorAll('[data-handle]').forEach((b) => b.addEventListener('click', async () => {
       await db.from('quote_requests').update({ status: 'handled' }).eq('id', b.dataset.handle);
       loadCustomers(); loadDash();
+    }));
+    /* quote → today's (or its booked day's) pickup sheet */
+    document.querySelectorAll('[data-topick]').forEach((b) => b.addEventListener('click', async () => {
+      const q = custData.quotes.find((x) => String(x.id) === String(b.dataset.topick));
+      if (!q) return;
+      const m = String(q.pickup_slot || '').match(/\d{4}-\d{2}-\d{2}/);
+      const date = prompt('Add to which day? (YYYY-MM-DD)', (m && m[0]) || new Date().toISOString().slice(0, 10));
+      if (!date) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Use the YYYY-MM-DD format, e.g. 2026-08-06'); return; }
+      const key = 'fcs:pickups:' + date;
+      const rows = await kvLoad(key, []);
+      const total = '$' + ((q.total_cents || 0) / 100).toLocaleString();
+      rows.push({ id: Math.random().toString(36).slice(2, 10), name: q.name || '', phone: q.phone || '',
+        address: q.address || '', request: `${q.cargo || ''} → ${q.destination || ''}${q.pickup_slot ? ' · ' + q.pickup_slot : ''}`,
+        paid: '', bal: total, done: false });
+      await kvSave(key, rows);
+      b.textContent = 'On the sheet ✓'; b.disabled = true;
+      if ($('pkDate').value === date) loadPickups();
     }));
     document.querySelectorAll('[data-delq]').forEach((b) => b.addEventListener('click', async () => {
       if (!confirm('Delete this quote for good? This cannot be undone.')) return;
@@ -587,6 +677,75 @@ details.cust>summary::-webkit-details-marker{display:none}
       loadCustomers();
     } catch (e) { msg.textContent = e.message; msg.className = 'msg err'; }
     $('ebCreate').disabled = false;
+  });
+
+  /* ---------- daily pickup sheet — clipboard columns, one key per day ---------- */
+  const kvLoad = async (k, fb) => {
+    try {
+      const { data } = await db.from('settings').select('value').eq('key', k).maybeSingle();
+      return data && data.value != null ? data.value : fb;
+    } catch (e) { return fb; }
+  };
+  const kvSave = (k, v) => db.from('settings').upsert({ key: k, value: v, updated_at: new Date().toISOString() });
+  let pkRows = []; let pkTimer = null;
+  const pkKey = () => 'fcs:pickups:' + $('pkDate').value;
+  async function loadPickups() {
+    if (!$('pkDate').value) $('pkDate').value = new Date().toISOString().slice(0, 10);
+    pkRows = await kvLoad(pkKey(), []);
+    renderPickups();
+  }
+  function pkPersist() { clearTimeout(pkTimer); pkTimer = setTimeout(() => kvSave(pkKey(), pkRows), 500); }
+  function renderPickups() {
+    $('pkHead').innerHTML = `<div class="pk-h"><span>Name</span><span>Telephone #</span><span>Address / cross st</span><span>Request</span><span>Paid</span><span>Bal</span><span></span></div>`;
+    $('pkRows').innerHTML = pkRows.map((r, i) => `<div class="pk-r${r.done ? ' done' : ''}">
+        ${['name', 'phone', 'address', 'request', 'paid', 'bal'].map((k) =>
+          `<input data-pk="${i}" data-k="${k}" value="${esc(r[k] || '')}">`).join('')}
+        <span style="display:flex;gap:.25rem">
+          <button class="pkbtn${r.done ? ' on' : ''}" data-pkdone="${i}" title="Cross off — picked up">✓</button>
+          <button class="pkbtn" data-pkdel="${i}" title="Remove">✕</button></span>
+      </div>`).join('') || '<p class="msg">Nothing on this day’s sheet yet.</p>';
+    document.querySelectorAll('[data-pk]').forEach((f) => f.addEventListener('input', () => {
+      pkRows[+f.dataset.pk][f.dataset.k] = f.value; pkPersist();
+    }));
+    document.querySelectorAll('[data-pkdone]').forEach((b) => b.addEventListener('click', () => {
+      pkRows[+b.dataset.pkdone].done = !pkRows[+b.dataset.pkdone].done;
+      kvSave(pkKey(), pkRows); renderPickups();
+    }));
+    document.querySelectorAll('[data-pkdel]').forEach((b) => b.addEventListener('click', () => {
+      if (!confirm('Remove this pickup from the sheet?')) return;
+      pkRows.splice(+b.dataset.pkdel, 1); kvSave(pkKey(), pkRows); renderPickups();
+    }));
+  }
+  $('pkAdd').addEventListener('click', () => { pkRows.push({ id: Math.random().toString(36).slice(2, 10), name: '', phone: '', address: '', request: '', paid: '', bal: '', done: false }); renderPickups(); pkPersist(); });
+  $('pkDate').addEventListener('change', loadPickups);
+  const pkShift = (d) => { const dt = new Date($('pkDate').value + 'T12:00:00'); dt.setDate(dt.getDate() + d); $('pkDate').value = dt.toISOString().slice(0, 10); loadPickups(); };
+  $('pkPrev').addEventListener('click', () => pkShift(-1));
+  $('pkNext').addEventListener('click', () => pkShift(1));
+  $('pkPrint').addEventListener('click', () => {
+    const d = new Date($('pkDate').value + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    const w = window.open('', '_blank', 'width=1000,height=800'); if (!w) return;
+    const blank = Math.max(0, 18 - pkRows.length);
+    w.document.write(`<!doctype html><html><head><title>Pickups ${$('pkDate').value}</title><style>
+      @page{size:letter landscape;margin:.4in}body{font-family:Arial;margin:0;color:#000}
+      h1{font-size:15pt;text-align:center;margin:0}
+      .a{font-size:8.5pt;text-align:center;margin:1pt 0 6pt}
+      h2{font-size:11pt;text-align:center;margin:0 0 6pt;letter-spacing:.12em}
+      .d{font-size:9.5pt;margin-bottom:4pt}
+      table{width:100%;border-collapse:collapse}
+      th{border:1px solid #000;background:#ddd;font-size:8pt;padding:3pt;text-align:left}
+      td{border:1px solid #000;padding:4pt;font-size:9pt;height:14pt}
+      .done td{text-decoration:line-through;color:#777}
+    </style></head><body>
+      <h1>FCS SHIPPING, LLC</h1><div class="a">9502 Ditmas Avenue · Brooklyn, NY 11236</div>
+      <h2>DAILY PICK UP SHEET</h2><div class="d">Date: <b>${d}</b></div>
+      <table><thead><tr><th style="width:16%">NAME</th><th style="width:13%">TELEPHONE #</th>
+        <th style="width:26%">ADDRESS / CROSS STREET</th><th style="width:25%">REQUEST</th>
+        <th style="width:10%">PAID</th><th style="width:10%">BAL</th></tr></thead><tbody>
+        ${pkRows.map((r) => `<tr${r.done ? ' class="done"' : ''}><td>${esc(r.name)}</td><td>${esc(r.phone)}</td><td>${esc(r.address)}</td><td>${esc(r.request)}</td><td>${esc(r.paid)}</td><td>${esc(r.bal)}</td></tr>`).join('')}
+        ${'<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>'.repeat(blank)}
+      </tbody></table>
+      <script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
+    w.document.close();
   });
 
   /* ---------- pickup calendar ---------- */
