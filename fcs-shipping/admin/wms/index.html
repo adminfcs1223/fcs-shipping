@@ -301,9 +301,10 @@ details.hier details.hier{background:#101A26}
           <div id="mblRows"></div>
           <button class="btn ghost sm" id="mblAddRow">+ Add row</button>
           <div class="meta" id="mblTotals" style="margin-top:.5rem"></div>
-          <div style="display:flex;gap:.6rem;margin-top:.8rem">
+          <div style="display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap">
             <button class="btn sm" id="mblSave" style="margin:0">Save</button>
             <button class="btn sm" id="mblPrint" style="margin:0">Print Master B/L</button>
+            <button class="btn ghost sm" id="mblManifest" style="margin:0">Print manifest</button>
           </div>
           <p class="msg" id="mblMsg2"></p>
         </div>
@@ -863,16 +864,22 @@ details.hier details.hier{background:#101A26}
      out, and a commercial bin is ALWAYS 29X19X19. Cubic ft = L×W×H ÷ 1728. */
   function parseDims(cargo) {
     const txt = String(cargo || '');
-    const dims = [...txt.matchAll(/(\d{1,3})\s*[xX×]\s*(\d{1,3})\s*[xX×]\s*(\d{1,3})/g)]
-      .map((m) => [+m[1], +m[2], +m[3]]);
+    const parts = [...txt.matchAll(/(\d{1,3})\s*[xX×]\s*(\d{1,3})\s*[xX×]\s*(\d{1,3})/g)]
+      .map((m) => ({ meas: `${+m[1]}X${+m[2]}X${+m[3]}`,
+        cuft: Math.max(1, Math.round(+m[1] * +m[2] * +m[3] / 1728)) }));
+    /* house standards: bin = 48X24X44 / 20 cu ft · barrel = 24X24X44 / 15 cu ft */
     const bins = (txt.match(/commercial\s*bin/gi) || []).length;
-    for (let i = 0; i < bins; i++) dims.push([29, 19, 19]);
-    if (!dims.length) return { meas: '', cuft: null };
-    return {
-      meas: dims.map((d) => d.join('X')).join(', '),
-      cuft: dims.reduce((s, d) => s + Math.max(1, Math.round(d[0] * d[1] * d[2] / 1728)), 0),
-    };
+    const barrels = (txt.match(/barrel/gi) || []).length;
+    for (let i = 0; i < bins; i++) parts.push({ meas: '48X24X44', cuft: 20 });
+    for (let i = 0; i < barrels; i++) parts.push({ meas: '24X24X44', cuft: 15 });
+    if (!parts.length) return { meas: '', cuft: null };
+    return { meas: parts.map((p) => p.meas).join(', '), cuft: parts.reduce((s, p) => s + p.cuft, 0) };
   }
+  const MBL_BROKERS = {
+    ella: 'ELLA SAMUEL CUSTOMS BROKERAGE\nNEW DOCK ROAD\nVIEUX-FORT\nST. LUCIA\n758-454-5343\nCELL: 758-721-4017',
+    hermlens: 'HERMLENS CUSTOMS BROKERAGE\nCASTRIES\nST. LUCIA',
+    westindies: 'WEST INDIES CUSTOMS BROKERAGE\nCASTRIES\nST. LUCIA',
+  };
 
   async function mblInit() {
     const { data } = await db.from('wms_shipments').select('*').eq('direction', 'outbound')
@@ -944,6 +951,7 @@ details.hier details.hier{background:#101A26}
       ...saved,
       rows: chosen.map((t) => ({ mark: t.mark, pkgs: t.pkgs, desc: t.desc, cuft: t.cuft, meas: t.meas })),
     };
+    mbl.manifest = chosen.slice(); /* keeps customer names + sectors for the manifest */
     $('mblDocCard').hidden = false;
     renderMblDoc();
     $('mblDocCard').scrollIntoView({ behavior: 'smooth' });
@@ -960,9 +968,23 @@ details.hier details.hier{background:#101A26}
     $('mblHead').innerHTML =
       '<div class="row2">' + MBL_DF.map(([k, l]) =>
         `<div><label>${l}</label><input data-df="${k}" value="${esc(mbl.doc[k] || '')}"></div>`).join('') + '</div>' +
-      MBL_HF.map(([k, l, rows]) => `<label>${l}</label>` + (rows
-        ? `<textarea data-hf="${k}" rows="${rows}">${esc(mbl.head[k] || '')}</textarea>`
-        : `<input data-hf="${k}" value="${esc(mbl.head[k] || '')}">`)).join('');
+      MBL_HF.map(([k, l, rows]) => {
+        /* Castries revenue goes through one of two brokers — one-tap presets */
+        const presets = k === 'consignee' ? `<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:.35rem 0">
+          <button type="button" class="btn ghost sm" data-broker="ella" style="margin:0">Ella Samuel · Vieux-Fort</button>
+          <button type="button" class="btn ghost sm" data-broker="hermlens" style="margin:0">Hermlens · Castries</button>
+          <button type="button" class="btn ghost sm" data-broker="westindies" style="margin:0">West Indies · Castries</button>
+        </div>` : '';
+        return `<label>${l}</label>` + presets + (rows
+          ? `<textarea data-hf="${k}" rows="${rows}">${esc(mbl.head[k] || '')}</textarea>`
+          : `<input data-hf="${k}" value="${esc(mbl.head[k] || '')}">`);
+      }).join('');
+    document.querySelectorAll('#mblHead [data-broker]').forEach((b) => b.addEventListener('click', () => {
+      mbl.head.consignee = MBL_BROKERS[b.dataset.broker];
+      const ta = document.querySelector('#mblHead [data-hf="consignee"]');
+      if (ta) ta.value = mbl.head.consignee;
+      mblPreview();
+    }));
     /* the paper on the right redraws with every keystroke — order-entry style */
     document.querySelectorAll('#mblHead [data-df]').forEach((f) =>
       f.addEventListener('input', () => { mbl.doc[f.dataset.df] = f.value; mblPreview(); }));
@@ -1091,6 +1113,55 @@ details.hier details.hier{background:#101A26}
     requestAnimationFrame(() => { host.firstChild.style.height = (paper.scrollHeight * s) + 'px'; });
   }
   window.addEventListener('resize', () => mblPreview());
+  /* the manifest: one line per EB/L with the customer's name — for the agent
+     on the dock and the broker clearing the container */
+  $('mblManifest').addEventListener('click', () => {
+    if (!mbl.ship || !mbl.manifest || !mbl.manifest.length) {
+      $('mblMsg2').textContent = 'Build and confirm the tally first.'; $('mblMsg2').className = 'msg err'; return;
+    }
+    mblCollect();
+    const rows = mbl.manifest;
+    const pk = rows.reduce((s, r) => s + (parseInt(r.pkgs, 10) || 0), 0);
+    const cf = Math.round(rows.reduce((s, r) => s + (parseFloat(r.cuft) || 0), 0) * 10) / 10;
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (!w) { $('mblMsg2').textContent = 'Pop-up blocked — allow pop-ups to print.'; $('mblMsg2').className = 'msg err'; return; }
+    w.document.write(`<!doctype html><html><head><title>Manifest ${esc(mbl.ship.shipment_no)}</title><style>
+      @page{size:letter portrait;margin:.5in}
+      body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000;font-size:9.5pt}
+      h1{font-size:16pt;margin:0;letter-spacing:.04em}
+      .sub{font-size:8.5pt;color:#333;margin:2pt 0 10pt}
+      .meta{display:flex;justify-content:space-between;border:1.5px solid #000;padding:5pt 8pt;font-size:9.5pt;margin-bottom:8pt}
+      table{width:100%;border-collapse:collapse}
+      th{border:1px solid #000;background:#eee;font-size:7.5pt;padding:3pt 5pt;text-align:left}
+      td{border:1px solid #000;padding:3pt 5pt;font-size:9pt;vertical-align:top}
+      .c{text-align:center}.r{text-align:right}
+      tfoot td{font-weight:700;background:#f4f4f4}
+      .sig{display:flex;justify-content:space-between;margin-top:22pt;font-size:9pt}
+      .sig span{border-top:1px solid #000;padding-top:3pt;width:220pt;text-align:center}
+    </style></head><body>
+      <h1>FCS SHIPPING LLC. — CARGO MANIFEST</h1>
+      <div class="sub">9502 Ditmas Ave, Building 4, Brooklyn NY 11236 · (718) 483-8006 · fcsshipping.com</div>
+      <div class="meta">
+        <span><b>${esc(mbl.ship.shipment_no)}</b></span>
+        <span>Vessel: <b>${esc(mbl.doc.vessel || '—')}</b></span>
+        <span>Departs: <b>${fd(mbl.ship.departs)}</b></span>
+        <span>Discharge: <b>${esc(mbl.doc.portDischarge)}</b></span>
+        <span>BKG# <b>${esc(mbl.doc.bkg || '—')}</b></span>
+      </div>
+      <table><thead><tr>
+        <th style="width:4%">#</th><th style="width:12%">B/L</th><th style="width:22%">CUSTOMER</th>
+        <th style="width:6%" class="c">PKGS</th><th>DESCRIPTION</th>
+        <th style="width:15%">MEASUREMENT</th><th style="width:7%" class="r">CU FT</th><th style="width:6%" class="c">SEC</th>
+      </tr></thead><tbody>
+        ${rows.map((r, i) => `<tr><td class="c">${i + 1}</td><td>${esc(r.mark)}</td><td>${esc(r.customer)}</td>
+          <td class="c">${esc(r.pkgs)}</td><td>${esc(r.desc)}</td><td>${esc(r.meas)}</td>
+          <td class="r">${esc(r.cuft)}</td><td class="c">${esc(r.sector)}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td colspan="3" class="r">TOTAL</td><td class="c">${pk}</td><td></td><td></td>
+        <td class="r">${cf}</td><td></td></tr></tfoot></table>
+      <div class="sig"><span>Prepared by / date</span><span>Received by carrier / date</span></div>
+      <script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
+    w.document.close();
+  });
   $('mblPrint').addEventListener('click', () => {
     mblCollect();
     const w = window.open('', '_blank', 'width=900,height=1100');
