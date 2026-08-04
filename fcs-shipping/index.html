@@ -355,6 +355,13 @@
             <input type="email" id="ccEmail" placeholder="E-mail">
           </div>
         </div>
+        <div id="mBoxDims" hidden>
+          <h4 style="margin-top:.4rem">Box measurements — inches</h4>
+          <div id="mBoxDimRows"></div>
+          <p class="dims-note" style="margin-top:.2rem">Length × Width × Height. Best guess is fine — we confirm with a tape at pickup.</p>
+        </div>
+        <label class="m-lbl">Special instructions (optional)</label>
+        <textarea id="pNotes" rows="2" placeholder="Gate code, heavy items, fragile, call ahead…"></textarea>
         <div class="hp" aria-hidden="true"><input type="text" id="pWebsite" tabindex="-1" autocomplete="off"></div>
         <p class="m-err" id="mErr" hidden></p>
         <button type="button" class="btn wz-request" id="mSubmit">Request Pickup</button>
@@ -392,6 +399,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/admin/config.js"></script>
-<script src="/js/main.js?v=12"></script>
+<script src="/js/main.js?v=13"></script>
 </body>
 </html>
