@@ -386,7 +386,24 @@
           <input type="text" inputmode="decimal" data-bd="w" data-bi="${i}" placeholder="Width">
           <input type="text" inputmode="decimal" data-bd="h" data-bi="${i}" placeholder="Height">
         </div>`).join('');
-    }
+      /* live L×W×H ÷ 1728 → cubic feet → price, as they type */
+      const calc = () => {
+        const rows = {};
+        document.querySelectorAll('#mBoxDimRows [data-bi]').forEach((f) => {
+          (rows[f.dataset.bi] = rows[f.dataset.bi] || {})[f.dataset.bd] = parseFloat(f.value) || 0;
+        });
+        let cuft = 0;
+        Object.values(rows).forEach((d) => { if (d.l > 0 && d.w > 0 && d.h > 0) cuft += d.l * d.w * d.h / 1728; });
+        cuft = Math.round(cuft * 10) / 10;
+        const el = $('mDimsCalc');
+        if (!cuft) { el.hidden = true; return; }
+        const rate = state.dest && state.dest.rate;
+        el.textContent = `≈ ${cuft} cu ft` + (rate ? ` → about $${Math.round(cuft * rate).toLocaleString()} freight for the box${nBox > 1 ? 'es' : ''}` : '');
+        el.hidden = false;
+      };
+      $('mBoxDimRows').addEventListener('input', calc);
+      calc();
+    } else { $('mDimsCalc').hidden = true; }
     $('mErr').hidden = true;
     openModal('mForm');
     setTimeout(() => $('pName').focus(), 150);
