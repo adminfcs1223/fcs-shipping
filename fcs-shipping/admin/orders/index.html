@@ -429,6 +429,7 @@ table.list tbody tr:hover{background:#fafcfd}
             <h2>Printed form</h2>
             <span class="grow"></span>
             <button class="btn ghost sm" id="btnPrint">Print / save PDF</button>
+            <button class="btn ghost sm" id="btnEmailRcpt">Email receipt</button>
           </div>
           <div class="pv-scroll">
             <div class="pv-scale" id="previewScale"><div id="preview"></div></div>
@@ -877,6 +878,31 @@ function printWmsLabel(){
   },320);
 }
 $('#btnWmsLabel').addEventListener('click', printWmsLabel);
+
+/* receipts on the road: type the customer's email, they get a branded receipt */
+$('#btnEmailRcpt').addEventListener('click', async ()=>{
+  if(!draft || !String(draft.inv).trim()) return toast('Open or save an order first');
+  const cust = customers.find(c=>c.id===draft.customerId);
+  const to = prompt("Customer's e-mail address:", (cust&&cust.email)||'');
+  if(!to) return;
+  const btn=$('#btnEmailRcpt'); btn.disabled=true; btn.textContent='Sending…';
+  try{
+    const res = await fetch(FN+'/email-receipt', {
+      method:'POST', headers: await authHeaders(),
+      body: JSON.stringify({ to: to.trim(), order:{
+        inv: draft.inv, date: usDate(draft.invDate), customer: draft.sh.name||'',
+        destination: (draft.co&&draft.co.city)||'',
+        items: draft.items.filter(it=>it.desc).map(it=>({qty:it.qty, desc:it.desc, amount: it.amount!==''?money(itemAmount(it)):(itemAmount(it)?money(itemAmount(it)):'')})),
+        total: money(orderTotal(draft)),
+        eblNo: draft.eblNo||'', paid: Boolean(draft.paid),
+        trackNote: draft.trackNo ? ('Track your shipment with '+draft.trackNo+' at www.fcsshipping.com') : '',
+      }})});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.ok) throw new Error(data.error||'send failed');
+    toast('Receipt emailed to '+to.trim());
+  }catch(e){ alert('Could not send: '+e.message); }
+  btn.disabled=false; btn.textContent='Email receipt';
+});
 async function saveOrderQuiet(){
   if(!draft.id) return;
   orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
