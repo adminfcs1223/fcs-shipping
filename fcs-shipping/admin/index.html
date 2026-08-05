@@ -423,11 +423,7 @@ details.cust>summary::-webkit-details-marker{display:none}
       const name = (o && o.sh && o.sh.name) || (item && item.customer_name) || (ship && ship.customer_name) || e.customer_email || 'Customer';
       const load = item && item.wms_loads;
       const shipNo = load && load.wms_shipments && load.wms_shipments.shipment_no;
-      const next = ship ? STATUS_CHAIN[STATUS_CHAIN.indexOf(ship.status) + 1] : null;
-      const wmsNext = item && (item.status === 'expected'
-        ? { label: 'Mark in warehouse ✓', upd: { status: 'in_warehouse', scanned_in_at: new Date().toISOString() } }
-        : item.status === 'in_warehouse'
-          ? { label: 'Mark loaded ✓', upd: { status: 'shipped', scanned_out_at: new Date().toISOString() } } : null);
+      const WH_OPTS = [['expected', 'Expected (not in yet)'], ['in_warehouse', 'In warehouse'], ['shipped', 'Loaded on ship']];
       return `<details class="item cust" data-qr="${esc(e.ebl_no)}">
         <summary>
           <div class="top"><b>${esc(name)}</b>
@@ -450,8 +446,14 @@ details.cust>summary::-webkit-details-marker{display:none}
             <div style="display:flex;gap:.45rem;flex-wrap:wrap;flex:1;min-width:210px;align-content:flex-start">
               ${e.order_inv ? `<a class="btn sm ghost cbtn" href="/admin/orders/?inv=${encodeURIComponent(e.order_inv)}">Order entry ↗</a>` : ''}
               ${item ? `<a class="btn sm ghost cbtn" href="/admin/wms/?ebl=${encodeURIComponent(e.ebl_no)}">Open in WMS ↗</a>` : ''}
-              ${wmsNext ? `<button class="btn sm sea cbtn" data-wmsnext="${item.id}" data-upd='${JSON.stringify(wmsNext.upd)}'>${wmsNext.label}</button>` : ''}
-              ${next ? `<button class="btn sm sea cbtn" data-adv="${ship.id}" data-next="${next}">Track: mark ${STATUS_LABEL[next]} →</button>` : ''}
+              ${item ? `<label class="cbtn" style="display:flex;align-items:center;gap:.35rem;border:1.5px solid var(--line);border-radius:8px;padding:.3rem .5rem;font-size:.72rem;font-family:var(--mono);color:var(--grey)">WH
+                <select data-wmsset="${item.id}" style="width:auto;border:none;padding:.15rem .1rem;font-weight:700">
+                  ${WH_OPTS.map(([v, l]) => `<option value="${v}"${item.status === v ? ' selected' : ''}>${l}</option>`).join('')}
+                </select></label>` : ''}
+              ${ship ? `<label class="cbtn" style="display:flex;align-items:center;gap:.35rem;border:1.5px solid var(--line);border-radius:8px;padding:.3rem .5rem;font-size:.72rem;font-family:var(--mono);color:var(--grey)">TRACK
+                <select data-shipset="${ship.id}" style="width:auto;border:none;padding:.15rem .1rem;font-weight:700">
+                  ${STATUS_CHAIN.map((s) => `<option value="${s}"${ship.status === s ? ' selected' : ''}>${STATUS_LABEL[s]}</option>`).join('')}
+                </select></label>` : ''}
               ${e.status === 'open' ? `<button class="btn sm cbtn" data-paid="${e.id}">Mark PAID</button>
                 <button class="btn sm ghost cbtn" data-void="${e.id}">Void</button>` : ''}
               ${e.status === 'paid' ? `<button class="btn sm ghost cbtn" data-unpaid="${e.id}">Reopen (not paid)</button>` : ''}
@@ -590,9 +592,21 @@ details.cust>summary::-webkit-details-marker{display:none}
       } catch (e) { alert('Could not add: ' + e.message); }
       loadCustomers();
     }));
-    document.querySelectorAll('[data-wmsnext]').forEach((b) => b.addEventListener('click', async () => {
-      await db.from('wms_items').update(JSON.parse(b.dataset.upd)).eq('id', b.dataset.wmsnext);
-      loadCustomers();
+    /* two-way status fixes: wrong scans and mis-marks get corrected right here */
+    document.querySelectorAll('[data-wmsset]').forEach((sel) => sel.addEventListener('change', async () => {
+      const it = custData.items.find((i) => String(i.id) === String(sel.dataset.wmsset));
+      const v = sel.value;
+      const upd = { status: v };
+      if (v === 'expected') { upd.scanned_in_at = null; upd.scanned_out_at = null; }
+      if (v === 'in_warehouse') { upd.scanned_in_at = (it && it.scanned_in_at) || new Date().toISOString(); upd.scanned_out_at = null; }
+      if (v === 'shipped') { upd.scanned_out_at = (it && it.scanned_out_at) || new Date().toISOString(); }
+      await db.from('wms_items').update(upd).eq('id', sel.dataset.wmsset);
+      loadCustomers(); loadDash();
+    }));
+    document.querySelectorAll('[data-shipset]').forEach((sel) => sel.addEventListener('change', async () => {
+      await db.from('shipments').update({ status: sel.value }).eq('id', sel.dataset.shipset);
+      await db.from('shipment_events').insert({ shipment_id: sel.dataset.shipset, status: sel.value, note: 'Status corrected in admin' });
+      loadCustomers(); loadDash();
     }));
     document.querySelectorAll('[data-paid]').forEach((b) => b.addEventListener('click', async () => {
       await db.from('ebl').update({ status: 'paid' }).eq('id', b.dataset.paid);
