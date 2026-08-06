@@ -28,21 +28,31 @@ exports.handler = async (event) => {
   const customerName = String(b.customerName || '').trim();
   if (!customerName) return json(400, { error: 'The order needs a shipper name.' });
 
-  /* ---------- 1. EB/L ---------- */
+  /* ---------- 1. B/L payment record ----------
+     V2: the B/L number IS the invoice number (b.useInv). The legacy
+     EBL-YYYY-NNN generator only runs for old-style calls. */
   let eblNo;
   try {
-    const gen = await fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/generate_ebl`, {
-      method: 'POST',
-      headers: {
-        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: '{}',
-    });
-    if (!gen.ok) throw new Error('EB/L number generator failed');
-    eblNo = (await gen.json());
-    if (typeof eblNo !== 'string') throw new Error('Unexpected EB/L number');
+    if (b.useInv && b.orderInv) {
+      eblNo = String(b.orderInv).trim().toUpperCase();
+    } else {
+      const gen = await fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/generate_ebl`, {
+        method: 'POST',
+        headers: {
+          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      });
+      if (!gen.ok) throw new Error('B/L number generator failed');
+      eblNo = (await gen.json());
+      if (typeof eblNo !== 'string') throw new Error('Unexpected B/L number');
+    }
+    /* idempotent for V2: clear any previous row for this number */
+    if (b.useInv) {
+      try { await sb(`ebl?ebl_no=eq.${encodeURIComponent(eblNo)}`, { method: 'DELETE' }); } catch (e) {}
+    }
 
     await sb('ebl', {
       method: 'POST',
