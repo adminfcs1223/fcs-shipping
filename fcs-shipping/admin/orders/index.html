@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>FCS Shipping — Order Entry Admin</title>
+<title>FCS Admin V2</title>
 <style>
 /* ============================================================
    FCS SHIPPING — ORDER ENTRY ADMIN
@@ -131,11 +131,20 @@ table.list tbody tr:hover{background:#fafcfd}
 @media(max-width:1240px){ .split{grid-template-columns:1fr} .stickywrap{position:static} }
 @media(max-width:900px){
   .shell{flex-direction:column}
-  .rail{width:auto;flex:none}
-  .rail nav{flex-direction:row;overflow:auto}
+  .rail{width:auto;flex:none;position:sticky;top:0;z-index:20;padding:10px 0}
+  .rail nav{flex-direction:row;overflow:auto;padding:0 10px}
+  .rail nav button{white-space:nowrap}
+  .rail .brand{padding:0 14px 8px;margin-bottom:6px}
   .rail .foot{display:none}
-  .main{padding:16px}
+  .main{padding:14px}
   .g2,.g3,.g4{grid-template-columns:1fr}
+  /* drivers on the road: no preview pane, thumb-sized targets */
+  .stickywrap{display:none}
+  input.f,select.f,textarea.f{padding:12px 12px;font-size:16px}
+  .items input,.items select{padding:11px 8px;font-size:15px}
+  .btn{padding:12px 18px;font-size:15px}
+  #actionCard{position:sticky;bottom:0;z-index:15;box-shadow:0 -6px 18px rgba(0,0,0,.08)}
+  .items{display:block;overflow-x:auto}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* ---------- staff login gate ---------- */
@@ -261,23 +270,20 @@ table.list tbody tr:hover{background:#fafcfd}
 
 <div class="shell" id="shell" hidden>
   <aside class="rail">
-    <a id="wmsBtn" href="/admin/wms/" style="display:flex;align-items:center;gap:.45rem;text-decoration:none;background:#0F1620;border:1.5px solid #FFB020;border-radius:8px;padding:.4rem .6rem;margin-bottom:12px">
-      <span style="width:22px;height:22px;border:1.5px solid #FFB020;border-radius:4px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:3px">
-        <i style="background:#FFB020;border-radius:1px"></i><i style="background:#FFB020;border-radius:1px"></i>
-        <i style="background:#FFB020;border-radius:1px"></i><i style="background:#5a6b7d;border-radius:1px"></i></span>
-      <span style="font-family:var(--monofont,monospace);font-weight:700;font-size:.8rem;color:#E8EEF5;letter-spacing:.04em">FCS<b style="color:#FFB020">·WMS</b></span>
-    </a>
-    <div class="brand">
-      <b>FCS SHIPPING LLC</b>
-      <span>Order entry &amp; invoicing</span>
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <img src="/assets/fcs-logo.png" alt="" style="width:38px;height:38px;object-fit:contain;border-radius:8px;background:#fff;padding:3px">
+      <div>
+        <b style="font-size:16px;letter-spacing:.06em;font-weight:800">FCS ADMIN <span style="color:#4FB3E8">V2</span></b>
+        <span>Cargo · Manifest · Revenue</span>
+      </div>
     </div>
     <nav>
-      <button data-tab="order" aria-current="true">New order</button>
-      <button data-tab="orders">Orders <span class="cnt" id="cOrders">0</span></button>
-      <button data-tab="customers">Customers <span class="cnt" id="cCust">0</span></button>
+      <button data-tab="orders" aria-current="true">Cargo <span class="cnt" id="cOrders">0</span></button>
+      <button data-tab="order">Create</button>
+      <button data-tab="customers">Quotes <span class="cnt" id="cCust">0</span></button>
+      <button data-tab="manifest">Manifest</button>
+      <button data-tab="prev">Previous Activity</button>
       <button data-tab="settings">Settings</button>
-      <a class="raillink" href="/admin/">← Shipments &amp; EB/L</a>
-      <a class="raillink" href="/admin/wms/">▦ Warehouse (WMS)</a>
     </nav>
     <div class="foot">
       <div id="storeState">Loading…</div>
@@ -303,36 +309,22 @@ table.list tbody tr:hover{background:#fafcfd}
         <div>
           <div class="card">
             <h2>Header</h2>
-            <p class="hint">Invoice number advances automatically. Time stamps when you start the order.</p>
+            <p class="hint">Invoice # is the B/L number. It advances automatically.</p>
             <div class="grid g4">
-              <div><label class="f">Invoice # (= B/L Nº on the Master B/L) <span class="req">*</span></label><input class="f" id="fInv"></div>
-              <div><label class="f">Invoice date</label><input class="f" type="date" id="fInvDate"></div>
+              <div><label class="f">Invoice / B/L # <span class="req">*</span></label><input class="f" id="fInv"></div>
+              <div><label class="f">Date</label><input class="f" type="date" id="fInvDate"></div>
               <div><label class="f">Pick up date</label><input class="f" type="date" id="fPickup"></div>
               <div><label class="f">Time</label><input class="f" id="fTime" placeholder="12:39:20 PM"></div>
-              <div><label class="f">PO number</label><input class="f" id="fPO"></div>
-              <div><label class="f">Container #</label><input class="f" id="fContainer"></div>
-              <div><label class="f">Shipping code</label><input class="f" id="fCode"></div>
-              <div><label class="f">Ship via</label><input class="f" id="fShipVia"></div>
-              <div style="grid-column:span 2"><label class="f">Cross street</label><input class="f" id="fCross"></div>
-              <div style="grid-column:span 2"><label class="f">Service</label><input class="f" id="fService"></div>
-              <div style="grid-column:span 2"><label class="f">Tracking # (customer's eBL — prints on the form, works on the website tracker)</label>
-                <input class="f" id="fEbl" placeholder="Insert eBL"></div>
+              <div style="grid-column:span 2"><label class="f">Received from</label>
+                <select class="f" id="fRecv"></select></div>
+              <div style="grid-column:span 4" class="grid g4" id="hdrExtra"></div>
             </div>
           </div>
           <div class="card">
             <h2>Shipper — bill to</h2>
-            <p class="hint">Pick a saved customer to fill both blocks, or type over anything.</p>
             <div class="grid g2">
-              <div style="grid-column:span 2">
-                <label class="f">Website quote</label>
-                <select class="f" id="fQuote"><option value="">— pull in a website quote —</option></select>
-              </div>
-              <div style="grid-column:span 2">
-                <label class="f">Customer on file</label>
-                <select class="f" id="fCustomer"><option value="">— none / one-off —</option></select>
-              </div>
               <div style="grid-column:span 2"><label class="f">Name</label><input class="f" id="fShName"></div>
-              <div><label class="f">Name, second line</label><input class="f" id="fShName2" placeholder="OF ST. LUCIA"></div>
+              <div><label class="f">Co-Shipper</label><input class="f" id="fShName2"></div>
               <div><label class="f">Street</label><input class="f" id="fShStreet"></div>
               <div><label class="f">City</label><input class="f" id="fShCity"></div>
               <div><label class="f">State / ZIP</label><input class="f" id="fShState"></div>
@@ -343,93 +335,55 @@ table.list tbody tr:hover{background:#fafcfd}
             <h2>Consignee — deliver to</h2>
             <div class="grid g2">
               <div><label class="f">Name</label><input class="f" id="fCoName"></div>
-              <div><label class="f">Name, second part</label><input class="f" id="fCoName2" placeholder="VICTORIN"></div>
-              <div><label class="f">Title / role</label><input class="f" id="fCoTitle"></div>
-              <div><label class="f">Organisation</label><input class="f" id="fCoOrg" placeholder="SSDF"></div>
-              <div><label class="f">City, country</label><input class="f" id="fCoCity"></div>
+              <div><label class="f">Co-Consignee</label><input class="f" id="fCoName2"></div>
+              <div><label class="f">Destination</label><select class="f" id="fCoCity"></select></div>
               <div><label class="f">Phone</label><input class="f" id="fCoPhone"></div>
             </div>
           </div>
           <div class="card">
             <h2>Line items</h2>
-            <p class="hint">Amount calculates from quantity × price. Leave quantity blank for a continuation line like “36 CUBIC FT”.</p>
+            <p class="hint">Pick Barrel or Commercial Bin — dims, cubic feet, and price fill themselves from the destination. Boxes: type the dims, everything else calculates.</p>
             <table class="items">
               <thead><tr>
-                <th style="width:74px">Qty</th><th style="width:96px">Cu ft</th>
-                <th>Description</th><th style="width:96px">Price/unit</th>
-                <th style="width:96px">Amount</th><th style="width:34px"></th>
+                <th style="width:56px">Qty</th><th>Description</th><th style="width:64px">Cu ft</th>
+                <th style="width:104px">Dims L×W×H</th><th style="width:84px">Price</th>
+                <th style="width:88px">Amount</th><th style="width:30px"></th>
               </tr></thead>
               <tbody id="itemRows"></tbody>
             </table>
-            <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               <button class="btn ghost sm" id="btnAddItem">Add line</button>
+              <button class="btn ghost sm" id="btnAddProduct">Add product</button>
               <label style="font-size:13px;display:flex;align-items:center;gap:6px">
                 <input type="checkbox" id="fShowTotal" checked> Print a total row
               </label>
               <span class="grow" style="flex:1"></span>
               <strong style="font-variant-numeric:tabular-nums">Total <span id="orderTotal">$0.00</span></strong>
             </div>
+            <div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <label class="f" style="margin:0">Amount received $</label>
+              <input class="f" id="fAmtRecd" inputmode="decimal" style="max-width:120px" placeholder="0.00">
+              <span style="font-size:12.5px;color:var(--muted)">Balance shows on the Cargo page as BAL/COD.</span>
+            </div>
           </div>
-          <!-- ===================== BILLING ===================== -->
-          <div class="card" id="billCard">
-            <h2>Billing &amp; payment</h2>
-            <p class="hint">Creates an EB/L the customer can pay online, and an invoice in QuickBooks for the books.</p>
-
-            <div id="billNone">
-              <p style="margin:0 0 14px;font-size:13px;color:var(--muted)">
-                Save the order first, then bill it from here.
-              </p>
-              <button class="btn" id="btnMakeEbl">Create EB/L + QuickBooks invoice</button>
-              <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:10px">
-                <input type="checkbox" id="fMarkPaid"> Customer already paid (mark paid immediately)
-              </label>
-              <p class="msg" id="billMsg" style="font-size:12.5px;margin-top:10px"></p>
+          <!-- ===================== ACTIONS ===================== -->
+          <div class="card" id="actionCard">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <button class="btn" id="btnCreate">Create</button>
+              <button class="btn ghost" id="btnPaid" hidden>Mark Paid</button>
+              <span id="qbDot" style="width:14px;height:14px;border-radius:50%;background:#c9cfd6;display:inline-block" title=""></span>
+              <span class="grow" style="flex:1"></span>
+              <button class="btn ghost" id="btnPrint">Print</button>
+              <button class="btn ghost" id="btnPdf">Save PDF</button>
+              <button class="btn ghost" id="btnEmailRcpt">Email receipt</button>
             </div>
-
-            <div id="billHas" hidden>
-              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-                <div>
-                  <div style="font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">EB/L number</div>
-                  <div id="billEbl" style="font-size:19px;font-weight:600;font-variant-numeric:tabular-nums"></div>
-                </div>
-                <div>
-                  <div style="font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">QuickBooks</div>
-                  <div id="billQb" style="font-size:14px"></div>
-                </div>
-                <span class="grow" style="flex:1"></span>
-                <div style="text-align:right">
-                  <div style="font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">Status</div>
-                  <div id="billState" style="font-size:17px;font-weight:700"></div>
-                </div>
-              </div>
-              <!-- WMS QR — appears the moment the EB/L is created; scan it with any phone -->
-              <div id="billQrWrap" hidden>
-                <div style="margin-top:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#0F1620;border:1.5px solid #FFB020;border-radius:10px;padding:12px 14px">
-                  <div id="billQr" style="background:#fff;padding:8px;border-radius:8px;line-height:0"></div>
-                  <div style="font-size:12.5px;line-height:1.7;color:#E8EEF5">
-                    <b style="font-family:ui-monospace,monospace;color:#FFB020;font-size:15px" id="billQrNo"></b><br>
-                    <b id="billQrSec"></b><br>
-                    Scan with any phone camera → opens <b style="color:#FFB020">FCS·WMS</b> on this load.<br>
-                    Print the 4×6 and stick it on the cargo.
-                  </div>
-                </div>
-              </div>
-              <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-                <button class="btn" id="btnPaid">Mark PAID</button>
-                <button class="btn ghost" id="btnUnpaid">Mark NOT paid</button>
-                <button class="btn ghost" id="btnCopyEbl">Copy EB/L for customer</button>
-                <button class="btn ghost" id="btnWmsLabel" hidden>Print 4×6 WMS label</button>
-              </div>
-              <p class="msg" id="billMsg2" style="font-size:12.5px;margin-top:10px"></p>
-            </div>
+            <p class="msg" id="billMsg" style="font-size:12.5px;margin:10px 0 0"></p>
           </div>
         </div>
         <div class="stickywrap">
           <div class="pv-bar">
             <h2>Printed form</h2>
             <span class="grow"></span>
-            <button class="btn ghost sm" id="btnPrint">Print / save PDF</button>
-            <button class="btn ghost sm" id="btnEmailRcpt">Email receipt</button>
           </div>
           <div class="pv-scroll">
             <div class="pv-scale" id="previewScale"><div id="preview"></div></div>
@@ -437,54 +391,65 @@ table.list tbody tr:hover{background:#fafcfd}
         </div>
       </div>
     </section>
-    <!-- ===================== ORDERS ===================== -->
+    <!-- ===================== CARGO (main page) ===================== -->
     <section data-panel="orders" hidden>
       <div class="head">
-        <h1>Orders</h1>
-        <p>Everything invoiced, newest first.</p>
+        <h1 id="cargoTitle">Cargo</h1>
+        <p id="cargoSub">This month.</p>
         <span class="grow"></span>
-        <input class="f" id="qOrders" placeholder="Search invoice, customer, PO…" style="max-width:280px">
-        <button class="btn ghost" id="btnCsv">Export CSV</button>
+        <input class="f" id="qOrders" placeholder="Search invoice, name…" style="max-width:240px">
+        <button class="btn ghost" id="btnCsv">CSV</button>
+        <button class="btn ghost" id="btnRevXlsx">Revenue .xlsx</button>
+        <button class="btn" id="btnCargoCreate">Create</button>
       </div>
-      <div class="card" style="padding:6px 6px"><div id="ordersList"></div></div>
+      <div class="grid g4" id="cargoStats" style="margin-bottom:14px"></div>
+      <div class="card" style="padding:6px 6px;overflow:auto"><div id="ordersList"></div></div>
     </section>
-    <!-- ===================== CUSTOMERS ===================== -->
+    <!-- ===================== QUOTES ===================== -->
     <section data-panel="customers" hidden>
       <div class="head">
-        <h1>Customers</h1>
-        <p>Shipper on file, with the consignee you usually send to.</p>
+        <h1>Quotes</h1>
+        <p>From the website. Create turns one into cargo.</p>
         <span class="grow"></span>
-        <input class="f" id="qCust" placeholder="Search name, city, phone…" style="max-width:260px">
-        <button class="btn" id="btnAddCust">Add customer</button>
-      </div>
-      <div class="card" id="custForm" hidden>
-        <h2 id="custFormTitle">Add customer</h2>
-        <p class="hint">The consignee defaults are optional — they just pre-fill new orders.</p>
-        <div class="grid g3">
-          <div style="grid-column:span 2"><label class="f">Name <span class="req">*</span></label><input class="f" id="cName"></div>
-          <div><label class="f">Name, second line</label><input class="f" id="cName2"></div>
-          <div><label class="f">Street</label><input class="f" id="cStreet"></div>
-          <div><label class="f">City</label><input class="f" id="cCity"></div>
-          <div><label class="f">State / ZIP</label><input class="f" id="cState"></div>
-          <div><label class="f">Phone</label><input class="f" id="cPhone"></div>
-          <div><label class="f">Email</label><input class="f" id="cEmail"></div>
-          <div><label class="f">Notes</label><input class="f" id="cNotes"></div>
-        </div>
-        <div style="height:1px;background:var(--rule);margin:16px 0"></div>
-        <div class="grid g3">
-          <div><label class="f">Consignee name</label><input class="f" id="cCoName"></div>
-          <div><label class="f">Consignee surname</label><input class="f" id="cCoName2"></div>
-          <div><label class="f">Consignee title</label><input class="f" id="cCoTitle"></div>
-          <div><label class="f">Organisation</label><input class="f" id="cCoOrg"></div>
-          <div><label class="f">City, country</label><input class="f" id="cCoCity"></div>
-          <div><label class="f">Consignee phone</label><input class="f" id="cCoPhone"></div>
-        </div>
-        <div style="margin-top:16px;display:flex;gap:8px">
-          <button class="btn" id="btnSaveCust">Save customer</button>
-          <button class="btn ghost" id="btnCancelCust">Cancel</button>
-        </div>
+        <button class="btn ghost" id="btnQuotesRefresh">Refresh</button>
       </div>
       <div class="card" style="padding:6px 6px"><div id="custList"></div></div>
+    </section>
+    <!-- ===================== MANIFEST ===================== -->
+    <section data-panel="manifest" hidden>
+      <div class="head">
+        <h1>Manifest</h1>
+        <p id="mfSub">This month's cargo, by destination.</p>
+        <span class="grow"></span>
+        <select class="f" id="mfDest" style="max-width:220px"></select>
+        <button class="btn ghost" id="mfToggle">Manifest view</button>
+        <button class="btn ghost" id="mfXlsx">Manifest .xlsx</button>
+        <button class="btn" id="mfMaster">Create Master B/L</button>
+      </div>
+      <div class="card" id="mfHeadCard" hidden>
+        <h2>Master B/L header — confirm before it generates</h2>
+        <div class="grid g2" id="mfHeadFields"></div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn" id="mfHeadGo">Looks right — generate .xlsx</button>
+          <button class="btn ghost" id="mfHeadCancel">Cancel</button>
+        </div>
+      </div>
+      <div class="card" style="padding:10px;overflow:auto"><div id="mfList"></div></div>
+    </section>
+    <!-- ===================== PREVIOUS ACTIVITY ===================== -->
+    <section data-panel="prev" hidden>
+      <div class="head">
+        <h1>Previous Activity</h1>
+        <p>Older months — cargo, manifests, Master B/Ls.</p>
+        <span class="grow"></span>
+        <input class="f" type="month" id="pvMonth" style="max-width:180px">
+        <select class="f" id="pvDest" style="max-width:200px"></select>
+        <button class="btn ghost" id="pvManifest">Manifest .xlsx</button>
+        <button class="btn ghost" id="pvMaster">Master B/L .xlsx</button>
+        <button class="btn ghost" id="pvRev">Revenue .xlsx</button>
+      </div>
+      <div class="grid g4" id="pvStats" style="margin-bottom:14px"></div>
+      <div class="card" style="padding:6px 6px;overflow:auto"><div id="pvList"></div></div>
     </section>
     <!-- ===================== SETTINGS ===================== -->
     <section data-panel="settings" hidden>
@@ -505,6 +470,37 @@ table.list tbody tr:hover{background:#fafcfd}
           <div><label class="f">Default price per unit</label><input class="f" id="sRate"></div>
         </div>
         <div style="margin-top:16px"><button class="btn" id="btnSaveSettings">Save settings</button></div>
+      </div>
+      <div class="card">
+        <h2>Form fields</h2>
+        <p class="hint">These stay on the printed paper. Toggle them on the Create form and rename the label the paper shows.</p>
+        <div id="sFieldRows"></div>
+      </div>
+      <div class="card">
+        <h2>Destinations &amp; pricing</h2>
+        <p class="hint">The rate per cubic foot drives every price — barrels, bins, boxes — and publishes straight to the website's quote builder. Optional flat prices win when they're cheaper for the customer.</p>
+        <div id="sDestRows"></div>
+        <button class="btn ghost sm" id="sDestAdd">+ Add destination</button>
+      </div>
+      <div class="card">
+        <h2>Products</h2>
+        <p class="hint">No cubic feet — empty barrels, pickup fees, tape. Product money is tracked separately from freight for QuickBooks.</p>
+        <div id="sProdRows"></div>
+        <button class="btn ghost sm" id="sProdAdd">+ Add product</button>
+      </div>
+      <div class="card">
+        <h2>Received-from options</h2>
+        <div id="sRecvRows"></div>
+        <button class="btn ghost sm" id="sRecvAdd">+ Add option</button>
+      </div>
+      <div class="card">
+        <h2>Manifest settings</h2>
+        <p class="hint">Brokers and every header block that prints on the Master B/L and Manifest.</p>
+        <div id="sBrokerRows"></div>
+        <button class="btn ghost sm" id="sBrokerAdd">+ Add broker</button>
+        <div style="height:1px;background:var(--rule);margin:14px 0"></div>
+        <div class="grid g2" id="sMblFields"></div>
+        <div style="margin-top:14px"><button class="btn" id="btnSaveSettings2">Save all settings</button></div>
       </div>
       <div class="card">
         <h2>QuickBooks</h2>
@@ -530,15 +526,16 @@ table.list tbody tr:hover{background:#fafcfd}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="/admin/config.js"></script>
 <script>
 /* ============================================================
-   1. PERSISTENCE  —  wired to the FCS Supabase `settings` table.
-   Keys used: fcs:customers · fcs:orders · fcs:settings
-   Staff-only RLS on that table already protects these records,
-   and every staff device sees the same data.
+   FCS ADMIN V2 — Cargo · Create · Quotes · Manifest · Previous · Settings
+   B/L number = invoice number. WMS parked (code kept at /admin/wms/).
+   Data: Supabase `settings` table (staff RLS):
+     fcs:customers · fcs:orders · fcs:settings · fcs:v2
    ============================================================ */
+/* ---------- 1. persistence ---------- */
 const SBC = (() => {
   const C = window.ADMIN_CONFIG || {};
   const ok = C.SUPABASE_URL && !C.SUPABASE_URL.includes('YOUR-PROJECT')
@@ -546,7 +543,6 @@ const SBC = (() => {
              && window.supabase;
   return ok ? window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY) : null;
 })();
-
 const DB = (() => {
   const mem = {};
   return {
@@ -570,9 +566,7 @@ const DB = (() => {
     }
   };
 })();
-/* ============================================================
-   2. STATE
-   ============================================================ */
+/* ---------- 2. state + helpers ---------- */
 const DEFAULTS = {
   name:'FCS SHIPPING LLC.',
   addr:'9502 Ditmas Ave. Brooklyn, NY.  11236',
@@ -581,11 +575,42 @@ const DEFAULTS = {
   title:'Order Entry',
   next:'12931', rows:13, rate:'65.00'
 };
+const V2DEF = {
+  fields:{
+    po:{label:'PO Number',on:false}, container:{label:'Container #',on:false},
+    code:{label:'Shipping Code',on:false}, shipVia:{label:'Ship Via',on:false},
+    cross:{label:'Cross Street',on:false}, service:{label:'Service',on:false},
+  },
+  dests:[
+    {name:'Vieux-Fort', rate:7, barrel:105, bin:190},
+    {name:'Castries',   rate:7, barrel:100, bin:190},
+  ],
+  products:[{name:'Empty Barrel',price:60},{name:'Pickup Fee',price:25}],
+  recv:['SEA FREIGHT','AIR FREIGHT','STANDARD'],
+  brokers:[
+    {name:"HERMLEN'S CUSTOMS BROKERAGE SERVICES INC",
+     addr:'JOHN COMPTON BLDG, TOP FL\nPORT CASTRIES\nST.LUCIA\n\n758-485-1874 / 723-3178\nEMAIL: HERMLENSCUSTOMSBROKERAGESERVICES@outlook.com'},
+    {name:'ELLA SAMUEL CUSTOMS BROKERAGE',
+     addr:'NEW DOCK ROAD\nVIEUX-FORT\nST. LUCIA\n758-454-5343\nCELL: 758-721-4017'},
+    {name:'WEST INDIES SHIPPERS/EDDIE HAZEL',
+     addr:'LA-TOC ROAD\nCASTRIES\nST. LUCIA\n758 459 0444'},
+  ],
+  mbl:{
+    carrier:'KING OCEAN SERVICES', trucking:'CABBY TRUCKING',
+    shipper:'STANDARD SHIPPERS\n9502 DITMAS AVE\nBROOKLYN,\nNEW YORK, 11236\n718-483-8006',
+    forwarder:'STANDARD SHIPPERS\n9502 DITMAS AVE\nBROOKLYN, NY 11236',
+    origin:'USA', notify:'SAME AS ABOVE', loadNote:'PLEASE APPLY NOSE LOAD RATE',
+    manFrom:'STANDARD SHIPPERS', manFromAddr:'9502 Ditmas Ave',
+    manFromCity:'Brooklyn', manFromState:'New York', manFromZip:'11236', manFromTel:'646-606-8320',
+    relTel:'785-454-5343/ 758-721-4017',
+  },
+};
 let S = {...DEFAULTS};
+let V2 = JSON.parse(JSON.stringify(V2DEF));
 let customers = [];
 let orders = [];
+let quotes = [];
 let draft = null;
-let editingCustomer = null;
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -612,84 +637,153 @@ function bumpInvoice(v){
   if(!m) return String(v||'');
   return m[1] + String(Number(m[2])+1).padStart(m[2].length,'0') + m[3];
 }
-/* ============================================================
-   3. DRAFT ORDER
-   ============================================================ */
-function blankItem(){ return {qty:'',part:'',desc:'',price:'',amount:'',nci:false}; }
+const monthKey = iso => String(iso||'').slice(0,7);
+const thisMonth = () => todayISO().slice(0,7);
+const monthLabel = ym => {
+  const [y,m]=String(ym).split('-');
+  return new Date(+y, +m-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+};
+const MONTH_NAMES = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+/* ---------- 3. order model ---------- */
+function blankItem(kind){ return {qty:'1',desc:'',cuft:'',dims:'',price:'',amount:'',kind:kind||'freight'}; }
 function blankOrder(){
   return {
     id:null, inv:S.next, invDate:todayISO(), pickup:todayISO(), time:nowTime(),
-    po:'', container:'', code:'', shipVia:'', cross:'', service:'', trackNo:'',
-    customerId:'',
+    po:'', container:'', code:'', shipVia:'', cross:'', service:'',
+    recv:(V2.recv[0]||'SEA FREIGHT'),
     sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
-    co:{name:'',name2:'',title:'',org:'',city:'',phone:''},
-    items:[blankItem(),blankItem()], showTotal:true,
-    eblNo:'', qbInvoiceNo:'', paid:false
+    co:{name:'',name2:'',city:(V2.dests[0]&&V2.dests[0].name)||'',phone:''},
+    items:[blankItem(),blankItem()], showTotal:true, amtRecd:'',
+    created:false, qbInvoiceNo:'', qbOk:null, paid:false, _quoteId:null,
   };
 }
+/* old orders: part→cuft, nci→product, eblNo era */
+function migrateOrder(o){
+  if(o._v2) return o;
+  (o.items||[]).forEach(it=>{
+    if(it.cuft==null) it.cuft = it.part||'';
+    if(it.kind==null) it.kind = it.nci ? 'product' : 'freight';
+    if(it.dims==null) it.dims = '';
+  });
+  if(o.recv==null) o.recv='SEA FREIGHT';
+  if(o.amtRecd==null) o.amtRecd = o.paid ? String(orderTotal(o)) : '';
+  if(o.created==null) o.created = !!(o.eblNo||o.qbInvoiceNo);
+  if(o.qbOk==null) o.qbOk = o.qbInvoiceNo ? true : null;
+  o._v2=true;
+  return o;
+}
 function itemAmount(it){
-  if(it.amount!=='' && it.amount!=null && !it._auto) return Number(it.amount)||0;
+  if(it.amount!=='' && it.amount!=null) return Number(String(it.amount).replace(/[^0-9.\-]/g,''))||0;
   const q=parseFloat(it.qty), p=parseFloat(String(it.price).replace(/[^0-9.\-]/g,''));
   return (isFinite(q)&&isFinite(p)) ? q*p : 0;
 }
 function orderTotal(o){ return o.items.reduce((s,it)=>s+itemAmount(it),0); }
-/* ---- form <-> draft ---- */
-const HDR = {
-  fInv:'inv', fInvDate:'invDate', fPickup:'pickup', fTime:'time', fPO:'po',
-  fContainer:'container', fCode:'code', fShipVia:'shipVia', fCross:'cross', fService:'service',
-  fEbl:'trackNo'
-};
+function freightTotal(o){ return o.items.filter(it=>it.kind!=='product').reduce((s,it)=>s+itemAmount(it),0); }
+function productTotal(o){ return o.items.filter(it=>it.kind==='product').reduce((s,it)=>s+itemAmount(it),0); }
+function orderBal(o){ return Math.max(0, orderTotal(o) - (parseFloat(o.amtRecd)||0)); }
+function destOf(name){ return V2.dests.find(d=>d.name===name) || null; }
+/* auto pricing: barrel/bin standards, boxes from dims, all off the destination rate */
+function priceItem(it, destName){
+  const d = destOf(destName);
+  const rate = d ? Number(d.rate)||0 : 0;
+  const desc = String(it.desc||'').toLowerCase();
+  if(it.kind==='product') { it.cuft=''; it.dims=''; return; }
+  if(desc==='barrel'){
+    it.dims='24X24X44'; it.cuft='15';
+    it.price = d && d.barrel ? String(d.barrel) : (rate? String(15*rate):'');
+  } else if(desc==='commercial bin'){
+    it.dims='48X24X44'; it.cuft='20';
+    it.price = d && d.bin ? String(d.bin) : (rate? String(20*rate):'');
+  } else if(desc==='box'){
+    const m = String(it.dims||'').match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
+    if(m){
+      const cu = Math.max(1, Math.round(m[1]*m[2]*m[3]/1728));
+      it.cuft = String(cu);
+      if(rate) it.price = String(cu*rate);
+    }
+  }
+  it.amount='';
+}
+function repriceAll(){
+  draft.items.forEach(it=>{ if(it.kind!=='product' && ['barrel','commercial bin','box'].includes(String(it.desc||'').toLowerCase())) priceItem(it, draft.co.city); });
+}
+/* ---------- 4. form <-> draft ---------- */
+const HDR = { fInv:'inv', fInvDate:'invDate', fPickup:'pickup', fTime:'time' };
 const SH = {fShName:'name',fShName2:'name2',fShStreet:'street',fShCity:'city',fShState:'state',fShPhone:'phone'};
-const CO = {fCoName:'name',fCoName2:'name2',fCoTitle:'title',fCoOrg:'org',fCoCity:'city',fCoPhone:'phone'};
+const CO = {fCoName:'name',fCoName2:'name2',fCoCity:'city',fCoPhone:'phone'};
+function fillDestSelects(){
+  const opts = V2.dests.map(d=>`<option>${esc(d.name)}</option>`).join('');
+  const co=$('#fCoCity'); if(co){ const k=co.value; co.innerHTML=opts; if(k) co.value=k; }
+  ['#mfDest','#pvDest'].forEach(s=>{ const el=$(s); if(el){ const k=el.value; el.innerHTML=opts; if(k) el.value=k; }});
+  const rv=$('#fRecv'); if(rv){ const k=rv.value; rv.innerHTML=V2.recv.map(r=>`<option>${esc(r)}</option>`).join(''); if(k) rv.value=k; }
+}
+function renderHdrExtra(){
+  const box=$('#hdrExtra'); if(!box) return;
+  box.innerHTML = Object.entries(V2.fields).filter(([k,f])=>f.on).map(([k,f])=>
+    `<div><label class="f">${esc(f.label)}</label><input class="f" data-hx="${k}" value="${esc(draft?draft[k]:'')}"></div>`).join('');
+  $$('#hdrExtra [data-hx]').forEach(inp=>inp.addEventListener('input',()=>{ draft[inp.dataset.hx]=inp.value; renderPreview(); }));
+}
 function draftToForm(){
   for(const id in HDR) $('#'+id).value = draft[HDR[id]] ?? '';
   for(const id in SH)  $('#'+id).value = draft.sh[SH[id]] ?? '';
-  for(const id in CO)  $('#'+id).value = draft.co[CO[id]] ?? '';
-  $('#fCustomer').value = draft.customerId || '';
+  for(const id in CO){ const el=$('#'+id); if(el) el.value = draft.co[CO[id]] ?? ''; }
+  $('#fRecv').value = draft.recv || V2.recv[0] || '';
+  $('#fAmtRecd').value = draft.amtRecd ?? '';
   $('#fShowTotal').checked = !!draft.showTotal;
+  renderHdrExtra();
   renderItems();
-  $('#orderTitle').textContent = draft.id ? 'Order '+draft.inv : 'New order';
-  $('#orderSub').textContent = draft.id ? 'Editing a saved order.' : 'Fill the left side, print the right.';
-  renderBilling();
+  $('#orderTitle').textContent = draft.id ? 'Cargo '+draft.inv : 'New cargo';
+  $('#orderSub').textContent = draft.id ? 'Editing a saved order.' : 'Fill it in, hit Create.';
+  renderActions();
   renderPreview();
 }
 function formToDraft(){
   for(const id in HDR) draft[HDR[id]] = $('#'+id).value;
   for(const id in SH)  draft.sh[SH[id]] = $('#'+id).value;
-  for(const id in CO)  draft.co[CO[id]] = $('#'+id).value;
-  draft.customerId = $('#fCustomer').value;
+  for(const id in CO){ const el=$('#'+id); if(el) draft.co[CO[id]] = el.value; }
+  draft.recv = $('#fRecv').value;
+  draft.amtRecd = $('#fAmtRecd').value;
   draft.showTotal = $('#fShowTotal').checked;
 }
-const DESC_OPTS = ['Barrel','Commercial Bin','Box','Other'];
+/* ---------- 5. line items ---------- */
+const STD_OPTS = ['Barrel','Commercial Bin','Box'];
 function descCell(it,i){
   const v = it.desc || '';
-  const isStd = DESC_OPTS.includes(v);
-  const other = !isStd && v !== '';
-  /* dropdown; picking "Other" swaps in a free-text input */
-  if(other || it._descOther){
+  if(it.kind==='product'){
+    return `<select data-k="desc">
+      <option value=""></option>
+      ${V2.products.map(p=>`<option${p.name===v?' selected':''}>${esc(p.name)}</option>`).join('')}
+    </select>`;
+  }
+  const isStd = STD_OPTS.includes(v);
+  if((!isStd && v!=='') || it._descOther){
     return `<input data-k="desc" value="${esc(v)}" placeholder="Describe it…">`;
   }
   return `<select data-k="desc">
     <option value=""></option>
-    ${DESC_OPTS.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}
+    ${STD_OPTS.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}
+    <option value="Other"${it._descOther?' selected':''}>Other…</option>
   </select>`;
 }
 function renderItems(){
   const tb=$('#itemRows');
-  tb.innerHTML = draft.items.map((it,i)=>`
-    <tr data-i="${i}">
-      <td><input data-k="qty"   value="${esc(it.qty)}"   inputmode="decimal"></td>
-      <td><input data-k="part"  value="${esc(it.part)}" inputmode="decimal"></td>
+  tb.innerHTML = draft.items.map((it,i)=>{
+    const isBox = String(it.desc||'').toLowerCase()==='box';
+    const lockDims = it.kind==='product' || (!isBox && it.dims!=='');
+    return `
+    <tr data-i="${i}" ${it.kind==='product'?'style="background:#FBF7F0"':''}>
+      <td><input data-k="qty" value="${esc(it.qty)}" inputmode="decimal"></td>
       <td>${descCell(it,i)}</td>
-      <td><input data-k="price" value="${esc(it.price)}" inputmode="decimal" placeholder="${esc(S.rate)}"></td>
+      <td><input data-k="cuft" value="${esc(it.cuft)}" inputmode="decimal" ${it.kind==='product'?'disabled':''} style="text-align:center"></td>
+      <td><input data-k="dims" value="${esc(it.dims)}" placeholder="${isBox?'45X14X9':''}" ${it.kind==='product'?'disabled':''} ${(!isBox&&it.kind!=='product')?'readonly':''}></td>
+      <td><input data-k="price" value="${esc(it.price)}" inputmode="decimal"></td>
       <td><input data-k="amount" value="${esc(it.amount)}" inputmode="decimal" placeholder="${itemAmount(it)?itemAmount(it).toFixed(2):''}"></td>
-      <td style="white-space:nowrap"><button class="nci${it.nci?' on':''}" data-nci="${i}" title="Non-cargo item (empty box, supplies…) — NOT counted as a piece on the WMS label">NCI</button><button class="x" data-del="${i}" title="Remove line" aria-label="Remove line">×</button></td>
-    </tr>`).join('');
+      <td><button class="x" data-del="${i}" title="Remove line">×</button></td>
+    </tr>`;
+  }).join('');
   $('#orderTotal').textContent = money(orderTotal(draft));
 }
-/* ============================================================
-   4. THE PRINTED FORM (single source of truth for preview + print)
-   ============================================================ */
+/* ---------- 6. printed form ---------- */
 function formHTML(o){
   const rows = Math.max(6, Number(S.rows)||13);
   const items = o.items.slice();
@@ -701,24 +795,27 @@ function formHTML(o){
     const showAmt = it && (it.amount!=='' || amt>0);
     body += `<tr>
       <td class="qty">${it?esc(it.qty):''}</td>
-      <td>${it?esc(it.part):''}</td>
-      <td class="desc">${it?esc(it.desc):''}</td>
+      <td class="desc">${it?esc(it.desc)+(it.dims?' &nbsp;'+esc(it.dims):''):''}</td>
+      <td class="qty">${it?esc(it.cuft):''}</td>
       <td class="pu">${it&&it.price!==''?money(String(it.price).replace(/[^0-9.\-]/g,'')):''}</td>
       <td class="amt">${showAmt?money(amt):''}</td>
     </tr>`;
   }
   if(o.showTotal && total>0){
     body += `<tr>
-      <td class="qty"></td><td></td>
+      <td class="qty"></td>
       <td class="desc tot" style="text-align:right;padding-right:10pt">TOTAL</td>
+      <td class="qty tot"></td>
       <td class="pu tot"></td><td class="amt tot">${money(total)}</td>
     </tr>`;
   }
   const partyRow = (a,b) => `<div class="r"><span>${esc(a)}</span><span>${esc(b)}</span></div>`;
+  const F = V2.fields;
   return `
 <div class="page">
   <div class="p-top">
     <div class="p-co">
+      <img src="/assets/fcs-logo.png" alt="" style="width:.55in;height:.55in;object-fit:contain;float:left;margin:-2pt 6pt 0 -2pt">
       <b>${esc(S.name)}</b>
       <div>${esc(S.addr)}</div>
       <div>${esc(S.tel)}</div>
@@ -727,20 +824,16 @@ function formHTML(o){
     <div class="p-right">
       <div class="p-inv">
         <div><div class="fld">${esc(o.inv)}</div><div class="cap">Invoice / B/L #</div></div>
-        <div><div class="fld">${esc(usDate(o.invDate))}</div><div class="cap">Invoice Date</div></div>
+        <div><div class="fld">${esc(usDate(o.invDate))}</div><div class="cap">Date</div></div>
       </div>
       <div class="p-cont">
-        <span class="lbl">Container #</span>
+        <span class="lbl">${esc(F.container.label)}</span>
         <div class="fld">${esc(o.container)}</div>
       </div>
-      ${o.trackNo ? `<div class="p-cont" style="margin-top:6pt">
-        <span class="lbl">Tracking # (eBL)</span>
-        <div class="fld">${esc(o.trackNo)}</div>
-      </div>` : ''}
       <div class="p-quad">
         <div><div class="fld">${esc(usDate(o.pickup))}</div><div class="cap">Pick Up Date</div></div>
-        <div><div class="fld">${esc(o.code)}</div><div class="cap">Shipping Code</div></div>
-        <div><div class="fld">${esc(o.po)}</div><div class="cap">PO Number</div></div>
+        <div><div class="fld">${esc(o.code)}</div><div class="cap">${esc(F.code.label)}</div></div>
+        <div><div class="fld">${esc(o.po)}</div><div class="cap">${esc(F.po.label)}</div></div>
         <div><div class="fld">${esc(o.time)}</div><div class="cap">Time</div></div>
       </div>
     </div>
@@ -755,21 +848,20 @@ function formHTML(o){
     </div>
     <div class="p-party">
       ${partyRow(o.co.name, o.co.name2)}
-      ${partyRow(o.co.title, o.co.org)}
       ${partyRow(o.co.city, '')}
       ${o.co.phone?`<div class="ph"><i>Phone:</i>${esc(o.co.phone)}</div>`:''}
     </div>
   </div>
   <div class="p-mid">
-    <div class="c1"><span class="lbl">Cross Street</span><div class="fld">${esc(o.cross)}</div></div>
-    <div class="c2"><span class="lbl">Service</span><div class="fld">${esc(o.service)}</div></div>
-    <div class="c3"><span class="lbl">Ship Via</span><div class="fld">${esc(o.shipVia)}</div></div>
+    <div class="c1"><span class="lbl">${esc(F.cross.label)}</span><div class="fld">${esc(o.cross)}</div></div>
+    <div class="c2"><span class="lbl">${esc(F.service.label)}</span><div class="fld">${esc(o.service)}</div></div>
+    <div class="c3"><span class="lbl">${esc(F.shipVia.label)}</span><div class="fld">${esc(o.shipVia)}</div></div>
   </div>
   <table class="p-tbl">
     <thead><tr>
-      <th class="c" style="width:1.05in">Quantity</th>
-      <th class="c" style="width:1.05in">Cu Ft</th>
+      <th class="c" style="width:.9in">Quantity</th>
       <th class="c">Description</th>
+      <th class="c" style="width:.9in">Cu Ft</th>
       <th class="c" style="width:1.05in">Price/Unit</th>
       <th class="r" style="width:1.05in">Amount</th>
     </tr></thead>
@@ -777,7 +869,7 @@ function formHTML(o){
   </table>
   <div class="p-track">You can track your shipment at <b>www.fcsshipping.com</b></div>
   <div class="p-sign">
-    <div class="s"><div class="line"></div><div class="cap2">Driver&rsquo;s Signature</div></div>
+    <div class="s"><div class="line"></div><div class="cap2">Customer&rsquo;s Signature</div></div>
     <div class="d"><div class="line"></div><div class="cap2">Date</div></div>
   </div>
 </div>`;
@@ -792,98 +884,104 @@ function renderPreview(){
     $('#previewScale').style.height = (page.offsetHeight*sc)+'px';
   }
 }
-/* ============================================================
-   4b. BILLING — EB/L + QuickBooks + paid status
-   ============================================================ */
+/* ---------- 7. actions: Create / Mark Paid / dot ---------- */
 const FN = '/.netlify/functions';
 async function authHeaders(){
-  if(!SBC) return {};
+  if(!SBC) return {'Content-Type':'application/json'};
   const { data:{ session } } = await SBC.auth.getSession();
   return session ? { Authorization:'Bearer '+session.access_token, 'Content-Type':'application/json' }
-                 : { 'Content-Type':'application/json' };
+                 : {'Content-Type':'application/json'};
 }
-function renderBilling(){
-  const has = !!(draft && draft.eblNo);
-  $('#billHas').hidden = !has;
-  $('#billNone').hidden = has;
-  $('#btnMakeEbl').disabled = !(draft && draft.id);
-  $('#billMsg').textContent = (draft && !draft.id)
-    ? 'Save the order to enable billing.' : '';
-  if(has){
-    $('#billEbl').textContent = draft.eblNo + (draft.loadNo ? '  ·  '+draft.loadNo : '');
-    $('#billQb').textContent = draft.qbInvoiceNo ? 'Invoice '+draft.qbInvoiceNo : 'not posted';
-    const st = $('#billState');
-    st.textContent = draft.paid ? 'PAID' : 'NOT PAID';
-    st.style.color = draft.paid ? '#177245' : '#B45309';
+function renderActions(){
+  $('#btnCreate').textContent = draft.created ? 'Save changes' : 'Create';
+  $('#btnPaid').hidden = !draft.created;
+  $('#btnPaid').textContent = draft.paid ? 'PAID ✓' : 'Mark Paid';
+  $('#btnPaid').style.background = draft.paid ? '#177245' : '';
+  $('#btnPaid').style.color = draft.paid ? '#fff' : '';
+  const dot=$('#qbDot');
+  dot.style.background = draft.qbOk===true ? '#1E9E4A' : draft.qbOk===false ? '#C22B1E' : '#c9cfd6';
+}
+async function saveDraft(){
+  formToDraft();
+  if(!String(draft.inv).trim()){ toast('An invoice number is required'); return false; }
+  if(draft.id){
+    orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
+  } else {
+    draft.id = uid();
+    orders.push({...draft});
+    if(String(draft.inv)===String(S.next)){ S.next = bumpInvoice(S.next); const el=$('#sNext'); if(el) el.value=S.next; }
   }
-  $('#btnWmsLabel').hidden = !(draft && draft.loadNo);
-  /* inline WMS QR — auto-connected: scanning opens the WMS on this load */
-  const qw = $('#billQrWrap');
-  if(has && draft.loadNo && window.QRCode){
-    qw.hidden = false;
-    const qr = $('#billQr');
-    if(qr.dataset.load !== draft.eblNo){
-      qr.innerHTML=''; qr.dataset.load = draft.eblNo;
-      new QRCode(qr, { text:'https://fcsshipping.com/admin/wms/?ebl='+encodeURIComponent(draft.eblNo),
-        width:128, height:128, correctLevel:QRCode.CorrectLevel.M });
+  await persist(); renderOrders();
+  return true;
+}
+$('#btnCreate').addEventListener('click', async ()=>{
+  const btn=$('#btnCreate'); const msg=$('#billMsg'); msg.className='msg'; msg.textContent='';
+  btn.disabled=true; btn.textContent='Working…';
+  try{
+    const already = draft.created;
+    if(!await saveDraft()) throw new Error('Could not save');
+    if(!already){
+      const total = orderTotal(draft);
+      if(total>0){
+        const lines = draft.items.filter(it=>itemAmount(it)>0).map(it=>({
+          desc: (it.kind==='product'?'PRODUCT: ':'') + (it.desc || 'Shipping services'),
+          qty: it.qty, price: String(it.price).replace(/[^0-9.]/g,''), amount: itemAmount(it)
+        }));
+        const res = await fetch(FN+'/order-to-ebl', {
+          method:'POST', headers: await authHeaders(),
+          body: JSON.stringify({
+            orderInv: draft.inv, useInv: true,
+            pieces: Math.max(1, Math.round(draft.items.filter(it=>it.kind!=='product').reduce((s2,it)=>s2+(parseFloat(it.qty)||0),0)) || 1),
+            cargo: draft.items.filter(it=>it.kind!=='product').map(i=>i.desc).filter(Boolean).join(', ') || 'Shipping services',
+            quantity: parseInt(draft.items[0] && draft.items[0].qty,10) || 1,
+            destination: draft.co.city || '',
+            priceCents: Math.round(total*100),
+            customerName: draft.sh.name || 'CUSTOMER',
+            customerPhone: draft.sh.phone,
+            customerExtra: { phone:draft.sh.phone, street:draft.sh.street, city:draft.sh.city, state:draft.sh.state },
+            markPaid: false, lines, txnDate: draft.invDate || null
+          })
+        });
+        const d = await res.json().catch(()=>({}));
+        if(res.ok && d.ok){
+          draft.created = true;
+          draft.qbOk = d.quickbooks && d.quickbooks.attempted ? !!d.quickbooks.ok : null;
+          draft.qbInvoiceNo = (d.quickbooks && d.quickbooks.ok) ? (d.quickbooks.docNumber||'posted') : '';
+        } else {
+          draft.created = true; draft.qbOk = false;
+        }
+      } else { draft.created = true; draft.qbOk = null; }
+      if(draft._quoteId && SBC){
+        SBC.from('quote_requests').update({status:'handled'}).eq('id',draft._quoteId).then(()=>loadQuotes());
+      }
+      orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
+      await persist();
+      toast('Cargo '+draft.inv+' created');
+    } else {
+      toast('Saved');
     }
-    const SEC={A:'Vieux-Fort',B:'Castries',C:'Other islands'};
-    $('#billQrNo').textContent = draft.loadNo + (draft.pieces ? '  ·  '+draft.pieces+' PC' : '');
-    $('#billQrSec').textContent = 'SECTOR '+(draft.sector||'?')+' · '+(SEC[draft.sector]||'');
-  } else { qw.hidden = true; }
-}
-
-/* ---- 4×6 WMS warehouse label: prints in its own window so the label's
-        4in×6in page size never fights the letter-size order form ---- */
-function printWmsLabel(){
-  if(!draft || !draft.loadNo) return;
-  const tmp=document.createElement('div'); tmp.style.display='none'; document.body.appendChild(tmp);
-  new QRCode(tmp,{ text:'https://fcsshipping.com/admin/wms/?ebl='+encodeURIComponent(draft.eblNo),
-    width:472, height:472, correctLevel:QRCode.CorrectLevel.M });
-  setTimeout(()=>{
-    const cv=tmp.querySelector('canvas');
-    const dataUrl=cv ? cv.toDataURL('image/png') : (tmp.querySelector('img')||{}).src;
-    tmp.remove();
-    const SECTORS={A:'VIEUX-FORT',B:'CASTRIES',C:'OTHER ISLANDS'};
-    const sec=draft.sector||'C';
-    const w=window.open('','_blank','width=430,height=660');
-    if(!w){ toast('Pop-up blocked — allow pop-ups to print labels'); return; }
-    w.document.write('<!doctype html><html><head><title>'+esc(draft.loadNo)+'</title><style>'+
-      '@page{size:4in 6in;margin:0}body{margin:0;font-family:Archivo,Arial,sans-serif}'+
-      '.label{width:4in;height:6in;padding:.22in;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center}'+
-      '.h{display:flex;align-items:center;justify-content:center;gap:8pt;font-family:monospace;font-weight:700;font-size:12pt;letter-spacing:.06em;border-bottom:2.5px solid #000;width:100%;padding-bottom:5pt}'+
-      '.h img{height:.3in;width:auto}'+
-      'img{width:2in;height:2in;margin:6pt 0 4pt}'+
-      '.no{font-family:monospace;font-weight:700;font-size:14pt}'+
-      '.sec{font-size:46pt;font-weight:900;line-height:1;border:3px solid #000;border-radius:8px;padding:2pt 16pt;margin:4pt 0 3pt}'+
-      '.pcs{font-size:22pt;font-weight:900;margin-top:1pt}'+
-      '.dest{font-weight:900;font-size:12pt}.meta{font-family:monospace;font-size:8pt;margin-top:3pt;line-height:1.45}'+
-      '.foot{margin-top:auto;font-family:monospace;font-size:7.5pt;border-top:1.5px solid #000;width:100%;padding-top:4pt}'+
-      '.label{page-break-after:always}'+
-      '<\/style><\/head><body>'+
-      Array.from({length:Math.max(1,draft.pieces||1)},(_,ix)=>{
-        const n=Math.max(1,draft.pieces||1);
-        return '<div class="label">'+
-        '<div class="h"><img src="https://fcsshipping.com/assets/fcs-logo.png" alt="FCS"><span>FCS·WMS&nbsp; WAREHOUSE LABEL<\/span><\/div>'+
-        '<img src="'+dataUrl+'">'+
-        '<div class="no">'+esc(draft.loadNo)+'<\/div>'+
-        '<div class="pcs">'+(n===1?'1 PIECE':(ix+1)+' OF '+n+' PIECES')+'<\/div>'+
-        '<div class="sec">'+sec+'<\/div><div class="dest">'+SECTORS[sec]+'<\/div>'+
-        '<div class="meta">'+esc(draft.sh.name||'')+
-        '<br>EB\/L: '+esc(draft.eblNo||'—')+' · B\/L '+esc(draft.inv||'')+'<\/div>'+
-        '<div class="foot">Scan any one label — it moves the whole EB\/L · fcsshipping.com<\/div><\/div>';
-      }).join('')+
-      '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print()},250)}<\/scr'+'ipt><\/body><\/html>');
-    w.document.close();
-  },320);
-}
-$('#btnWmsLabel').addEventListener('click', printWmsLabel);
-
-/* receipts on the road: type the customer's email, they get a branded receipt */
+    renderActions(); renderOrders();
+  }catch(e){ msg.textContent=e.message; msg.className='msg err'; }
+  btn.disabled=false; renderActions();
+});
+$('#btnPaid').addEventListener('click', async ()=>{
+  const paid = !draft.paid;
+  draft.paid = paid;
+  if(paid && !(parseFloat(draft.amtRecd)>0)){ draft.amtRecd = String(orderTotal(draft)); $('#fAmtRecd').value = draft.amtRecd; }
+  orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
+  await persist(); renderActions(); renderOrders();
+  try{
+    await fetch(FN+'/ebl-status', { method:'POST', headers: await authHeaders(),
+      body: JSON.stringify({ eblNo: String(draft.inv), status: paid?'paid':'open' }) });
+  }catch(e){}
+  toast(paid ? 'Marked paid' : 'Marked not paid');
+});
+$('#btnPrint').addEventListener('click',()=>{ formToDraft(); $('#printroot').innerHTML=formHTML(draft); window.print(); });
+$('#btnPdf').addEventListener('click',()=>{ formToDraft(); $('#printroot').innerHTML=formHTML(draft); window.print(); });
 $('#btnEmailRcpt').addEventListener('click', async ()=>{
-  if(!draft || !String(draft.inv).trim()) return toast('Open or save an order first');
-  const cust = customers.find(c=>c.id===draft.customerId);
-  const to = prompt("Customer's e-mail address:", (cust&&cust.email)||'');
+  formToDraft();
+  if(!String(draft.inv).trim()) return toast('Fill the order first');
+  const to = prompt("Customer's e-mail address:", '');
   if(!to) return;
   const btn=$('#btnEmailRcpt'); btn.disabled=true; btn.textContent='Sending…';
   try{
@@ -892,10 +990,10 @@ $('#btnEmailRcpt').addEventListener('click', async ()=>{
       body: JSON.stringify({ to: to.trim(), order:{
         inv: draft.inv, date: usDate(draft.invDate), customer: draft.sh.name||'',
         destination: (draft.co&&draft.co.city)||'',
-        items: draft.items.filter(it=>it.desc).map(it=>({qty:it.qty, desc:it.desc, amount: it.amount!==''?money(itemAmount(it)):(itemAmount(it)?money(itemAmount(it)):'')})),
+        items: draft.items.filter(it=>it.desc).map(it=>({qty:it.qty, desc:it.desc, amount: money(itemAmount(it))})),
         total: money(orderTotal(draft)),
-        eblNo: draft.eblNo||'', paid: Boolean(draft.paid),
-        trackNote: draft.trackNo ? ('Track your shipment with '+draft.trackNo+' at www.fcsshipping.com') : '',
+        eblNo: String(draft.inv), paid: Boolean(draft.paid),
+        trackNote: 'Track your shipment with B/L '+draft.inv+' at www.fcsshipping.com',
       }})});
     const data = await res.json().catch(()=>({}));
     if(!res.ok || !data.ok) throw new Error(data.error||'send failed');
@@ -903,318 +1001,539 @@ $('#btnEmailRcpt').addEventListener('click', async ()=>{
   }catch(e){ alert('Could not send: '+e.message); }
   btn.disabled=false; btn.textContent='Email receipt';
 });
-async function saveOrderQuiet(){
-  if(!draft.id) return;
-  orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
-  await persist(); renderOrders();
+/* ---------- 8. CARGO list (this month) ---------- */
+function monthOrders(ym, dest){
+  return orders.filter(o=>monthKey(o.invDate)===ym && (!dest || o.co.city===dest))
+               .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
 }
-$('#btnMakeEbl').addEventListener('click', async()=>{
-  formToDraft();
-  const msg=$('#billMsg'); msg.className='msg';
-  const total = orderTotal(draft);
-  if(!draft.id) { msg.textContent='Save the order first.'; msg.className='msg err'; return; }
-  if(total<=0){ msg.textContent='Add a line item with an amount first.'; msg.className='msg err'; return; }
-  const btn=$('#btnMakeEbl'); btn.disabled=true; btn.textContent='Creating…';
-  try{
-    const lines = draft.items.filter(it=>itemAmount(it)>0).map(it=>({
-      desc: it.desc || 'Shipping services', qty: it.qty,
-      price: String(it.price).replace(/[^0-9.]/g,''), amount: itemAmount(it)
-    }));
-    const res = await fetch(FN+'/order-to-ebl', {
-      method:'POST', headers: await authHeaders(),
-      body: JSON.stringify({
-        orderInv: draft.inv, blNo: draft.container || '',
-        trackNo: draft.trackNo || '',
-        /* NCI lines (empty boxes, supplies) don't count as cargo pieces */
-        pieces: Math.max(1, Math.round(draft.items.filter(it=>!it.nci).reduce((s2,it)=>s2+(parseFloat(it.qty)||0),0)) || 1),
-        cargo: draft.items.map(i=>i.desc).filter(Boolean).join(', ') || 'Shipping services',
-        quantity: parseInt(draft.items[0] && draft.items[0].qty,10) || 1,
-        destination: draft.co.city || '',
-        priceCents: Math.round(total*100),
-        customerName: draft.sh.name,
-        customerPhone: draft.sh.phone,
-        customerEmail: (customers.find(c=>c.id===draft.customerId)||{}).email || '',
-        customerExtra: { phone:draft.sh.phone, street:draft.sh.street, city:draft.sh.city, state:draft.sh.state,
-                         email:(customers.find(c=>c.id===draft.customerId)||{}).email || '' },
-        markPaid: $('#fMarkPaid').checked,
-        lines, txnDate: draft.invDate || null
-      })
-    });
-    const d = await res.json().catch(()=>({}));
-    if(!res.ok || !d.ok) throw new Error(d.error || 'Could not create the EB/L');
-    draft.eblNo = d.eblNo;
-    draft.paid = !!$('#fMarkPaid').checked;
-    draft.qbInvoiceNo = (d.quickbooks && d.quickbooks.ok) ? (d.quickbooks.docNumber || 'posted') : '';
-    if(d.shipment && d.shipment.ok) draft.waybillNo = d.shipment.waybill;
-    if(d.wms && d.wms.ok){ draft.loadNo = d.wms.loadNo; draft.sector = d.wms.sector; draft.pieces = d.wms.pieces; }
-    await saveOrderQuiet();
-    renderBilling();
-    const shipNote = (d.shipment && d.shipment.ok
-      ? ` Shipment ${d.shipment.waybill} created — track it on the admin Shipments tab; it's already in the customer's portal.`
-      : ' (Shipment could not be created — add one manually on the Shipments tab.)')
-      + (d.wms && d.wms.ok
-      ? ` ${d.wms.pieces} pc added to ${d.wms.loadNo} (Sector ${d.wms.sector}). Print the 4×6 label below and stick it on the cargo.`
-      : ' (WMS load not created — run supabase/wms.sql, or add it in the WMS.)');
-    const qbNote = (!d.quickbooks.attempted ? 'QuickBooks not connected — EB/L created.'
-      : d.quickbooks.ok ? 'QuickBooks invoice posted.'
-      : 'EB/L created, but QuickBooks said: '+d.quickbooks.error) + shipNote;
-    $('#billMsg2').textContent = qbNote;
-    $('#billMsg2').className = d.quickbooks.attempted && !d.quickbooks.ok ? 'msg err' : 'msg';
-    /* the website quote this came from is now handled */
-    if(draft._quoteId && SBC){
-      SBC.from('quote_requests').update({status:'handled'}).eq('id',draft._quoteId).then(()=>loadWebQuotes());
-    }
-    toast('EB/L '+d.eblNo+(d.shipment&&d.shipment.ok?' + B/L '+d.shipment.waybill:'')+' created');
-  }catch(e){ msg.textContent=e.message; msg.className='msg err'; }
-  btn.disabled=false; btn.textContent='Create EB/L + QuickBooks invoice';
-});
-async function setPaid(paid){
-  const msg=$('#billMsg2'); msg.className='msg'; msg.textContent='Updating…';
-  try{
-    const res = await fetch(FN+'/ebl-status', {
-      method:'POST', headers: await authHeaders(),
-      body: JSON.stringify({ eblNo: draft.eblNo, status: paid?'paid':'open' })
-    });
-    const d = await res.json().catch(()=>({}));
-    if(!res.ok || !d.ok) throw new Error(d.error||'Update failed');
-    draft.paid = paid; await saveOrderQuiet(); renderBilling();
-    msg.textContent = paid
-      ? (d.quickbooks && d.quickbooks.ok ? 'Marked paid — payment recorded in QuickBooks too.'
-         : d.quickbooks && d.quickbooks.error ? 'Marked paid. QuickBooks: '+d.quickbooks.error
-         : 'Marked paid.')
-      : 'Set back to not paid.';
-    toast(paid?'Marked paid':'Marked not paid');
-  }catch(e){ msg.textContent=e.message; msg.className='msg err'; }
-}
-$('#btnPaid').addEventListener('click',()=>setPaid(true));
-$('#btnUnpaid').addEventListener('click',()=>setPaid(false));
-$('#btnCopyEbl').addEventListener('click',async()=>{
-  const txt = `Your FCS Shipping bill of lading: ${draft.eblNo}\nAmount due: ${money(orderTotal(draft))}\nPay online at ${location.origin}/#quote — tap "I have an EB/L number" and enter ${draft.eblNo}.\nYou can track your shipment at fcsshipping.com`;
-  try{ await navigator.clipboard.writeText(txt); toast('Copied — paste into a text or email'); }
-  catch{ prompt('Copy this for the customer:', txt); }
-});
-/* QuickBooks connection state (Settings tab) */
-async function qbCheck(){
-  const el=$('#qbState');
-  try{
-    const res = await fetch(FN+'/ebl-status?qbstatus=1', { headers: await authHeaders() });
-    const d = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(d.error||'unavailable');
-    if(!d.configured){ el.innerHTML='<b>Not set up.</b> Add QB_CLIENT_ID, QB_CLIENT_SECRET and QB_ENV in Netlify, then redeploy.'; $('#qbConnect').style.display='none'; }
-    else if(d.connected){ el.innerHTML='<b style="color:#177245">Connected</b> — company '+esc(d.realmId||'')+' ('+esc(d.env)+'). Invoices will post automatically.'; $('#qbConnect').textContent='Reconnect QuickBooks'; }
-    else { el.innerHTML='<b>Set up, not connected yet.</b> Click Connect and sign in to QuickBooks.'; }
-  }catch(e){ el.textContent='Could not check QuickBooks: '+e.message; }
-}
-$('#qbRecheck').addEventListener('click',qbCheck);
-
-/* ============================================================
-   5. LISTS
-   ============================================================ */
-function renderCustomerSelect(){
-  const sel=$('#fCustomer'), keep=sel.value;
-  sel.innerHTML = '<option value="">— none / one-off —</option>' +
-    customers.slice().sort((a,b)=>a.name.localeCompare(b.name))
-      .map(c=>`<option value="${c.id}">${esc(c.name)}${c.city?' — '+esc(c.city):''}</option>`).join('');
-  sel.value = keep;
-}
-function renderCustomers(){
-  $('#cCust').textContent = customers.length;
-  const q = ($('#qCust').value||'').toLowerCase();
-  const rows = customers.filter(c=>!q || [c.name,c.name2,c.city,c.phone,c.email].join(' ').toLowerCase().includes(q))
-                        .sort((a,b)=>a.name.localeCompare(b.name));
-  $('#custList').innerHTML = rows.length ? `
+function cargoTable(rows, actions){
+  if(!rows.length) return `<div class="empty"><b>No cargo yet.</b> Hit Create to write the first order.</div>`;
+  return `
     <table class="list"><thead><tr>
-      <th>Name</th><th>Address</th><th>Phone</th><th>Usual consignee</th><th></th>
-    </tr></thead><tbody>${rows.map(c=>`
-      <tr>
-        <td><strong>${esc(c.name)}</strong>${c.name2?' '+esc(c.name2):''}${c.notes?`<div style="color:var(--muted);font-size:12px">${esc(c.notes)}</div>`:''}</td>
-        <td>${esc(c.street||'')}${c.city?`<div>${esc(c.city)} ${esc(c.state||'')}</div>`:''}</td>
-        <td>${esc(c.phone||'')}${c.email?`<div style="color:var(--muted);font-size:12px">${esc(c.email)}</div>`:''}</td>
-        <td>${esc([c.co&&c.co.name,c.co&&c.co.name2].filter(Boolean).join(' '))}${c.co&&c.co.city?`<div style="color:var(--muted);font-size:12px">${esc(c.co.city)}</div>`:''}</td>
-        <td class="num" style="white-space:nowrap">
-          <button class="btn ghost sm" data-neworder="${c.id}">New order</button>
-          <button class="btn ghost sm" data-editc="${c.id}">Edit</button>
-          <button class="btn warn sm" data-delc="${c.id}">Delete</button>
-        </td>
-      </tr>`).join('')}</tbody></table>`
-    : `<div class="empty"><b>${customers.length?'Nothing matches that search.':'No customers yet.'}</b>
-        ${customers.length?'Try a shorter term.':'Add your first shipper to start invoicing.'}</div>`;
+      <th>Date</th><th>Type</th><th>Destination</th><th>Received From</th><th>Invoice #</th>
+      <th class="num">Freight $</th><th class="num">Amt Rec'd</th><th class="num">BAL/COD</th>${actions?'<th></th>':''}
+    </tr></thead><tbody>${rows.map(o=>{
+      const bal = orderBal(o);
+      return `<tr>
+        <td>${esc(usDate(o.invDate))}</td>
+        <td>${o.paid?'<b style="color:#177245">PAID</b>':'<b style="color:#B45309">BALANCE</b>'}</td>
+        <td>${esc(o.co.city||'')}</td>
+        <td>${esc(o.recv||'')}</td>
+        <td><strong>${esc(o.inv)}</strong>
+          <div style="color:var(--muted);font-size:11.5px">${esc(o.sh.name||'')}${o.co.name?' → '+esc(o.co.name):''}</div></td>
+        <td class="num">${money(orderTotal(o))}</td>
+        <td class="num">${money(parseFloat(o.amtRecd)||0)}</td>
+        <td class="num">${bal>0?'<b style="color:#B45309">'+money(bal)+'</b>':money(0)}</td>
+        ${actions?`<td class="num" style="white-space:nowrap">
+          <button class="btn ghost sm" data-openo="${o.id}">Open</button>
+          <button class="btn ghost sm" data-dupo="${o.id}">Dup</button>
+          <button class="btn warn sm" data-delo="${o.id}">Del</button>
+        </td>`:''}
+      </tr>`;}).join('')}</tbody></table>`;
+}
+function statCards(rows){
+  const freight = rows.reduce((s,o)=>s+freightTotal(o),0);
+  const prod = rows.reduce((s,o)=>s+productTotal(o),0);
+  const recd = rows.reduce((s,o)=>s+(parseFloat(o.amtRecd)||0),0);
+  const bal = rows.reduce((s,o)=>s+orderBal(o),0);
+  const card=(l,v,c)=>`<div class="card" style="padding:12px 14px"><div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${l}</div><div style="font-size:20px;font-weight:700;${c?'color:'+c:''}">${v}</div></div>`;
+  return card('Cargo', rows.length) + card('Freight', money(freight)) + card('Products', money(prod)) + card('Collected · Balance', money(recd)+' · <span style="color:#B45309">'+money(bal)+'</span>');
 }
 function renderOrders(){
-  $('#cOrders').textContent = orders.length;
+  const ym = thisMonth();
   const q=($('#qOrders').value||'').toLowerCase();
-  const rows = orders.filter(o=>!q || [o.inv,o.po,o.container,o.sh.name,o.co.name].join(' ').toLowerCase().includes(q));
-  $('#ordersList').innerHTML = rows.length ? `
-    <table class="list"><thead><tr>
-      <th>Invoice</th><th>Date</th><th>Shipper</th><th>EB/L</th><th>Paid</th><th class="num">Total</th><th></th>
-    </tr></thead><tbody>${rows.map(o=>`
-      <tr>
-        <td><strong>${esc(o.inv)}</strong>${o.po?`<div style="color:var(--muted);font-size:12px">PO ${esc(o.po)}</div>`:''}</td>
-        <td>${esc(usDate(o.invDate))}</td>
-        <td>${esc(o.sh.name)}<div style="color:var(--muted);font-size:12px">${esc([o.co.name,o.co.name2].filter(Boolean).join(' '))}</div></td>
-        <td>${o.eblNo?`<span style="font-variant-numeric:tabular-nums">${esc(o.eblNo)}</span>${o.qbInvoiceNo?`<div style="color:var(--muted);font-size:12px">QB ${esc(o.qbInvoiceNo)}</div>`:''}`:'<span style="color:var(--muted)">—</span>'}</td>
-        <td>${o.eblNo?(o.paid?'<b style="color:#177245">PAID</b>':'<b style="color:#B45309">NOT PAID</b>'):'<span style="color:var(--muted)">—</span>'}</td>
-        <td class="num">${money(orderTotal(o))}</td>
-        <td class="num" style="white-space:nowrap">
-          <button class="btn ghost sm" data-openo="${o.id}">Open</button>
-          <button class="btn ghost sm" data-dupo="${o.id}">Duplicate</button>
-          <button class="btn warn sm" data-delo="${o.id}">Delete</button>
-        </td>
-      </tr>`).join('')}</tbody></table>`
-    : `<div class="empty"><b>${orders.length?'Nothing matches that search.':'No orders yet.'}</b>
-        ${orders.length?'Try the invoice number.':'Head to New order to write the first one.'}</div>`;
+  let rows = monthOrders(ym);
+  $('#cOrders').textContent = rows.length;
+  if(q) rows = rows.filter(o=>[o.inv,o.sh.name,o.co.name,o.co.city].join(' ').toLowerCase().includes(q));
+  $('#cargoTitle').textContent = 'Cargo — '+monthLabel(ym);
+  $('#cargoSub').textContent = 'Older months live in Previous Activity.';
+  $('#cargoStats').innerHTML = statCards(monthOrders(ym));
+  $('#ordersList').innerHTML = cargoTable(rows, true);
 }
-/* ============================================================
-   6. PERSIST
-   ============================================================ */
-async function persist(){
-  await DB.save('fcs:customers', customers);
-  await DB.save('fcs:orders', orders);
+/* ---------- 9. QUOTES ---------- */
+async function loadQuotes(){
+  if(!SBC) return;
+  try{
+    const {data} = await SBC.from('quote_requests').select('*')
+      .in('status',['new','deposit_paid']).order('created_at',{ascending:false}).limit(50);
+    quotes = data||[];
+  }catch(e){ quotes=[]; }
+  $('#cCust').textContent = quotes.length;
+  $('#custList').innerHTML = quotes.length ? `
+    <table class="list"><thead><tr><th>Name</th><th>Contact</th><th>Cargo</th><th class="num">Est.</th><th></th></tr></thead>
+    <tbody>${quotes.map(q=>`<tr>
+      <td><strong>${esc(q.name)}</strong>${q.pickup_slot?`<div style="color:var(--muted);font-size:11.5px">${esc(q.pickup_slot)}</div>`:''}</td>
+      <td>${esc(q.phone)}<div style="color:var(--muted);font-size:11.5px">${esc(q.email||'')}</div>${q.address?`<div style="color:var(--muted);font-size:11.5px">${esc(q.address)}</div>`:''}</td>
+      <td style="max-width:340px">${esc(q.cargo)} → ${esc(q.destination)}</td>
+      <td class="num">${money((q.total_cents||0)/100)}</td>
+      <td class="num" style="white-space:nowrap">
+        <button class="btn sm" data-mkorder="${q.id}">Create</button>
+        <button class="btn warn sm" data-delq="${q.id}">Delete</button>
+      </td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty"><b>No open quotes.</b> New website quotes land here.</div>`;
+}
+$('#custList').addEventListener('click', async e=>{
+  const mk=e.target.dataset.mkorder, dl=e.target.dataset.delq;
+  if(mk){
+    const q = quotes.find(x=>String(x.id)===String(mk)); if(!q) return;
+    draft = blankOrder();
+    draft._quoteId = q.id;
+    draft.sh = { name:String(q.name||'').toUpperCase(), name2:'', street:String(q.address||'').toUpperCase(), city:'', state:'', phone:q.phone||'' };
+    const dest = V2.dests.find(d=>String(q.destination||'').toLowerCase().includes(d.name.toLowerCase()));
+    draft.co.city = dest ? dest.name : (V2.dests[0]&&V2.dests[0].name)||'';
+    const extras = Array.isArray(q.extras)?q.extras.slice():[];
+    const ci = extras.findIndex(x=>/^Consignee:/i.test(String(x)));
+    if(ci>-1){
+      const parts = String(extras.splice(ci,1)[0]).replace(/^Consignee:\s*/i,'').split(' · ').map(s=>s.trim()).filter(Boolean);
+      draft.co.name = String(parts.shift()||'').toUpperCase();
+      if(parts.length && String(parts[parts.length-1]).replace(/\D/g,'').length>=7) draft.co.phone = parts.pop();
+    }
+    /* rough line from the quote cargo text */
+    const items=[];
+    const t = String(q.cargo||'').toLowerCase();
+    const grab=(re,desc)=>{ const m=t.match(re); if(m) { const it=blankItem(); it.qty=String(m[1]||1); it.desc=desc; priceItem(it,draft.co.city); items.push(it);} };
+    grab(/barrel[^×x\d]*[×x\s]*(\d+)?/,'Barrel');
+    grab(/commercial bin[^×x\d]*[×x\s]*(\d+)?/,'Commercial Bin');
+    if(!items.length){ const it=blankItem(); it.desc=String(q.cargo||'').toUpperCase(); it.amount=((q.total_cents||0)/100).toFixed(2); items.push(it); }
+    draft.items = items.concat([blankItem()]);
+    if(q.pickup_slot) draft.service = ('PICKUP: '+q.pickup_slot).toUpperCase();
+    goTab('order'); draftToForm();
+    toast('Quote loaded — check it, then Create');
+  }
+  if(dl){
+    if(!confirm('Delete this quote?')) return;
+    await SBC.from('quote_requests').delete().eq('id',dl);
+    loadQuotes();
+  }
+});
+$('#btnQuotesRefresh').addEventListener('click',loadQuotes);
+/* ---------- 10. MANIFEST ---------- */
+let mfMode='tally';
+function mfRows(ym,dest){
+  const list=[];
+  monthOrders(ym,dest).forEach(o=>{
+    o.items.forEach((it,ix)=>{
+      if(it.kind==='product' || !it.desc) return;
+      list.push({o,ix,it});
+    });
+  });
+  return list;
+}
+function renderManifest(){
+  const dest=$('#mfDest').value; const ym=thisMonth();
+  $('#mfSub').textContent = monthLabel(ym)+' · '+(mfMode==='tally'?'tally sheet':'manifest view');
+  const rows=mfRows(ym,dest);
+  if(!rows.length){ $('#mfList').innerHTML='<div class="empty"><b>No cargo for '+esc(dest||'—')+' yet this month.</b></div>'; return; }
+  if(mfMode==='tally'){
+    const pk = rows.reduce((s,r)=>s+(parseFloat(r.it.qty)||0),0);
+    const cf = rows.reduce((s,r)=>s+(parseFloat(r.it.cuft)||0),0);
+    $('#mfList').innerHTML = `
+      <table class="list"><thead><tr>
+        <th style="width:110px">B/L #</th><th style="width:64px">Pkgs</th><th>Description</th>
+        <th style="width:70px">Cu ft</th><th style="width:120px">Dims</th><th style="width:90px" class="num">$</th><th style="width:34px"></th>
+      </tr></thead><tbody>
+      ${rows.map((r,n)=>`<tr>
+        <td><strong>BL#${esc(r.o.inv)}</strong><div style="color:var(--muted);font-size:11px">${esc(r.o.sh.name||'')}</div></td>
+        <td><input class="f" data-mf="${n}" data-k="qty" value="${esc(r.it.qty)}" style="padding:4px 6px"></td>
+        <td><input class="f" data-mf="${n}" data-k="desc" value="${esc(r.it.desc)}" style="padding:4px 6px"></td>
+        <td><input class="f" data-mf="${n}" data-k="cuft" value="${esc(r.it.cuft)}" style="padding:4px 6px;text-align:center"></td>
+        <td><input class="f" data-mf="${n}" data-k="dims" value="${esc(r.it.dims)}" style="padding:4px 6px"></td>
+        <td class="num">${money(itemAmount(r.it))}</td>
+        <td><button class="x" data-mfdel="${n}" title="Remove from cargo too">×</button></td>
+      </tr>`).join('')}
+      <tr><td><b>TOTAL</b></td><td><b>${pk}</b></td><td></td><td><b>${Math.round(cf*10)/10}</b></td><td></td><td class="num"><b>${money(rows.reduce((s,r)=>s+itemAmount(r.it),0))}</b></td><td></td></tr>
+      </tbody></table>
+      <p style="font-size:12px;color:var(--muted);margin:8px 6px">Edits here write straight back to the cargo — the Cargo page and the revenue export follow automatically.</p>`;
+    const R=rows;
+    $$('#mfList [data-mf]').forEach(inp=>inp.addEventListener('change',async ()=>{
+      const r=R[+inp.dataset.mf]; r.it[inp.dataset.k]=inp.value;
+      orders = orders.map(o=>o.id===r.o.id ? {...r.o} : o);
+      await persist(); renderManifest(); renderOrders();
+    }));
+    $$('#mfList [data-mfdel]').forEach(b=>b.addEventListener('click',async ()=>{
+      const r=R[+b.dataset.mfdel];
+      if(!confirm('Remove this line from BL#'+r.o.inv+'? It comes off the cargo and the revenue too.')) return;
+      r.o.items.splice(r.ix,1);
+      orders = orders.map(o=>o.id===r.o.id ? {...r.o} : o);
+      await persist(); renderManifest(); renderOrders();
+    }));
+  } else {
+    /* manifest view — one block per B/L */
+    const byOrder={};
+    rows.forEach(r=>{ (byOrder[r.o.id]=byOrder[r.o.id]||{o:r.o,items:[]}).items.push(r.it); });
+    $('#mfList').innerHTML = Object.values(byOrder).map((g,i)=>`
+      <div style="border:1px solid var(--rule);border-radius:7px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:60px 1.2fr 1.2fr 1.6fr;gap:8px;align-items:start">
+        <div style="font-weight:700">${i+1}<br><span style="font-size:15px">${esc(g.o.inv)}</span></div>
+        <div><b>${esc(g.o.sh.name||'')}</b><br>${esc(g.o.sh.street||'')}<br>${esc([g.o.sh.city,g.o.sh.state].filter(Boolean).join(', '))}<br><span style="color:var(--muted)">TEL# ${esc(g.o.sh.phone||'')}</span></div>
+        <div><b>${esc(g.o.co.name||'')}</b><br>${esc(g.o.co.city||'')}<br>ST. LUCIA<br><span style="color:var(--muted)">TEL# ${esc(g.o.co.phone||'')}</span></div>
+        <div>${g.items.map(it=>`${esc(it.qty)} ${esc(it.desc)} S.T.C PERSONAL EFFECTS &nbsp; <b>${esc(it.cuft)}</b> &nbsp; ${money(itemAmount(it))}`).join('<br>')}
+          ${orderBal(g.o)>0?'<div style="color:#C22B1E;font-weight:800;margin-top:4px">HOLD</div>':''}</div>
+      </div>`).join('');
+  }
+}
+$('#mfDest').addEventListener('change',renderManifest);
+$('#mfToggle').addEventListener('click',()=>{ mfMode = mfMode==='tally'?'manifest':'tally'; $('#mfToggle').textContent = mfMode==='tally'?'Manifest view':'Tally view'; renderManifest(); });
+/* ---------- 11. XLSX exports (ExcelJS) ---------- */
+function dl(buf,name){
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
+}
+const thin={style:'thin'}; const B={top:thin,left:thin,bottom:thin,right:thin};
+async function buildMasterBL(ym,dest,hdr){
+  const rows=mfRows(ym,dest);
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet((hdr.brokerName||'MASTER BL').slice(0,28));
+  const widths={A:12.4,B:10.4,C:6.7,D:2.4,E:3.3,F:5.3,G:16.7,H:8.4,I:22,J:2.7,K:8.3,L:18};
+  Object.entries(widths).forEach(([c,w])=>ws.getColumn(c).width=w);
+  const set=(cell,v,opt)=>{ const c=ws.getCell(cell); c.value=v; if(opt&&opt.b) c.font={bold:true,size:opt.sz||10}; else c.font={size:(opt&&opt.sz)||9}; };
+  set('A1',hdr.carrier,{b:1,sz:14}); set('I1','LONG FORM - INTERNATIONAL BILL OF LADING',{sz:8});
+  set('A2','(2) SHIPPER/EXPORTER (Embarcador/Remitente)',{sz:7});
+  hdr.shipper.split('\n').forEach((l,i)=>set('A'+(3+i),l,{sz:9}));
+  set('H2','(5) BOOKING NO. (No. Reservacion)',{sz:7}); set('K2','(5A) B/L NO. (No. Conocimiento)',{sz:7});
+  set('H3','BKG# '+(hdr.bkg||''),{sz:9});
+  set('H4','(6) EXPORT REFERENCES (Referencia de Exportacion)',{sz:7});
+  set('A8','(3) CONSIGNEE (Consignatario)',{sz:7});
+  hdr.consignee.split('\n').forEach((l,i)=>set('A'+(9+i),l,{sz:9}));
+  set('H8','(7) FREIGHT FORWARDER/CHB (Agente Aduanal)',{sz:7});
+  hdr.forwarder.split('\n').forEach((l,i)=>set('H'+(9+i),l,{sz:9}));
+  set('K11','FMC/CHB No.',{sz:7});
+  set('H12','(8) POINT AND COUNTRY OF ORIGIN (Punto y Pais de Origen)',{sz:7});
+  set('H15',hdr.origin,{sz:9});
+  set('A16','(4) NOTIFY PARTY (Dirigir Notificacion de Llegada a)',{sz:7});
+  set('A17',hdr.notify,{sz:9});
+  set('H16','(9) ALSO NOTIFY - ROUTING INSTRUCTIONS (Tambien Notificar a/Ruta Domestica)',{sz:7});
+  set('A21','(12) INITIAL CARRIAGE BY (Mode)',{sz:7}); set('C21','(13) PLACE OF INITIAL RECEIPT (Punto de Recibo Inicial) *',{sz:7});
+  set('H21','(9A) FINAL DESTINATION OF THE GOODS (Destino Final de la Carga)',{sz:7});
+  set('A23','(14) VESSEL (Nave)             VOY          FLAG',{sz:7}); set('D23','(15) PORT OF LOADING (Puerto de Carga)',{sz:7});
+  set('H23','(10) LOADING PIER/TERMINAL (Muelle)',{sz:7}); set('J23','(10A) ORIGINALS TO BE RELEASED AT',{sz:7});
+  set('A24',hdr.vessel||'',{sz:9});
+  set('A25','PORT OF DISCHARGE',{sz:7}); set('D25','(17) PLACE OF DELIVERY (Punto de Entrega)',{sz:7});
+  set('H25','(11) TYPE OF MOVE (Tipo de Movimiento)',{sz:7});
+  set('A26',dest.toUpperCase(),{b:1,sz:10}); set('B26','ST. LUCIA',{b:1,sz:10});
+  set('A27','PARTICULARS FURNISHED BY SHIPPER',{sz:8}); set('H27',"(SPACES IMMEDIATELY ABOVE FOR SHIPPER'S MEMORANDUM)",{sz:7});
+  set('C28','NO. OF PKGS.',{sz:7}); set('E28','HM**',{sz:7}); set('G28','DESCRIPTION OF PACKAGES AND GOODS',{sz:7});
+  set('J28','CUBIC FT',{sz:7}); set('L28','MEASUREMENT',{sz:7});
+  set('A29','(Marcas y Numeros)',{sz:7}); set('C29','(No. de Bultos)',{sz:7}); set('G29','(Contenido)',{sz:7}); set('L29','(Medidas)',{sz:7});
+  set('A30','(18)',{sz:7}); set('C30','(19)',{sz:7}); set('G30','(20)',{sz:7}); set('J30','(21)',{sz:7}); set('L30','(22)',{sz:7});
+  /* aggregate barrels + bins first, like the paper */
+  let r=31;
+  const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}};
+  const singles=[];
+  rows.forEach(x=>{
+    const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
+    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
+    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*20;}
+    else singles.push(x);
+  });
+  if(agg.barrel.n){ set('C'+r,agg.barrel.n,{sz:9}); set('I'+r,'BARREL',{sz:9}); set('K'+r,agg.barrel.cu,{sz:9}); set('L'+r,'24X24X44',{sz:9}); r++; }
+  if(agg.bin.n){ set('C'+r,agg.bin.n,{sz:9}); set('I'+r,'COMMERCIAL BINS',{sz:9}); set('K'+r,agg.bin.cu,{sz:9}); set('L'+r,'48X24X44',{sz:9}); r++; }
+  singles.forEach(x=>{
+    set('A'+r,'BL#'+x.o.inv,{sz:9}); set('C'+r,parseFloat(x.it.qty)||1,{sz:9});
+    set('I'+r,String(x.it.desc).toUpperCase(),{sz:9}); set('K'+r,parseFloat(x.it.cuft)||'',{sz:9});
+    set('L'+r,x.it.dims||'',{sz:9}); r++;
+  });
+  const noteR=r+1;
+  set('H'+noteR,hdr.loadNote,{b:1,sz:10});
+  const totR=noteR+2;
+  set('A'+totR,'TOTAL NO. PIECES',{b:1,sz:9});
+  ws.getCell('C'+totR).value={formula:`SUM(C31:C${r})`}; ws.getCell('C'+totR).font={bold:true,size:10};
+  ws.getCell('K'+totR).value={formula:`SUM(K31:K${r})`}; ws.getCell('K'+totR).font={bold:true,size:10};
+  let f=totR+2;
+  set('A'+f,'(23) DECLARED VALUE $____________________ IF SHIPPER ENTERS A VALUE, CARRIER\'S',{sz:7});
+  set('I'+f,'(24) FREIGHT PAYABLE AT',{sz:7}); set('K'+f,'MASTER B/L',{b:1,sz:10});
+  set('A'+(f+1),'         "PACKAGE" LIABILITY DOES NOT APPLY AND THE AD VALOREM RATE WILL BE CHARGED',{sz:7});
+  set('I'+(f+1),'FREIGHT PREPAID',{b:1,sz:9});
+  set('A'+(f+2),'FREIGHT CHARGES',{sz:8}); set('C'+(f+2),'RATED AS',{sz:7}); set('E'+(f+2),'PER',{sz:7});
+  set('G'+(f+2),'RATE',{sz:7}); set('H'+(f+2),'PREPAID',{sz:7}); set('I'+(f+2),'COLLECT',{sz:7}); set('J'+(f+2),'CURRENCY/RATE OF EXCHANGE',{sz:7});
+  set('A'+(f+3),'PREPAID',{sz:9});
+  set('A'+(f+5),"THE RECEIPT, CUSTODY, CARRIAGE AND DELIVERY OF THE GOODS ARE SUBJECT TO THE",{sz:7});
+  set('A'+(f+6),"TERMS APPEARING ON THE FACE AND BACK HEREOF AND TO CARRIER'S APPLICABLE TARIFF",{sz:7});
+  set('I'+(f+5),'* Applicable only when used for multimodal or through transportation',{sz:6});
+  set('I'+(f+6),'** Indicate whether any of the cargo is hazardous material under DOT,',{sz:6});
+  set('G'+(f+8),hdr.carrier,{b:1,sz:9});
+  set('A'+(f+8),'In witness whereof                       original bills of lading all the same tenor and',{sz:7});
+  set('A'+(f+9),'date one of which being accomplished, the others to stand void, have been',{sz:7});
+  set('G'+(f+10),'By: ………………………………………………………………………………………………………………………………………',{sz:8});
+  set('G'+(f+11),'BILL OF LADING NO.',{sz:8}); set('J'+(f+11),'DATE:',{sz:8});
+  ws.getCell('K'+(f+11)).value=new Date(); ws.getCell('K'+(f+11)).numFmt='m/d/yyyy';
+  const buf=await wb.xlsx.writeBuffer();
+  dl(buf, `MASTER BL - ${dest.toUpperCase()} - ${monthLabel(ym).toUpperCase()}.xlsx`);
+}
+async function buildManifestXlsx(ym,dest){
+  const os = monthOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
+  if(!os.length){ toast('Nothing to manifest'); return; }
+  const M=V2.mbl;
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('Manifest');
+  [['A',1.7],['B',6],['C',9],['D',9],['E',30],['F',10],['G',34],['H',9],['I',26],['J',5],['K',9],['M',11]].forEach(([c,w])=>ws.getColumn(c).width=w);
+  const set=(cell,v,b,sz)=>{ const c=ws.getCell(cell); c.value=v; c.font={bold:!!b,size:sz||10}; };
+  set('E3',M.carrier,1,14);
+  set('G5','MANIFEST',1,16);
+  set('B8','FROM',1); set('H8','TO:',1); set('I8',(hdrBrokerName||'').trim()||dest,0,10);
+  set('E9',M.manFrom);
+  set('B10','ADDRESS',1); set('H10','ADDRESS',1);
+  set('E11',M.manFromAddr); set('I11',hdrBrokerAddr.split('\n')[0]||'');
+  set('C13',M.manFromCity); set('E13',M.manFromState); set('F13',M.manFromZip);
+  set('I13',dest+', St. Lucia');
+  set('B15','Tel: ',1); set('E15',M.manFromTel); set('H15','Tel:',1); set('I15',M.relTel);
+  set('B18','CARRIER:',1); set('E18',hdrVessel||'');
+  set('B20','DATE SHIPPED:',1); set('E20',new Date());
+  set('B22','CONTAINER #',1); set('E22',hdrBkg||'');
+  set('B24','DESTINATION:',1); set('E24',(dest+', ST. LUCIA').toUpperCase());
+  set('B26','ETA DATE:',1);
+  const totalPk = os.reduce((s,o)=>s+o.items.filter(it=>it.kind!=='product').reduce((x,it)=>x+(parseFloat(it.qty)||0),0),0);
+  const totalCu = os.reduce((s,o)=>s+o.items.filter(it=>it.kind!=='product').reduce((x,it)=>x+(parseFloat(it.cuft)||0),0),0);
+  set('J27','TOTAL # PACKAGES',1); set('M27',totalPk,1);
+  set('J28','TOTAL VOLUME',1); set('M28',Math.round(totalCu*10)/10,1);
+  set('C32','B/L #',1); set('E32','Sender:',1); set('G32','Consignee:',1); set('I32','Contents:',1); set('K32','Vol-ft³',1);
+  let r=35; let n=1;
+  for(const o of os){
+    set('C'+(r+1),o.inv,1,11); set('D'+(r+1),'Name:'); set('E'+(r+1),o.sh.name||''); set('G'+(r+1),o.co.name||'');
+    set('C'+(r+2),n); set('D'+(r+2),'Address:'); set('E'+(r+2),o.sh.street||''); set('G'+(r+2),o.co.city||'');
+    set('E'+(r+3),[o.sh.city,o.sh.state].filter(Boolean).join(', ')); set('G'+(r+3),'St. Lucia');
+    const its=o.items.filter(it=>it.kind!=='product'&&it.desc);
+    its.forEach((it,i)=>{ set('H'+(r+i),parseFloat(it.qty)||1); set('I'+(r+i),it.desc.toUpperCase()+' S.T.C PERSONAL EFFECTS'); set('K'+(r+i),parseFloat(it.cuft)||''); });
+    set('D'+(r+6),'tel#'); set('E'+(r+6),o.sh.phone||''); set('F'+(r+6),'tel#'); set('G'+(r+6),o.co.phone||'');
+    if(orderBal(o)>0){ set('I'+(r+6),'HOLD',1,11); ws.getCell('I'+(r+6)).font={bold:true,color:{argb:'FFC00000'},size:11}; }
+    r += Math.max(8, its.length+6); n++;
+  }
+  const buf=await wb.xlsx.writeBuffer();
+  dl(buf, `Manifest - ${dest.toUpperCase()} - ${monthLabel(ym).toUpperCase()}.xlsx`);
+}
+async function buildRevenueXlsx(ym){
+  const rows=monthOrders(ym);
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet(MONTH_NAMES[+ym.split('-')[1]-1]);
+  [['A',14.7],['B',14.7],['C',12],['D',26.7],['E',12.7],['F',14.7],['G',12.7],['H',12]].forEach(([c,w])=>ws.getColumn(c).width=w);
+  ws.getCell('A1').value='      MONTHLY REVENUES'; ws.getCell('A1').font={bold:true,size:12};
+  ws.getCell('A2').value=monthLabel(ym).toUpperCase(); ws.getCell('A2').font={bold:true};
+  const H=['DATE','TYPE','DESTINATION','RECEIVED FROM','INVOICE#','FREIGHT $',"AMT REC'D",'BAL/COD'];
+  H.forEach((h,i)=>{ const c=ws.getRow(3).getCell(i+1); c.value=h; c.font={bold:true}; c.border=B; });
+  let r=4;
+  rows.forEach(o=>{
+    const row=ws.getRow(r);
+    row.getCell(1).value=o.invDate?new Date(o.invDate+'T12:00:00'):''; row.getCell(1).numFmt='m/d/yyyy';
+    row.getCell(2).value=o.paid?'PAID':'BALANCE';
+    row.getCell(3).value=o.co.city||'';
+    row.getCell(4).value=o.recv||'SEA FREIGHT';
+    row.getCell(5).value=isNaN(+o.inv)?o.inv:+o.inv;
+    row.getCell(6).value=orderTotal(o);
+    row.getCell(7).value=parseFloat(o.amtRecd)||0;
+    row.getCell(8).value={formula:`F${r}-G${r}`};
+    r++;
+  });
+  const t=ws.getRow(r+1);
+  t.getCell(5).value='TOTALS'; t.getCell(5).font={bold:true};
+  t.getCell(6).value={formula:`SUM(F4:F${r-1})`}; t.getCell(6).font={bold:true};
+  t.getCell(7).value={formula:`SUM(G4:G${r-1})`}; t.getCell(7).font={bold:true};
+  t.getCell(8).value={formula:`SUM(H4:H${r-1})`}; t.getCell(8).font={bold:true};
+  const p=ws.getRow(r+2);
+  p.getCell(5).value='PRODUCTS'; p.getCell(5).font={bold:true};
+  p.getCell(6).value=rows.reduce((s,o)=>s+productTotal(o),0); p.getCell(6).font={bold:true};
+  const buf=await wb.xlsx.writeBuffer();
+  dl(buf, `Monthly Revenue - ${monthLabel(ym)}.xlsx`);
+}
+/* master B/L header confirm flow */
+let hdrBrokerName='', hdrBrokerAddr='', hdrVessel='', hdrBkg='';
+function mblHeaderFields(dest){
+  const M=V2.mbl;
+  return [
+    ['brokerName','Broker / Consignee', 'select'],
+    ['carrier','Carrier', M.carrier], ['trucking','Trucking', M.trucking],
+    ['shipper','Shipper / Exporter', M.shipper, 5], ['forwarder','Freight Forwarder / CHB', M.forwarder, 3],
+    ['origin','Point & Country of Origin', M.origin], ['notify','Notify Party', M.notify],
+    ['vessel','Vessel', ''], ['bkg','Booking # (BKG)', ''],
+    ['loadNote','Note to carrier', M.loadNote],
+  ];
+}
+$('#mfMaster').addEventListener('click',()=>{
+  const dest=$('#mfDest').value;
+  const card=$('#mfHeadCard'); card.hidden=false;
+  $('#mfHeadFields').innerHTML = mblHeaderFields(dest).map(([k,l,v,rows])=>{
+    if(v==='select'){
+      return `<div style="grid-column:span 2"><label class="f">${l}</label>
+        <select class="f" data-mh="${k}">${V2.brokers.map(b=>`<option>${esc(b.name)}</option>`).join('')}</select></div>`;
+    }
+    return rows
+      ? `<div><label class="f">${l}</label><textarea class="f" data-mh="${k}" rows="${rows}">${esc(v)}</textarea></div>`
+      : `<div><label class="f">${l}</label><input class="f" data-mh="${k}" value="${esc(v)}"></div>`;
+  }).join('');
+  card.scrollIntoView({behavior:'smooth'});
+});
+$('#mfHeadCancel').addEventListener('click',()=>{ $('#mfHeadCard').hidden=true; });
+$('#mfHeadGo').addEventListener('click',async ()=>{
+  const dest=$('#mfDest').value; const vals={};
+  $$('#mfHeadFields [data-mh]').forEach(f=>vals[f.dataset.mh]=f.value);
+  const broker=V2.brokers.find(b=>b.name===vals.brokerName)||V2.brokers[0];
+  hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr; hdrVessel=vals.vessel; hdrBkg=vals.bkg;
+  const hdr={ ...vals, brokerName:broker.name,
+    consignee: broker.name+'\n'+broker.addr };
+  try{
+    await buildMasterBL(thisMonth(), dest, hdr);
+    await buildManifestXlsx(thisMonth(), dest);
+    $('#mfHeadCard').hidden=true;
+    toast('Master B/L + Manifest downloaded');
+  }catch(e){ alert('Could not build: '+e.message); }
+});
+$('#mfXlsx').addEventListener('click',()=>buildManifestXlsx(thisMonth(),$('#mfDest').value));
+$('#btnRevXlsx').addEventListener('click',()=>buildRevenueXlsx(thisMonth()));
+/* ---------- 12. PREVIOUS ACTIVITY ---------- */
+function renderPrev(){
+  const ym=$('#pvMonth').value || (()=>{ const d=new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
+  $('#pvMonth').value=ym;
+  const rows=monthOrders(ym);
+  $('#pvStats').innerHTML = statCards(rows);
+  $('#pvList').innerHTML = cargoTable(rows, true);
+}
+$('#pvMonth').addEventListener('change',renderPrev);
+$('#pvManifest').addEventListener('click',()=>buildManifestXlsx($('#pvMonth').value,$('#pvDest').value));
+$('#pvMaster').addEventListener('click',()=>{
+  const broker=V2.brokers[0]; hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
+  buildMasterBL($('#pvMonth').value, $('#pvDest').value,
+    { ...V2.mbl, brokerName:broker.name, consignee:broker.name+'\n'+broker.addr, bkg:'', vessel:'' });
+});
+$('#pvRev').addEventListener('click',()=>buildRevenueXlsx($('#pvMonth').value));
+/* ---------- 13. SETTINGS ---------- */
+function listEditor(holder, list, cols, onChange){
+  const el=$(holder);
+  el.innerHTML = list.map((row,i)=>`<div class="grid" style="grid-template-columns:${cols.map(c=>c.w||'1fr').join(' ')} 30px;gap:8px;margin-bottom:6px">
+    ${cols.map(c=>c.ta
+      ? `<textarea class="f" data-le="${i}" data-k="${c.k}" rows="3">${esc(row[c.k]??'')}</textarea>`
+      : `<input class="f" data-le="${i}" data-k="${c.k}" value="${esc(row[c.k]??'')}" placeholder="${c.p||''}">`).join('')}
+    <button class="x" data-ledel="${i}" style="font-size:15px">×</button>
+  </div>`).join('') || '<p class="hint">Nothing yet.</p>';
+  $$(holder+' [data-le]').forEach(f=>f.addEventListener('input',()=>{ list[+f.dataset.le][f.dataset.k]=f.value; if(onChange) onChange(); }));
+  $$(holder+' [data-ledel]').forEach(b=>b.addEventListener('click',()=>{ list.splice(+b.dataset.ledel,1); listEditor(holder,list,cols,onChange); if(onChange) onChange(); }));
+}
+function renderSettingsV2(){
+  $('#sFieldRows').innerHTML = Object.entries(V2.fields).map(([k,f])=>`
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;min-width:70px">
+        <input type="checkbox" data-fon="${k}" ${f.on?'checked':''}> show</label>
+      <input class="f" data-flabel="${k}" value="${esc(f.label)}" style="max-width:260px">
+    </div>`).join('');
+  $$('#sFieldRows [data-fon]').forEach(c=>c.addEventListener('change',()=>{ V2.fields[c.dataset.fon].on=c.checked; renderHdrExtra(); }));
+  $$('#sFieldRows [data-flabel]').forEach(f=>f.addEventListener('input',()=>{ V2.fields[f.dataset.flabel].label=f.value; }));
+  listEditor('#sDestRows', V2.dests, [
+    {k:'name',p:'Destination',w:'1.4fr'},{k:'rate',p:'$/cu ft',w:'.6fr'},
+    {k:'barrel',p:'Barrel flat $',w:'.7fr'},{k:'bin',p:'Bin flat $',w:'.7fr'}], fillDestSelects);
+  listEditor('#sProdRows', V2.products, [{k:'name',p:'Product',w:'1.6fr'},{k:'price',p:'$',w:'.5fr'}]);
+  listEditor('#sRecvRows', V2.recv.map(r=>({v:r})), [{k:'v',p:'Option'}], null);
+  /* recv is array of strings — rebind */
+  $$('#sRecvRows [data-le]').forEach(f=>f.addEventListener('input',()=>{ V2.recv[+f.dataset.le]=f.value; fillDestSelects(); }));
+  $$('#sRecvRows [data-ledel]').forEach(b=>b.addEventListener('click',()=>{ V2.recv.splice(+b.dataset.ledel,1); renderSettingsV2(); fillDestSelects(); }));
+  listEditor('#sBrokerRows', V2.brokers, [{k:'name',p:'Broker name',w:'1fr'},{k:'addr',p:'Address block',ta:1,w:'1.4fr'}]);
+  const M=V2.mbl;
+  const rows=[['carrier','Carrier'],['trucking','Trucking'],['shipper','Shipper block',4],['forwarder','Forwarder block',3],
+    ['origin','Origin'],['notify','Notify party'],['loadNote','Note to carrier'],
+    ['manFrom','Manifest FROM name'],['manFromAddr','FROM address'],['manFromCity','FROM city'],
+    ['manFromState','FROM state'],['manFromZip','FROM zip'],['manFromTel','FROM tel'],['relTel','Cargo-release tel']];
+  $('#sMblFields').innerHTML = rows.map(([k,l,ta])=> ta
+    ? `<div><label class="f">${l}</label><textarea class="f" data-mbl="${k}" rows="${ta}">${esc(M[k]||'')}</textarea></div>`
+    : `<div><label class="f">${l}</label><input class="f" data-mbl="${k}" value="${esc(M[k]||'')}"></div>`).join('');
+  $$('#sMblFields [data-mbl]').forEach(f=>f.addEventListener('input',()=>{ V2.mbl[f.dataset.mbl]=f.value; }));
+}
+$('#sDestAdd').addEventListener('click',()=>{ V2.dests.push({name:'',rate:'',barrel:'',bin:''}); renderSettingsV2(); });
+$('#sProdAdd').addEventListener('click',()=>{ V2.products.push({name:'',price:''}); renderSettingsV2(); });
+$('#sRecvAdd').addEventListener('click',()=>{ V2.recv.push(''); renderSettingsV2(); });
+$('#sBrokerAdd').addEventListener('click',()=>{ V2.brokers.push({name:'',addr:''}); renderSettingsV2(); });
+/* publish the destination pricing to the WEBSITE (legacy 'pricing' shape) */
+async function publishPricing(){
+  const legacy = await DB.load('pricing', {});
+  const dests = V2.dests.filter(d=>d.name);
+  const cargo = [
+    {id:'barrel', label:'Barrel (15 cu ft)', cuft:15, prices:{}},
+    {id:'bin', label:'Commercial Bin (20 cu ft)', cuft:20, prices:{}},
+    {id:'box', label:'Box — Enter Measurements', custom:true, prices:{}},
+    {id:'ebl', label:'Other (B/L Number)', ebl:true, prices:{}},
+  ];
+  dests.forEach(d=>{
+    if(d.barrel) cargo[0].prices[d.name]=Number(d.barrel);
+    if(d.bin) cargo[1].prices[d.name]=Number(d.bin);
+  });
+  const pricing = { ...legacy,
+    cargo,
+    destinations: dests.map(d=>({name:d.name, rate:Number(d.rate)||0, country:'St. Lucia'}))
+      .concat([{name:'Other island', call:true}]),
+  };
+  await DB.save('pricing', pricing);
+}
+async function saveAllSettings(){
+  const SF={sName:'name',sAddr:'addr',sTel:'tel',sFax:'fax',sTitle:'title',sNext:'next',sRows:'rows',sRate:'rate'};
+  for(const id in SF){ const el=$('#'+id); if(el) S[SF[id]]=el.value; }
   await DB.save('fcs:settings', S);
+  await DB.save('fcs:v2', V2);
+  await publishPricing();
+  fillDestSelects(); repriceAll(); renderItems(); renderPreview();
+  toast('Settings saved — website pricing updated');
 }
-/* ============================================================
-   7. EVENTS
-   ============================================================ */
+$('#btnSaveSettings').addEventListener('click',saveAllSettings);
+$('#btnSaveSettings2').addEventListener('click',saveAllSettings);
+/* ---------- 14. events: items + lists + tabs ---------- */
 $$('.rail nav button').forEach(b=>b.addEventListener('click',()=>{
   $$('.rail nav button').forEach(x=>x.setAttribute('aria-current', x===b));
   $$('[data-panel]').forEach(p=>p.hidden = p.dataset.panel!==b.dataset.tab);
   if(b.dataset.tab==='order') renderPreview();
+  if(b.dataset.tab==='orders') renderOrders();
+  if(b.dataset.tab==='customers') loadQuotes();
+  if(b.dataset.tab==='manifest') renderManifest();
+  if(b.dataset.tab==='prev') renderPrev();
 }));
 function goTab(t){ const b=$(`.rail nav button[data-tab="${t}"]`); if(b) b.click(); }
-// header + party inputs
 Object.keys(HDR).concat(Object.keys(SH),Object.keys(CO)).forEach(id=>{
-  $('#'+id).addEventListener('input',()=>{ formToDraft(); renderPreview(); });
+  const el=$('#'+id); if(!el) return;
+  const evt = el.tagName==='SELECT' ? 'change' : 'input';
+  el.addEventListener(evt,()=>{
+    formToDraft();
+    if(id==='fCoCity'){ repriceAll(); renderItems(); }
+    renderPreview();
+  });
 });
+$('#fRecv').addEventListener('change',()=>{ formToDraft(); });
+$('#fAmtRecd').addEventListener('input',()=>{ formToDraft(); });
 $('#fShowTotal').addEventListener('change',()=>{ formToDraft(); renderPreview(); });
-// customer picker fills both blocks
-/* ---- website quotes → order (the Darnell flow) ---- */
-let webQuotes=[];
-async function loadWebQuotes(){
-  if(!SBC) return;
-  try{
-    const {data,error} = await SBC.from('quote_requests').select('*').order('created_at',{ascending:false}).limit(50);
-    if(error || !data) return;
-    webQuotes = data;
-    $('#fQuote').innerHTML = '<option value="">— pull in a website quote —</option>' +
-      webQuotes.map(q=>`<option value="${q.id}">${q.status==='new'?'● ':''}${esc(q.name)} · $${(q.total_cents/100).toLocaleString()} · ${esc(q.destination||'')} · ${new Date(q.created_at).toLocaleDateString()}</option>`).join('');
-  }catch(e){ console.warn('quotes load skipped', e); }
-}
-async function applyQuote(q){
-  /* file the customer automatically so Darnell is one click next time */
-  const digits = s => String(s||'').replace(/\D/g,'');
-  let c = customers.find(x =>
-    (q.email && x.email && x.email.toLowerCase()===String(q.email).toLowerCase()) ||
-    (digits(q.phone) && digits(x.phone)===digits(q.phone)));
-  if(!c){
-    c = { id:uid(), name:String(q.name||'').toUpperCase(), name2:'', street:String(q.address||'').toUpperCase(),
-          city:'', state:'', phone:q.phone||'', email:q.email||'',
-          notes:'From website quote · '+new Date(q.created_at).toLocaleDateString(), co:{} };
-    customers = customers.concat(c);
-    await persist(); renderCustomers(); renderCustomerSelect();
-    toast((q.name||'Customer')+' added to customers on file');
-  }
-  draft = blankOrder();
-  draft.customerId = c.id;
-  draft._quoteId = q.id;
-  draft.sh = { name:String(q.name||'').toUpperCase(), name2:'', street:String(q.address||c.street||'').toUpperCase(),
-               city:c.city||'', state:c.state||'', phone:q.phone||'' };
-  draft.co = { ...draft.co, city: q.destination ? String(q.destination).toUpperCase()+', ST. LUCIA' : '' };
-  if(q.pickup_slot) draft.service = ('PICKUP: '+q.pickup_slot).toUpperCase();
-  /* the consignee from the website goes into the CONSIGNEE block, not a line item */
-  const extras = Array.isArray(q.extras) ? q.extras.slice() : [];
-  const ci = extras.findIndex(x=>/^Consignee:/i.test(String(x)));
-  if(ci > -1){
-    const parts = String(extras.splice(ci,1)[0]).replace(/^Consignee:\s*/i,'').split(' · ').map(s=>s.trim()).filter(Boolean);
-    const coName = parts.shift() || '';
-    let coPhone = '';
-    if(parts.length && String(parts[parts.length-1]).replace(/\D/g,'').length >= 7) coPhone = parts.pop();
-    draft.co = { ...draft.co,
-      name: coName.toUpperCase(),
-      phone: coPhone,
-      city: (parts.join(', ') || draft.co.city || '').toUpperCase() };
-  }
-  const items = [{ qty:String(q.quantity||1), part:'', desc:String(q.cargo||'').toUpperCase(), price:'', amount:(q.total_cents/100).toFixed(2) }];
-  if(extras.length)
-    items.push({ qty:'', part:'', desc:('INCL: '+extras.join(', ')).toUpperCase(), price:'', amount:'' });
-  draft.items = items.concat([blankItem()]);
-  goTab('order');
-  draftToForm();
-  toast('Quote loaded — check it over, save, then bill it');
-}
-$('#fQuote').addEventListener('change',()=>{
-  const q = webQuotes.find(x=>String(x.id)===$('#fQuote').value);
-  if(q) applyQuote(q);
-});
-
-$('#fCustomer').addEventListener('change',e=>{
-  const c = customers.find(x=>x.id===e.target.value);
-  if(c){
-    draft.sh = {name:c.name||'',name2:c.name2||'',street:c.street||'',city:c.city||'',state:c.state||'',phone:c.phone||''};
-    if(c.co) draft.co = {name:c.co.name||'',name2:c.co.name2||'',title:c.co.title||'',org:c.co.org||'',city:c.co.city||'',phone:c.co.phone||''};
-  }
-  draft.customerId = e.target.value;
-  draftToForm();
-});
-// line items
 $('#itemRows').addEventListener('input',e=>{
   const tr=e.target.closest('tr'); if(!tr) return;
   const i=+tr.dataset.i, k=e.target.dataset.k;
   if(!k) return;
   draft.items[i][k]=e.target.value;
-  if(k==='qty'||k==='price') draft.items[i].amount='';
+  if(k==='dims' && String(draft.items[i].desc).toLowerCase()==='box'){
+    priceItem(draft.items[i], draft.co.city);
+    renderItems();
+  }
+  if(k==='qty' || k==='price') draft.items[i].amount='';
   $('#orderTotal').textContent = money(orderTotal(draft));
-  const amtIn = tr.querySelector('[data-k="amount"]');
-  if(k!=='amount' && amtIn){ const a=itemAmount(draft.items[i]); amtIn.placeholder = a?a.toFixed(2):''; amtIn.value=''; }
   renderPreview();
 });
 $('#itemRows').addEventListener('change',e=>{
   const tr=e.target.closest('tr'); if(!tr) return;
   const i=+tr.dataset.i;
-  if(e.target.dataset.k==='desc' && e.target.tagName==='SELECT' && e.target.value==='Other'){
-    draft.items[i]._descOther=true; draft.items[i].desc='';
+  if(e.target.dataset.k==='desc'){
+    const v=e.target.value;
+    if(v==='Other'){ draft.items[i]._descOther=true; draft.items[i].desc=''; renderItems(); renderPreview();
+      const inp=$(`#itemRows tr[data-i="${i}"] [data-k="desc"]`); if(inp) inp.focus(); return; }
+    draft.items[i].desc=v; draft.items[i]._descOther=false;
+    if(draft.items[i].kind==='product'){
+      const p=V2.products.find(x=>x.name===v);
+      if(p) draft.items[i].price=String(p.price);
+    } else {
+      priceItem(draft.items[i], draft.co.city);
+    }
     renderItems(); renderPreview();
-    const inp=$('#itemRows').querySelector(`tr[data-i="${i}"] [data-k="desc"]`);
-    if(inp) inp.focus();
   }
 });
 $('#itemRows').addEventListener('click',e=>{
-  const n=e.target.dataset.nci;
-  if(n!==undefined){
-    /* non-cargo item: empty box, supplies, a fee — real thing on the invoice,
-       but NOT a piece of cargo, so it never counts toward "1 of N pieces" */
-    draft.items[+n].nci=!draft.items[+n].nci;
-    renderItems(); renderPreview();
-    return;
-  }
   const d=e.target.dataset.del; if(d===undefined) return;
   draft.items.splice(+d,1);
   if(!draft.items.length) draft.items.push(blankItem());
   renderItems(); renderPreview();
 });
 $('#btnAddItem').addEventListener('click',()=>{ draft.items.push(blankItem()); renderItems(); renderPreview(); });
-// order actions
+$('#btnAddProduct').addEventListener('click',()=>{ draft.items.push(blankItem('product')); renderItems(); renderPreview(); });
 $('#btnNewOrder').addEventListener('click',()=>{ draft=blankOrder(); draftToForm(); toast('Blank order ready'); });
-$('#btnSaveOrder').addEventListener('click',async()=>{
-  formToDraft();
-  if(!String(draft.inv).trim()) return toast('An invoice number is required');
-  if(!draft.sh.name.trim())     return toast('A shipper name is required');
-  if(draft.id){
-    orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
-    toast('Order '+draft.inv+' updated');
-  }else{
-    draft.id = uid();
-    orders.unshift({...draft});
-    if(String(draft.inv)===String(S.next)){ S.next = bumpInvoice(S.next); $('#sNext').value=S.next; }
-    toast('Order '+draft.inv+' saved');
-  }
-  await persist(); renderOrders(); renderBilling();
-  $('#orderTitle').textContent='Order '+draft.inv;
-});
-$('#btnPrint').addEventListener('click',()=>{
-  formToDraft();
-  $('#printroot').innerHTML = formHTML(draft);
-  window.print();
-});
+$('#btnSaveOrder').addEventListener('click',async()=>{ if(await saveDraft()){ draft.created?toast('Saved'):toast('Saved as draft — hit Create to bill it'); renderActions(); } });
+$('#btnCargoCreate').addEventListener('click',()=>{ draft=blankOrder(); goTab('order'); draftToForm(); });
 $('#ordersList').addEventListener('click',async e=>{
   const t=e.target;
   if(t.dataset.openo){
@@ -1225,171 +1544,131 @@ $('#ordersList').addEventListener('click',async e=>{
     const o=orders.find(x=>x.id===t.dataset.dupo); if(!o) return;
     draft=JSON.parse(JSON.stringify(o));
     draft.id=null; draft.inv=S.next; draft.invDate=todayISO(); draft.pickup=todayISO(); draft.time=nowTime();
-    draft.container=''; draft.code='';
-    draft.eblNo=''; draft.qbInvoiceNo=''; draft.paid=false;
+    draft.created=false; draft.qbInvoiceNo=''; draft.qbOk=null; draft.paid=false; draft.amtRecd='';
     goTab('order'); draftToForm(); toast('Copied — new invoice number');
   }
   if(t.dataset.delo){
     const o=orders.find(x=>x.id===t.dataset.delo); if(!o) return;
-    if(!confirm('Delete order '+o.inv+'?'+(o.eblNo?' Its EB/L, tracking, and warehouse entry go with it.':'')+' This cannot be undone.')) return;
-    /* orders are the source of truth — deleting one clears its EB/L,
-       tracked shipment, and warehouse item everywhere (Customers tab + WMS) */
-    if(o.eblNo && SBC){
+    if(!confirm('Delete cargo '+o.inv+'? This cannot be undone.')) return;
+    if(SBC){
       try{
-        await SBC.from('wms_items').delete().eq('ebl_no', o.eblNo);
-        const {data:shs} = await SBC.from('shipments').select('id').eq('ebl_no', o.eblNo);
+        await SBC.from('wms_items').delete().eq('ebl_no', String(o.inv));
+        const {data:shs} = await SBC.from('shipments').select('id').eq('ebl_no', String(o.inv));
         for(const s of (shs||[])) await SBC.from('shipment_events').delete().eq('shipment_id', s.id);
-        await SBC.from('shipments').delete().eq('ebl_no', o.eblNo);
-        await SBC.from('ebl').delete().eq('ebl_no', o.eblNo);
-      }catch(e){ console.warn('linked-record cleanup:', e.message); }
+        await SBC.from('shipments').delete().eq('ebl_no', String(o.inv));
+        await SBC.from('ebl').delete().eq('ebl_no', String(o.inv));
+      }catch(err){}
     }
-    orders=orders.filter(x=>x.id!==o.id); await persist(); renderOrders(); toast('Order deleted everywhere');
+    orders=orders.filter(x=>x.id!==o.id); await persist(); renderOrders(); toast('Deleted everywhere');
+  }
+});
+$('#pvList').addEventListener('click',e=>{
+  const t=e.target;
+  if(t.dataset.openo){
+    const o=orders.find(x=>x.id===t.dataset.openo); if(!o) return;
+    draft=JSON.parse(JSON.stringify(o)); goTab('order'); draftToForm();
   }
 });
 $('#qOrders').addEventListener('input',renderOrders);
-// customers
-const CF={cName:'name',cName2:'name2',cStreet:'street',cCity:'city',cState:'state',cPhone:'phone',cEmail:'email',cNotes:'notes'};
-const CFCO={cCoName:'name',cCoName2:'name2',cCoTitle:'title',cCoOrg:'org',cCoCity:'city',cCoPhone:'phone'};
-function openCustForm(c){
-  editingCustomer = c || null;
-  $('#custFormTitle').textContent = c ? 'Edit '+c.name : 'Add customer';
-  for(const id in CF)   $('#'+id).value = c ? (c[CF[id]]||'') : '';
-  for(const id in CFCO) $('#'+id).value = (c&&c.co) ? (c.co[CFCO[id]]||'') : '';
-  $('#custForm').hidden=false; $('#cName').focus();
-}
-$('#btnAddCust').addEventListener('click',()=>openCustForm(null));
-$('#btnCancelCust').addEventListener('click',()=>{ $('#custForm').hidden=true; editingCustomer=null; });
-$('#btnSaveCust').addEventListener('click',async()=>{
-  const rec={id:editingCustomer?editingCustomer.id:uid(), co:{}};
-  for(const id in CF)   rec[CF[id]]   = $('#'+id).value.trim();
-  for(const id in CFCO) rec.co[CFCO[id]] = $('#'+id).value.trim();
-  if(!rec.name) return toast('A customer name is required');
-  customers = editingCustomer ? customers.map(c=>c.id===rec.id?rec:c) : customers.concat(rec);
-  await persist();
-  $('#custForm').hidden=true; editingCustomer=null;
-  renderCustomers(); renderCustomerSelect(); toast('Customer saved');
-});
-$('#custList').addEventListener('click',async e=>{
-  const t=e.target;
-  if(t.dataset.editc) openCustForm(customers.find(c=>c.id===t.dataset.editc));
-  if(t.dataset.delc){
-    const c=customers.find(x=>x.id===t.dataset.delc); if(!c) return;
-    if(!confirm('Delete '+c.name+'? Saved orders keep their own copy of the address.')) return;
-    customers=customers.filter(x=>x.id!==c.id); await persist();
-    renderCustomers(); renderCustomerSelect(); toast('Customer deleted');
-  }
-  if(t.dataset.neworder){
-    draft=blankOrder(); draft.customerId=t.dataset.neworder;
-    goTab('order'); draftToForm();
-    $('#fCustomer').value=t.dataset.neworder;
-    $('#fCustomer').dispatchEvent(new Event('change'));
-  }
-});
-$('#qCust').addEventListener('input',renderCustomers);
-// settings
-const SF={sName:'name',sAddr:'addr',sTel:'tel',sFax:'fax',sTitle:'title',sNext:'next',sRows:'rows',sRate:'rate'};
-$('#btnSaveSettings').addEventListener('click',async()=>{
-  for(const id in SF) S[SF[id]] = $('#'+id).value;
-  S.rows = Math.min(24, Math.max(6, Number(S.rows)||13));
-  $('#sRows').value = S.rows;
-  await persist(); renderPreview(); toast('Settings saved');
-});
-// backup / restore / wipe
-function download(name, text, type){
-  const b=new Blob([text],{type:type||'application/json'}), u=URL.createObjectURL(b);
-  const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u);
-}
-function doExport(){
-  download(`fcs-backup-${todayISO()}.json`, JSON.stringify({v:1,settings:S,customers,orders},null,2));
-  toast('Backup downloaded');
-}
-$('#btnExport').addEventListener('click',doExport);
-$('#btnExport2').addEventListener('click',doExport);
-$('#btnImport').addEventListener('click',()=>$('#fileImport').click());
-$('#fileImport').addEventListener('change',e=>{
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=async()=>{
-    try{
-      const d=JSON.parse(r.result);
-      if(!d || !Array.isArray(d.customers)) throw 0;
-      customers=d.customers; orders=Array.isArray(d.orders)?d.orders:[]; S={...DEFAULTS,...(d.settings||{})};
-      await persist(); boot(true); toast('Backup restored');
-    }catch(err){ toast('That file is not an FCS backup'); }
-  };
-  r.readAsText(f); e.target.value='';
-});
 $('#btnCsv').addEventListener('click',()=>{
-  const q=s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
-  const head=['Invoice','Invoice date','Pick up','PO','Container','Ship via','Shipper','Shipper city','Consignee','Consignee city','Total'];
-  const lines=[head.map(q).join(',')].concat(orders.map(o=>[
-    o.inv,usDate(o.invDate),usDate(o.pickup),o.po,o.container,o.shipVia,
-    o.sh.name,o.sh.city,[o.co.name,o.co.name2].filter(Boolean).join(' '),o.co.city,
-    orderTotal(o).toFixed(2)
-  ].map(q).join(',')));
-  download(`fcs-orders-${todayISO()}.csv`, lines.join('\r\n'), 'text/csv');
-  toast('CSV downloaded');
+  const rows=monthOrders(thisMonth());
+  const csv=[['DATE','TYPE','DESTINATION','RECEIVED FROM','INVOICE#','FREIGHT $',"AMT REC'D",'BAL/COD','SHIPPER','CONSIGNEE'].join(',')]
+    .concat(rows.map(o=>[usDate(o.invDate),o.paid?'PAID':'BALANCE',o.co.city,o.recv,o.inv,orderTotal(o).toFixed(2),(parseFloat(o.amtRecd)||0).toFixed(2),orderBal(o).toFixed(2),
+      '"'+String(o.sh.name||'').replace(/"/g,'""')+'"','"'+String(o.co.name||'').replace(/"/g,'""')+'"'].join(','))).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='cargo-'+thisMonth()+'.csv'; a.click();
+});
+/* backup / restore / wipe */
+$('#btnExport').addEventListener('click',exportJson);
+$('#btnExport2') && $('#btnExport2').addEventListener('click',exportJson);
+function exportJson(){
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({customers,orders,settings:S,v2:V2},null,1));
+  a.download='fcs-backup-'+todayISO()+'.json'; a.click();
+}
+$('#btnImport').addEventListener('click',()=>$('#fileImport').click());
+$('#fileImport').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(d.orders) orders=d.orders.map(migrateOrder);
+    if(d.customers) customers=d.customers;
+    if(d.settings) S={...DEFAULTS,...d.settings};
+    if(d.v2) V2={...JSON.parse(JSON.stringify(V2DEF)),...d.v2};
+    await persist(); await DB.save('fcs:v2',V2);
+    renderOrders(); toast('Restored');
+  }catch(err){ alert('Could not read that backup: '+err.message); }
 });
 $('#btnWipe').addEventListener('click',async()=>{
-  if(!confirm('Erase every customer and order? Download a backup first — this cannot be undone.')) return;
-  customers=[]; orders=[]; S={...DEFAULTS}; await persist(); boot(true); toast('All records erased');
+  if(prompt('This erases every order. Type ERASE to confirm.')!=='ERASE') return;
+  orders=[]; await persist(); renderOrders(); toast('All records erased');
 });
-window.addEventListener('resize',()=>{ if(!$('[data-panel="order"]').hidden) renderPreview(); });
-/* ============================================================
-   8. BOOT  (behind the staff login gate)
-   ============================================================ */
-function seed(){
-  const cid=uid();
-  customers=[{
-    id:cid,name:'CONSULATE',name2:'OF ST.LUCIA',street:'630 3RD AVE',city:'NEW YORK',state:'NY',
-    phone:'917-539-1607',email:'',notes:'Sample record — edit or delete',
-    co:{name:'JOHN',name2:'VICTORIN',title:'EXECUTIVE DIRECTOR',org:'SSDF',city:'CASTRIES, ST.LUCIA',phone:'758-733-9538'}
-  }];
-  const o=blankOrder();
-  o.id=uid(); o.inv='12930'; o.invDate='2026-06-19'; o.pickup='2026-06-09'; o.po='1060'; o.time='12:39:20 PM';
-  o.customerId=cid;
-  o.sh={name:'CONSULATE',name2:'OF ST.LUCIA',street:'630 3RD AVE',city:'NEW YORK',state:'NY',phone:'917-539-1607'};
-  o.co={name:'JOHN',name2:'VICTORIN',title:'EXECUTIVE DIRECTOR',org:'SSDF',city:'CASTRIES, ST.LUCIA',phone:'758-733-9538'};
-  o.items=[{qty:'6',part:'',desc:'PLASTIC BINS',price:'65.00',amount:''},{qty:'',part:'',desc:'36 CUBIC FT',price:'',amount:''}];
-  orders=[o];
+/* QuickBooks settings card */
+async function qbCheck(){
+  const el=$('#qbState');
+  try{
+    const res = await fetch(FN+'/ebl-status?qbstatus=1', { headers: await authHeaders() });
+    const d = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'unavailable');
+    if(!d.configured){ el.innerHTML='<b>Not set up.</b> Add QB_CLIENT_ID, QB_CLIENT_SECRET and QB_ENV in Netlify, then redeploy.'; $('#qbConnect').style.display='none'; }
+    else if(d.connected){ el.innerHTML='<b style="color:#177245">Connected</b> — company '+esc(d.realmId||'')+' ('+esc(d.env)+').'; $('#qbConnect').textContent='Reconnect QuickBooks'; }
+    else { el.innerHTML='<b>Set up, not connected yet.</b> Click Connect and sign in.'; }
+  }catch(e){ el.textContent='Could not check QuickBooks: '+e.message; }
 }
-function boot(skipLoad){
-  for(const id in SF) $('#'+id).value = S[SF[id]] ?? '';
-  renderCustomerSelect(); renderCustomers(); renderOrders();
+$('#qbRecheck').addEventListener('click',qbCheck);
+async function persist(){
+  await DB.save('fcs:customers', customers);
+  await DB.save('fcs:orders', orders);
+  await DB.save('fcs:settings', S);
+}
+/* ---------- 15. boot + auth gate ---------- */
+function boot(){
+  const SF={sName:'name',sAddr:'addr',sTel:'tel',sFax:'fax',sTitle:'title',sNext:'next',sRows:'rows',sRate:'rate'};
+  for(const id in SF){ const el=$('#'+id); if(el) el.value = S[SF[id]] ?? ''; }
+  fillDestSelects();
+  renderSettingsV2();
+  renderOrders();
   draft = blankOrder(); draftToForm();
 }
-let started = false;
+let started=false;
 async function startApp(){
   if(started) return;
-  started = true;
-  S         = {...DEFAULTS, ...(await DB.load('fcs:settings', {}))};
+  started=true;
+  S = {...DEFAULTS, ...(await DB.load('fcs:settings', {}))};
+  const v2 = await DB.load('fcs:v2', null);
+  if(v2){ V2 = {...JSON.parse(JSON.stringify(V2DEF)), ...v2,
+    fields:{...V2DEF.fields, ...(v2.fields||{})}, mbl:{...V2DEF.mbl, ...(v2.mbl||{})} }; }
+  else {
+    /* first run: pull destinations/prices from the legacy website pricing */
+    const legacy = await DB.load('pricing', null);
+    if(legacy && Array.isArray(legacy.destinations)){
+      const cargo = legacy.cargo||[];
+      const bar = cargo.find(c=>c.id==='barrel')||{prices:{}};
+      const bin = cargo.find(c=>c.id==='bin')||{prices:{}};
+      V2.dests = legacy.destinations.filter(d=>!d.call).map(d=>({
+        name:d.name, rate:d.rate||0,
+        barrel:(bar.prices||{})[d.name]||'', bin:(bin.prices||{})[d.name]||'' }));
+    }
+    await DB.save('fcs:v2', V2);
+  }
   customers = await DB.load('fcs:customers', null) || [];
-  orders    = await DB.load('fcs:orders', null) || [];
-  if(!customers.length && !orders.length) seed();
-  $('#storeState').textContent = DB.live
-    ? 'Saved to your FCS database.'
-    : 'Session only — Supabase not connected.';
+  orders    = (await DB.load('fcs:orders', null) || []).map(migrateOrder);
+  $('#storeState').textContent = DB.live ? 'Saved to your FCS database.' : 'Session only — Supabase not connected.';
   boot();
   await persist();
-  await loadWebQuotes();
-  /* deep link from the admin Quotes tab: /admin/orders/?quote=<id> */
-  const qp = new URLSearchParams(location.search).get('quote');
-  if(qp){
-    let q = webQuotes.find(x=>String(x.id)===qp);
-    if(!q && SBC){
-      try{ const {data} = await SBC.from('quote_requests').select('*').eq('id',qp).maybeSingle(); q = data; }catch(e){}
-    }
-    if(q){ await applyQuote(q); $('#fQuote').value = String(q.id); }
-  }
-  /* deep link from the admin Customers tab: /admin/orders/?inv=<invoice #> */
-  const ip = new URLSearchParams(location.search).get('inv');
+  await loadQuotes();
+  qbCheck();
+  /* deep links: ?quote= from admin days, ?inv= */
+  const params = new URLSearchParams(location.search);
+  const qp = params.get('quote');
+  if(qp){ goTab('customers'); const btn=$(`[data-mkorder="${qp}"]`); if(btn) btn.click(); }
+  const ip = params.get('inv');
   if(ip){
     const o = orders.find(x=>String(x.inv)===String(ip));
-    if(o){ draft=JSON.parse(JSON.stringify(o)); goTab('order'); draftToForm(); toast('Order '+o.inv+' opened'); }
-    else toast('No order with invoice #'+ip+' on this device');
+    if(o){ draft=JSON.parse(JSON.stringify(o)); goTab('order'); draftToForm(); }
   }
 }
-/* ---- staff login gate ---- */
 async function gateCheck(){
   if(!SBC){ $('#gate').hidden=false; $('#gateCfg').hidden=false; return; }
   const { data:{ session } } = await SBC.auth.getSession();
@@ -1402,19 +1681,18 @@ async function gateCheck(){
     $('#gate').hidden = false;
   }
 }
-$('#gBtn').addEventListener('click', async()=>{
-  const msg=$('#gMsg'); msg.textContent=''; msg.className='msg';
-  if(!SBC) return;
-  const { error } = await SBC.auth.signInWithPassword({
-    email:$('#gEmail').value.trim(), password:$('#gPass').value
-  });
+$('#gBtn').addEventListener('click', async ()=>{
+  const msg=$('#gMsg'); msg.className='msg';
+  const { error } = await SBC.auth.signInWithPassword({ email:$('#gEmail').value.trim(), password:$('#gPass').value });
   if(error){ msg.textContent=error.message; msg.className='msg err'; return; }
   gateCheck();
 });
 $('#gPass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#gBtn').click(); });
-$('#btnSignOut').addEventListener('click', async()=>{ if(SBC) await SBC.auth.signOut(); location.reload(); });
+$('#btnSignOut').addEventListener('click', async ()=>{ if(SBC) await SBC.auth.signOut(); location.reload(); });
 if(SBC) SBC.auth.onAuthStateChange(()=>gateCheck());
 gateCheck();
+window.addEventListener('resize',()=>{ if(draft) renderPreview(); });
+
 </script>
 </body>
 </html>
