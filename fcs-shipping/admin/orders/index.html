@@ -279,8 +279,8 @@ table.list tbody tr:hover{background:#fafcfd}
     </div>
     <nav>
       <button data-tab="orders" aria-current="true">Cargo <span class="cnt" id="cOrders">0</span></button>
-      <button data-tab="order">Create</button>
       <button data-tab="customers">Quotes <span class="cnt" id="cCust">0</span></button>
+      <button data-tab="order">Create</button>
       <button data-tab="manifest">Manifest</button>
       <button data-tab="prev">Previous Activity</button>
       <button data-tab="settings">Settings</button>
@@ -374,7 +374,6 @@ table.list tbody tr:hover{background:#fafcfd}
               <span id="qbDot" style="width:14px;height:14px;border-radius:50%;background:#c9cfd6;display:inline-block" title=""></span>
               <span class="grow" style="flex:1"></span>
               <button class="btn ghost" id="btnPrint">Print</button>
-              <button class="btn ghost" id="btnPdf">Save PDF</button>
               <button class="btn ghost" id="btnEmailRcpt">Email receipt</button>
             </div>
             <p class="msg" id="billMsg" style="font-size:12.5px;margin:10px 0 0"></p>
@@ -399,7 +398,7 @@ table.list tbody tr:hover{background:#fafcfd}
         <span class="grow"></span>
         <input class="f" id="qOrders" placeholder="Search invoice, name…" style="max-width:240px">
         <button class="btn ghost" id="btnCsv">CSV</button>
-        <button class="btn ghost" id="btnRevXlsx">Revenue .xlsx</button>
+        <button class="btn ghost" id="btnRevXlsx">Update Revenue sheet</button>
         <button class="btn" id="btnCargoCreate">Create</button>
       </div>
       <div class="grid g4" id="cargoStats" style="margin-bottom:14px"></div>
@@ -423,8 +422,8 @@ table.list tbody tr:hover{background:#fafcfd}
         <span class="grow"></span>
         <select class="f" id="mfDest" style="max-width:220px"></select>
         <button class="btn ghost" id="mfToggle">Manifest view</button>
-        <button class="btn ghost" id="mfXlsx">Manifest .xlsx</button>
-        <button class="btn" id="mfMaster">Create Master B/L</button>
+        <button class="btn ghost" id="mfXlsx">Update Manifest sheet</button>
+        <button class="btn" id="mfMaster">Update Master B/L</button>
       </div>
       <div class="card" id="mfHeadCard" hidden>
         <h2>Master B/L header — confirm before it generates</h2>
@@ -444,9 +443,9 @@ table.list tbody tr:hover{background:#fafcfd}
         <span class="grow"></span>
         <input class="f" type="month" id="pvMonth" style="max-width:180px">
         <select class="f" id="pvDest" style="max-width:200px"></select>
-        <button class="btn ghost" id="pvManifest">Manifest .xlsx</button>
-        <button class="btn ghost" id="pvMaster">Master B/L .xlsx</button>
-        <button class="btn ghost" id="pvRev">Revenue .xlsx</button>
+        <button class="btn ghost" id="pvManifest">Update Manifest</button>
+        <button class="btn ghost" id="pvMaster">Update Master B/L</button>
+        <button class="btn ghost" id="pvRev">Update Revenue</button>
       </div>
       <div class="grid g4" id="pvStats" style="margin-bottom:14px"></div>
       <div class="card" style="padding:6px 6px;overflow:auto"><div id="pvList"></div></div>
@@ -487,6 +486,23 @@ table.list tbody tr:hover{background:#fafcfd}
         <p class="hint">No cubic feet — empty barrels, pickup fees, tape. Product money is tracked separately from freight for QuickBooks.</p>
         <div id="sProdRows"></div>
         <button class="btn ghost sm" id="sProdAdd">+ Add product</button>
+      </div>
+      <div class="card">
+        <h2>Shipping products</h2>
+        <p class="hint">Extra cargo types besides Barrel / Bin / Box — crates, TV crates, pallets, bags. Set the standard dims and cubic feet once; price computes from the destination rate.</p>
+        <div id="sShipRows"></div>
+        <button class="btn ghost sm" id="sShipAdd">+ Add shipping product</button>
+      </div>
+      <div class="card">
+        <h2>Google Sheets</h2>
+        <p class="hint">Paste the Apps Script webhook once and the Update buttons fill your Google Sheet templates directly — new Master B/L &amp; Manifest files are copied automatically each month.</p>
+        <div class="grid g2">
+          <div style="grid-column:span 2"><label class="f">Webhook URL (from Apps Script deploy)</label><input class="f" id="sGsHook" placeholder="https://script.google.com/macros/s/…/exec"></div>
+          <div><label class="f">Monthly Revenues sheet link</label><input class="f" id="sGsRev"></div>
+          <div><label class="f">Manifest template link</label><input class="f" id="sGsMan"></div>
+          <div><label class="f">Hermen Master B/L template link</label><input class="f" id="sGsHer"></div>
+          <div><label class="f">Ella Master B/L template link</label><input class="f" id="sGsElla"></div>
+        </div>
       </div>
       <div class="card">
         <h2>Received-from options</h2>
@@ -586,6 +602,13 @@ const V2DEF = {
     {name:'Castries',   rate:7, barrel:100, bin:190},
   ],
   products:[{name:'Empty Barrel',price:60},{name:'Pickup Fee',price:25}],
+  shipTypes:[
+    {name:'TV/Crate', dims:'', cuft:''},
+    {name:'Crate', dims:'', cuft:''},
+    {name:'Pallet', dims:'', cuft:''},
+    {name:'Bag', dims:'', cuft:''},
+  ],
+  sheets:{hook:'',rev:'',man:'',her:'',ella:''},
   recv:['SEA FREIGHT','AIR FREIGHT','STANDARD'],
   brokers:[
     {name:"HERMLEN'S CUSTOMS BROKERAGE SERVICES INC",
@@ -606,6 +629,7 @@ const V2DEF = {
   },
 };
 let S = {...DEFAULTS};
+let userName = '';
 let V2 = JSON.parse(JSON.stringify(V2DEF));
 let customers = [];
 let orders = [];
@@ -652,7 +676,7 @@ function blankOrder(){
     po:'', container:'', code:'', shipVia:'', cross:'', service:'',
     recv:(V2.recv[0]||'SEA FREIGHT'),
     sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
-    co:{name:'',name2:'',city:(V2.dests[0]&&V2.dests[0].name)||'',phone:''},
+    co:{name:'',name2:'',city:'',phone:''},
     items:[blankItem(),blankItem()], showTotal:true, amtRecd:'',
     created:false, qbInvoiceNo:'', qbOk:null, paid:false, _quoteId:null,
   };
@@ -683,24 +707,30 @@ function productTotal(o){ return o.items.filter(it=>it.kind==='product').reduce(
 function orderBal(o){ return Math.max(0, orderTotal(o) - (parseFloat(o.amtRecd)||0)); }
 function destOf(name){ return V2.dests.find(d=>d.name===name) || null; }
 /* auto pricing: barrel/bin standards, boxes from dims, all off the destination rate */
+function dimsToCuft(dims){
+  const m = String(dims||'').match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
+  return m ? Math.max(1, Math.round(m[1]*m[2]*m[3]/1728)) : null;
+}
 function priceItem(it, destName){
   const d = destOf(destName);
   const rate = d ? Number(d.rate)||0 : 0;
   const desc = String(it.desc||'').toLowerCase();
   if(it.kind==='product') { it.cuft=''; it.dims=''; return; }
+  const st = V2.shipTypes.find(x=>String(x.name).toLowerCase()===desc);
   if(desc==='barrel'){
     it.dims='24X24X44'; it.cuft='15';
     it.price = d && d.barrel ? String(d.barrel) : (rate? String(15*rate):'');
   } else if(desc==='commercial bin'){
     it.dims='48X24X44'; it.cuft='20';
     it.price = d && d.bin ? String(d.bin) : (rate? String(20*rate):'');
-  } else if(desc==='box'){
-    const m = String(it.dims||'').match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
-    if(m){
-      const cu = Math.max(1, Math.round(m[1]*m[2]*m[3]/1728));
-      it.cuft = String(cu);
-      if(rate) it.price = String(cu*rate);
-    }
+  } else if(st){
+    if(st.dims && !it.dims) it.dims=st.dims;
+    const cu = dimsToCuft(it.dims) ?? (parseFloat(st.cuft)||null);
+    if(cu!=null){ it.cuft=String(cu); if(rate) it.price=String(cu*rate); }
+  } else {
+    /* Box, Other, anything with measurements typed in */
+    const cu = dimsToCuft(it.dims);
+    if(cu!=null){ it.cuft=String(cu); if(rate) it.price=String(cu*rate); }
   }
   it.amount='';
 }
@@ -713,7 +743,7 @@ const SH = {fShName:'name',fShName2:'name2',fShStreet:'street',fShCity:'city',fS
 const CO = {fCoName:'name',fCoName2:'name2',fCoCity:'city',fCoPhone:'phone'};
 function fillDestSelects(){
   const opts = V2.dests.map(d=>`<option>${esc(d.name)}</option>`).join('');
-  const co=$('#fCoCity'); if(co){ const k=co.value; co.innerHTML=opts; if(k) co.value=k; }
+  const co=$('#fCoCity'); if(co){ const k=co.value; co.innerHTML='<option value="">— pick destination —</option>'+opts; if(k) co.value=k; }
   ['#mfDest','#pvDest'].forEach(s=>{ const el=$(s); if(el){ const k=el.value; el.innerHTML=opts; if(k) el.value=k; }});
   const rv=$('#fRecv'); if(rv){ const k=rv.value; rv.innerHTML=V2.recv.map(r=>`<option>${esc(r)}</option>`).join(''); if(k) rv.value=k; }
 }
@@ -755,32 +785,29 @@ function descCell(it,i){
       ${V2.products.map(p=>`<option${p.name===v?' selected':''}>${esc(p.name)}</option>`).join('')}
     </select>`;
   }
-  const isStd = STD_OPTS.includes(v);
+  const opts = STD_OPTS.concat(V2.shipTypes.map(s=>s.name).filter(Boolean));
+  const isStd = opts.includes(v);
   if((!isStd && v!=='') || it._descOther){
     return `<input data-k="desc" value="${esc(v)}" placeholder="Describe it…">`;
   }
   return `<select data-k="desc">
     <option value=""></option>
-    ${STD_OPTS.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}
+    ${opts.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}
     <option value="Other"${it._descOther?' selected':''}>Other…</option>
   </select>`;
 }
 function renderItems(){
   const tb=$('#itemRows');
-  tb.innerHTML = draft.items.map((it,i)=>{
-    const isBox = String(it.desc||'').toLowerCase()==='box';
-    const lockDims = it.kind==='product' || (!isBox && it.dims!=='');
-    return `
+  tb.innerHTML = draft.items.map((it,i)=>`
     <tr data-i="${i}" ${it.kind==='product'?'style="background:#FBF7F0"':''}>
       <td><input data-k="qty" value="${esc(it.qty)}" inputmode="decimal"></td>
       <td>${descCell(it,i)}</td>
       <td><input data-k="cuft" value="${esc(it.cuft)}" inputmode="decimal" ${it.kind==='product'?'disabled':''} style="text-align:center"></td>
-      <td><input data-k="dims" value="${esc(it.dims)}" placeholder="${isBox?'45X14X9':''}" ${it.kind==='product'?'disabled':''} ${(!isBox&&it.kind!=='product')?'readonly':''}></td>
+      <td><input data-k="dims" value="${esc(it.dims)}" placeholder="45X14X9" ${it.kind==='product'?'disabled':''}></td>
       <td><input data-k="price" value="${esc(it.price)}" inputmode="decimal"></td>
       <td><input data-k="amount" value="${esc(it.amount)}" inputmode="decimal" placeholder="${itemAmount(it)?itemAmount(it).toFixed(2):''}"></td>
       <td><button class="x" data-del="${i}" title="Remove line">×</button></td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
   $('#orderTotal').textContent = money(orderTotal(draft));
 }
 /* ---------- 6. printed form ---------- */
@@ -867,7 +894,8 @@ function formHTML(o){
     </tr></thead>
     <tbody>${body}</tbody>
   </table>
-  <div class="p-track">You can track your shipment at <b>www.fcsshipping.com</b></div>
+  <div class="p-track">You can track your shipment at <b>www.fcsshipping.com</b><br>
+    <span style="font-size:10pt">Track using your B/L number</span></div>
   <div class="p-sign">
     <div class="s"><div class="line"></div><div class="cap2">Customer&rsquo;s Signature</div></div>
     <div class="d"><div class="line"></div><div class="cap2">Date</div></div>
@@ -904,6 +932,7 @@ function renderActions(){
 async function saveDraft(){
   formToDraft();
   if(!String(draft.inv).trim()){ toast('An invoice number is required'); return false; }
+  if(!String(draft.co.city||'').trim()){ toast('Pick a destination first'); $('#fCoCity').focus(); return false; }
   if(draft.id){
     orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
   } else {
@@ -977,7 +1006,6 @@ $('#btnPaid').addEventListener('click', async ()=>{
   toast(paid ? 'Marked paid' : 'Marked not paid');
 });
 $('#btnPrint').addEventListener('click',()=>{ formToDraft(); $('#printroot').innerHTML=formHTML(draft); window.print(); });
-$('#btnPdf').addEventListener('click',()=>{ formToDraft(); $('#printroot').innerHTML=formHTML(draft); window.print(); });
 $('#btnEmailRcpt').addEventListener('click', async ()=>{
   formToDraft();
   if(!String(draft.inv).trim()) return toast('Fill the order first');
@@ -1052,7 +1080,7 @@ function renderOrders(){
   $('#cOrders').textContent = rows.length;
   if(q) rows = rows.filter(o=>[o.inv,o.sh.name,o.co.name,o.co.city].join(' ').toLowerCase().includes(q));
   $('#cargoTitle').textContent = 'Cargo — '+monthLabel(ym);
-  $('#cargoSub').textContent = 'Older months live in Previous Activity.';
+  $('#cargoSub').textContent = userName ? ('Welcome, '+userName) : 'Older months live in Previous Activity.';
   $('#cargoStats').innerHTML = statCards(monthOrders(ym));
   $('#ordersList').innerHTML = cargoTable(rows, true);
 }
@@ -1094,12 +1122,30 @@ $('#custList').addEventListener('click', async e=>{
       draft.co.name = String(parts.shift()||'').toUpperCase();
       if(parts.length && String(parts[parts.length-1]).replace(/\D/g,'').length>=7) draft.co.phone = parts.pop();
     }
-    /* rough line from the quote cargo text */
+    /* parse the quote summary properly: "Barrel (15 cu ft) × 2" → qty 2, NOT the 15 */
     const items=[];
-    const t = String(q.cargo||'').toLowerCase();
-    const grab=(re,desc)=>{ const m=t.match(re); if(m) { const it=blankItem(); it.qty=String(m[1]||1); it.desc=desc; priceItem(it,draft.co.city); items.push(it);} };
-    grab(/barrel[^×x\d]*[×x\s]*(\d+)?/,'Barrel');
-    grab(/commercial bin[^×x\d]*[×x\s]*(\d+)?/,'Commercial Bin');
+    const t = String(q.cargo||'');
+    const qtyFor=(word)=>{
+      /* only a "× N" AFTER the closing paren counts as quantity */
+      const re=new RegExp(word+'[^,×]*\\)?\\s*[×xX]\\s*(\\d+)','i');
+      const m=t.match(re);
+      if(m) return parseInt(m[1],10)||1;
+      return new RegExp(word,'i').test(t) ? 1 : 0;
+    };
+    const nBarrel=qtyFor('Barrel'), nBin=qtyFor('Commercial Bin');
+    if(nBarrel){ const it=blankItem(); it.qty=String(nBarrel); it.desc='Barrel'; priceItem(it,draft.co.city); items.push(it); }
+    if(nBin){ const it=blankItem(); it.qty=String(nBin); it.desc='Commercial Bin'; priceItem(it,draft.co.city); items.push(it); }
+    /* boxes: one line per measured box from the "Box dims:" extra */
+    const dimsExtra=(Array.isArray(q.extras)?q.extras:[]).find(x=>/^Box dims:/i.test(String(x)));
+    if(dimsExtra){
+      String(dimsExtra).replace(/^Box dims:\s*/i,'').split(',').map(s=>s.trim()).filter(Boolean).forEach(d=>{
+        const it=blankItem(); it.qty='1'; it.desc='Box'; it.dims=d.toUpperCase();
+        priceItem(it,draft.co.city); items.push(it);
+      });
+    } else if(/box/i.test(t) && !/commercial/i.test(t.match(/[^,]*box[^,]*/i)?.[0]||'')){
+      const nBox=qtyFor('Box');
+      for(let bi=0;bi<nBox;bi++){ const it=blankItem(); it.qty='1'; it.desc='Box'; items.push(it); }
+    }
     if(!items.length){ const it=blankItem(); it.desc=String(q.cargo||'').toUpperCase(); it.amount=((q.total_cents||0)/100).toFixed(2); items.push(it); }
     draft.items = items.concat([blankItem()]);
     if(q.pickup_slot) draft.service = ('PICKUP: '+q.pickup_slot).toUpperCase();
@@ -1340,6 +1386,61 @@ async function buildRevenueXlsx(ym){
   const buf=await wb.xlsx.writeBuffer();
   dl(buf, `Monthly Revenue - ${monthLabel(ym)}.xlsx`);
 }
+/* ---------- Google Sheets sync (Apps Script webhook via server proxy) ---------- */
+async function gsSync(payload, fallback){
+  const hook=(V2.sheets&&V2.sheets.hook||'').trim();
+  if(!hook){
+    if(fallback && confirm('Google Sheets webhook not set up yet (Settings → Google Sheets). Download an .xlsx instead?')) fallback();
+    return;
+  }
+  toast('Updating Google Sheet…');
+  try{
+    const res=await fetch(FN+'/sheets-sync',{ method:'POST', headers:await authHeaders(),
+      body:JSON.stringify({ hook, payload }) });
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok||!d.ok) throw new Error(d.error||'sync failed');
+    toast('Sheet updated ✓');
+    if(d.url) window.open(d.url,'_blank');
+  }catch(e){ alert('Could not update the sheet: '+e.message); }
+}
+function revenuePayload(ym){
+  const [y,m]=ym.split('-');
+  return { action:'revenue', month:MONTH_NAMES[+m-1], year:+y,
+    rows: monthOrders(ym).map(o=>{
+      const d=destOf(o.co.city)||V2.dests.find(x=>String(o.co.city||'').toLowerCase().includes(String(x.name).toLowerCase()));
+      return [ usDate(o.invDate), o.paid?'PAID':'Will Pay later',
+        (d&&d.revLabel)||o.co.city||'', o.recv||'SEA FREIGHT',
+        isNaN(+o.inv)?o.inv:+o.inv, orderTotal(o), parseFloat(o.amtRecd)||0 ];
+    })};
+}
+function masterPayload(ym,dest,hdr){
+  const rows=mfRows(ym,dest);
+  const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}}; const lines=[];
+  rows.forEach(x=>{
+    const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
+    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
+    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*20;}
+    else lines.push([ 'BL#'+x.o.inv, parseFloat(x.it.qty)||1, String(x.it.desc).toUpperCase(),
+      parseFloat(x.it.cuft)||'', x.it.dims||'' ]);
+  });
+  return { action:'master', month:ym, dest,
+    template: /castries/i.test(dest)?'her':'ella',
+    header: hdr, barrels:agg.barrel, bins:agg.bin, lines };
+}
+function manifestPayload(ym,dest){
+  const os=monthOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
+  return { action:'manifest', month:ym, dest,
+    from:{ name:V2.mbl.manFrom, addr:V2.mbl.manFromAddr, city:V2.mbl.manFromCity,
+      state:V2.mbl.manFromState, zip:V2.mbl.manFromZip, tel:V2.mbl.manFromTel },
+    to:{ name:hdrBrokerName||'', addr:hdrBrokerAddr||'', tel:V2.mbl.relTel||'' },
+    blocks: os.map(o=>({ bl:o.inv, sender:o.sh.name||'', senderAddr:o.sh.street||'',
+      senderCity:[o.sh.city,o.sh.state].filter(Boolean).join(', '), senderTel:o.sh.phone||'',
+      consignee:o.co.name||'', dest:o.co.city||'', consTel:o.co.phone||'',
+      hold: orderBal(o)>0,
+      lines:o.items.filter(it=>it.kind!=='product'&&it.desc).map(it=>[
+        parseFloat(it.qty)||1, String(it.desc).toUpperCase()+' S.T.C PERSONAL EFFECTS',
+        parseFloat(it.cuft)||'', itemAmount(it) ]) })) };
+}
 /* master B/L header confirm flow */
 let hdrBrokerName='', hdrBrokerAddr='', hdrVessel='', hdrBkg='';
 function mblHeaderFields(dest){
@@ -1375,15 +1476,13 @@ $('#mfHeadGo').addEventListener('click',async ()=>{
   hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr; hdrVessel=vals.vessel; hdrBkg=vals.bkg;
   const hdr={ ...vals, brokerName:broker.name,
     consignee: broker.name+'\n'+broker.addr };
-  try{
-    await buildMasterBL(thisMonth(), dest, hdr);
-    await buildManifestXlsx(thisMonth(), dest);
-    $('#mfHeadCard').hidden=true;
-    toast('Master B/L + Manifest downloaded');
-  }catch(e){ alert('Could not build: '+e.message); }
+  $('#mfHeadCard').hidden=true;
+  await gsSync(masterPayload(thisMonth(), dest, hdr), ()=>buildMasterBL(thisMonth(), dest, hdr));
 });
-$('#mfXlsx').addEventListener('click',()=>buildManifestXlsx(thisMonth(),$('#mfDest').value));
-$('#btnRevXlsx').addEventListener('click',()=>buildRevenueXlsx(thisMonth()));
+$('#mfXlsx').addEventListener('click',()=>gsSync(manifestPayload(thisMonth(),$('#mfDest').value),
+  ()=>buildManifestXlsx(thisMonth(),$('#mfDest').value)));
+$('#btnRevXlsx').addEventListener('click',()=>gsSync(revenuePayload(thisMonth()),
+  ()=>buildRevenueXlsx(thisMonth())));
 /* ---------- 12. PREVIOUS ACTIVITY ---------- */
 function renderPrev(){
   const ym=$('#pvMonth').value || (()=>{ const d=new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
@@ -1393,13 +1492,16 @@ function renderPrev(){
   $('#pvList').innerHTML = cargoTable(rows, true);
 }
 $('#pvMonth').addEventListener('change',renderPrev);
-$('#pvManifest').addEventListener('click',()=>buildManifestXlsx($('#pvMonth').value,$('#pvDest').value));
+$('#pvManifest').addEventListener('click',()=>gsSync(manifestPayload($('#pvMonth').value,$('#pvDest').value),
+  ()=>buildManifestXlsx($('#pvMonth').value,$('#pvDest').value)));
 $('#pvMaster').addEventListener('click',()=>{
   const broker=V2.brokers[0]; hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
-  buildMasterBL($('#pvMonth').value, $('#pvDest').value,
-    { ...V2.mbl, brokerName:broker.name, consignee:broker.name+'\n'+broker.addr, bkg:'', vessel:'' });
+  const hdr={ ...V2.mbl, brokerName:broker.name, consignee:broker.name+'\n'+broker.addr, bkg:'', vessel:'' };
+  gsSync(masterPayload($('#pvMonth').value,$('#pvDest').value,hdr),
+    ()=>buildMasterBL($('#pvMonth').value,$('#pvDest').value,hdr));
 });
-$('#pvRev').addEventListener('click',()=>buildRevenueXlsx($('#pvMonth').value));
+$('#pvRev').addEventListener('click',()=>gsSync(revenuePayload($('#pvMonth').value),
+  ()=>buildRevenueXlsx($('#pvMonth').value)));
 /* ---------- 13. SETTINGS ---------- */
 function listEditor(holder, list, cols, onChange){
   const el=$(holder);
@@ -1422,9 +1524,18 @@ function renderSettingsV2(){
   $$('#sFieldRows [data-fon]').forEach(c=>c.addEventListener('change',()=>{ V2.fields[c.dataset.fon].on=c.checked; renderHdrExtra(); }));
   $$('#sFieldRows [data-flabel]').forEach(f=>f.addEventListener('input',()=>{ V2.fields[f.dataset.flabel].label=f.value; }));
   listEditor('#sDestRows', V2.dests, [
-    {k:'name',p:'Destination',w:'1.4fr'},{k:'rate',p:'$/cu ft',w:'.6fr'},
-    {k:'barrel',p:'Barrel flat $',w:'.7fr'},{k:'bin',p:'Bin flat $',w:'.7fr'}], fillDestSelects);
+    {k:'name',p:'Destination',w:'1.2fr'},{k:'rate',p:'$/cu ft',w:'.55fr'},
+    {k:'barrel',p:'Barrel flat $',w:'.65fr'},{k:'bin',p:'Bin flat $',w:'.6fr'},
+    {k:'revLabel',p:'Revenue label (e.g. ELLA VF)',w:'1fr'}], fillDestSelects);
   listEditor('#sProdRows', V2.products, [{k:'name',p:'Product',w:'1.6fr'},{k:'price',p:'$',w:'.5fr'}]);
+  listEditor('#sShipRows', V2.shipTypes, [
+    {k:'name',p:'Name (shows in Description)',w:'1.2fr'},{k:'dims',p:'Std dims 48X24X44',w:'.9fr'},{k:'cuft',p:'Cu ft',w:'.45fr'}]);
+  const G=V2.sheets||{};
+  [['sGsHook','hook'],['sGsRev','rev'],['sGsMan','man'],['sGsHer','her'],['sGsElla','ella']].forEach(([id,k])=>{
+    const el=$('#'+id); if(!el) return;
+    el.value=G[k]||'';
+    el.oninput=()=>{ V2.sheets=V2.sheets||{}; V2.sheets[k]=el.value.trim(); };
+  });
   listEditor('#sRecvRows', V2.recv.map(r=>({v:r})), [{k:'v',p:'Option'}], null);
   /* recv is array of strings — rebind */
   $$('#sRecvRows [data-le]').forEach(f=>f.addEventListener('input',()=>{ V2.recv[+f.dataset.le]=f.value; fillDestSelects(); }));
@@ -1440,7 +1551,8 @@ function renderSettingsV2(){
     : `<div><label class="f">${l}</label><input class="f" data-mbl="${k}" value="${esc(M[k]||'')}"></div>`).join('');
   $$('#sMblFields [data-mbl]').forEach(f=>f.addEventListener('input',()=>{ V2.mbl[f.dataset.mbl]=f.value; }));
 }
-$('#sDestAdd').addEventListener('click',()=>{ V2.dests.push({name:'',rate:'',barrel:'',bin:''}); renderSettingsV2(); });
+$('#sDestAdd').addEventListener('click',()=>{ V2.dests.push({name:'',rate:'',barrel:'',bin:'',revLabel:''}); renderSettingsV2(); });
+$('#sShipAdd').addEventListener('click',()=>{ V2.shipTypes.push({name:'',dims:'',cuft:''}); renderSettingsV2(); });
 $('#sProdAdd').addEventListener('click',()=>{ V2.products.push({name:'',price:''}); renderSettingsV2(); });
 $('#sRecvAdd').addEventListener('click',()=>{ V2.recv.push(''); renderSettingsV2(); });
 $('#sBrokerAdd').addEventListener('click',()=>{ V2.brokers.push({name:'',addr:''}); renderSettingsV2(); });
@@ -1504,11 +1616,24 @@ $('#itemRows').addEventListener('input',e=>{
   const i=+tr.dataset.i, k=e.target.dataset.k;
   if(!k) return;
   draft.items[i][k]=e.target.value;
-  if(k==='dims' && String(draft.items[i].desc).toLowerCase()==='box'){
-    priceItem(draft.items[i], draft.co.city);
-    renderItems();
+  if(k==='dims' && draft.items[i].kind!=='product'){
+    /* live cuft + price WITHOUT re-rendering — the cursor stays put */
+    const cu = dimsToCuft(e.target.value);
+    if(cu!=null){
+      const d=destOf(draft.co.city); const rate=d?Number(d.rate)||0:0;
+      draft.items[i].cuft=String(cu);
+      const cuEl=tr.querySelector('[data-k="cuft"]'); if(cuEl) cuEl.value=String(cu);
+      if(rate && !['barrel','commercial bin'].includes(String(draft.items[i].desc).toLowerCase())){
+        draft.items[i].price=String(cu*rate); draft.items[i].amount='';
+        const pEl=tr.querySelector('[data-k="price"]'); if(pEl) pEl.value=String(cu*rate);
+        const aEl=tr.querySelector('[data-k="amount"]'); if(aEl){ aEl.value=''; aEl.placeholder=itemAmount(draft.items[i]).toFixed(2); }
+      }
+    }
   }
-  if(k==='qty' || k==='price') draft.items[i].amount='';
+  if(k==='qty' || k==='price'){
+    draft.items[i].amount='';
+    const aEl=tr.querySelector('[data-k="amount"]'); if(aEl){ aEl.value=''; aEl.placeholder=itemAmount(draft.items[i])?itemAmount(draft.items[i]).toFixed(2):''; }
+  }
   $('#orderTotal').textContent = money(orderTotal(draft));
   renderPreview();
 });
@@ -1679,6 +1804,10 @@ async function gateCheck(){
   if(!SBC){ $('#gate').hidden=false; $('#gateCfg').hidden=false; return; }
   const { data:{ session } } = await SBC.auth.getSession();
   if(session){
+    const u = session.user || {};
+    const md = u.user_metadata || {};
+    userName = md.display_name || md.full_name || String(u.email||'').split('@')[0];
+    userName = userName ? userName.charAt(0).toUpperCase()+userName.slice(1) : '';
     $('#gate').hidden = true;
     $('#shell').hidden = false;
     await startApp();
