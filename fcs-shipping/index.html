@@ -107,7 +107,7 @@
         <button type="button" class="btn wz-request" id="wzContinue" hidden>Continue →</button>
         <div class="wz-links">
           <button type="button" id="wzSuppliesOnly">Just need empty barrels or bins? →</button>
-          <button type="button" id="wzHaveEbl">Have an EB/L number? Pay it here →</button>
+          <button type="button" id="wzHaveEbl">Have a B/L number? Pay it here →</button>
         </div>
       </div>
 
@@ -138,12 +138,12 @@
       <!-- EB/L payment (side path) -->
       <div class="wz-step" id="wzStepEbl">
         <button type="button" class="wz-back" data-back="1">← Back</button>
-        <h3 class="wz-q">Pay your EB/L</h3>
+        <h3 class="wz-q">Pay your B/L</h3>
         <div class="ebl-row">
-          <input type="text" id="eblInput" placeholder="EBL-2026-0000">
+          <input type="text" id="eblInput" placeholder="B/L number — e.g. 16407">
           <button type="button" class="btn btn-dark" id="eblLoad">Load</button>
         </div>
-        <p class="dims-note" id="eblMsg">Enter the EB/L number our team gave you — your exact price loads automatically.</p>
+        <p class="dims-note" id="eblMsg">Enter the B/L number on your receipt — your exact price loads automatically.</p>
         <button type="button" class="btn btn-dark" id="eblPay" hidden>Pay now →</button>
       </div>
 
@@ -206,11 +206,11 @@
     <div class="sec-head reveal">
       <div class="eyebrow">Shipment tracking</div>
       <h2>Where's my barrel?</h2>
-      <p>Enter your FCS waybill number or your eBL tracking number and follow your cargo from our Brooklyn warehouse to the island.</p>
+      <p>Enter your FCS waybill number or your B/L number and follow your cargo from our Brooklyn warehouse to the island.</p>
     </div>
     <div class="track-box reveal">
       <div class="track-form">
-        <input id="trackInput" type="text" placeholder="FCS-2026-4471 or eBL number" aria-label="Waybill or eBL number">
+        <input id="trackInput" type="text" placeholder="FCS-2026-4471 or B/L number" aria-label="Waybill or eBL number">
         <button class="btn btn-dark" id="trackBtn">Track shipment</button>
       </div>
       <p class="hint">Lost your B/L number? Call us — <span id="trackPhone">(718) 483-8006</span>. Demo: try <button id="demoNo" type="button">FCS-2026-4471</button></p>
@@ -400,6 +400,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/admin/config.js"></script>
-<script src="/js/main.js?v=14"></script>
+<script src="/js/main.js?v=15"></script>
 </body>
 </html>
