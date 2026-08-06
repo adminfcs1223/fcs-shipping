@@ -502,14 +502,14 @@
       const res = await fetch(`${FN}/ebl?no=${encodeURIComponent(no)}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Not found');
-      if (data.status === 'paid') { msg.textContent = 'This EB/L is already paid \u2014 thank you!'; return; }
+      if (data.status === 'paid') { msg.textContent = 'This B/L is already paid \u2014 thank you!'; return; }
       state.ebl = data;
       $('eblPay').hidden = false;
       msg.textContent = 'Loaded! Review the bill and hit Pay now.';
       renderBill();
     } catch (e) {
       state.ebl = null; $('eblPay').hidden = true;
-      msg.textContent = `Couldn't find that EB/L number. Double-check it or call ${co.phones[0]}.`;
+      msg.textContent = `Couldn't find that B/L number. Double-check it or call ${co.phones[0]}.`;
       renderBill();
     }
   });
@@ -545,7 +545,7 @@
     /* EB/L mode */
     if (state.ebl && $('wzStepEbl').classList.contains('on')) {
       const e = state.ebl;
-      $('wbNoLabel').textContent = 'EB/L N\u00BA';
+      $('wbNoLabel').textContent = 'B/L N\u00BA';
       $('wbNo').textContent = e.ebl_no;
       $('wbItem').textContent = `${e.cargo}${e.quantity > 1 ? ' \u00D7 ' + e.quantity : ''}`;
       $('wbVolume').textContent = e.cuft ? e.cuft + ' cu ft' : '\u2014';
@@ -558,7 +558,7 @@
       $('wbNote').hidden = true;
       return;
     }
-    $('wbNoLabel').textContent = 'EB/L N\u00BA';
+    $('wbNoLabel').textContent = 'B/L N\u00BA';
     $('wbNo').textContent = 'PENDING';
     $('wbTotalLabel').textContent = 'ESTIMATED TOTAL';
     $('wbNote').hidden = false;
