@@ -1003,8 +1003,14 @@ $('#btnEmailRcpt').addEventListener('click', async ()=>{
 });
 /* ---------- 8. CARGO list (this month) ---------- */
 function monthOrders(ym, dest){
-  return orders.filter(o=>monthKey(o.invDate)===ym && (!dest || o.co.city===dest))
-               .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
+  /* destination match is fuzzy — old orders wrote "VIEUX-FORT ST. LUCIA" free-text */
+  const dl = String(dest||'').toLowerCase().replace(/[^a-z]/g,'');
+  return orders.filter(o=>{
+    if(monthKey(o.invDate)!==ym) return false;
+    if(!dest) return true;
+    const cl = String(o.co.city||'').toLowerCase().replace(/[^a-z]/g,'');
+    return cl.includes(dl) || dl.includes(cl && cl.slice(0,8) || '␀');
+  }).sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
 }
 function cargoTable(rows, actions){
   if(!rows.length) return `<div class="empty"><b>No cargo yet.</b> Hit Create to write the first order.</div>`;
