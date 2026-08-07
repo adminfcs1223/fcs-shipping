@@ -711,28 +711,42 @@ function dimsToCuft(dims){
   const m = String(dims||'').match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
   return m ? Math.max(1, Math.round(m[1]*m[2]*m[3]/1728)) : null;
 }
+const MIN_FREIGHT = 65;
 function priceItem(it, destName){
   const d = destOf(destName);
   const rate = d ? Number(d.rate)||0 : 0;
   const desc = String(it.desc||'').toLowerCase();
   if(it.kind==='product') { it.cuft=''; it.dims=''; return; }
   const st = V2.shipTypes.find(x=>String(x.name).toLowerCase()===desc);
+  const q = Math.max(1, parseFloat(it.qty)||1);
+  let unit=null, price=null;
   if(desc==='barrel'){
-    it.dims='24X24X44'; it.cuft='15';
-    it.price = d && d.barrel ? String(d.barrel) : (rate? String(15*rate):'');
+    it.dims='24X24X44'; unit=15;
+    price = d && d.barrel ? Number(d.barrel) : (rate? 15*rate : null);
   } else if(desc==='commercial bin'){
-    it.dims='48X24X44'; it.cuft='20';
-    it.price = d && d.bin ? String(d.bin) : (rate? String(20*rate):'');
+    it.dims='48X24X44'; unit=20;
+    price = d && d.bin ? Number(d.bin) : (rate? 20*rate : null);
   } else if(st){
     if(st.dims && !it.dims) it.dims=st.dims;
-    const cu = dimsToCuft(it.dims) ?? (parseFloat(st.cuft)||null);
-    if(cu!=null){ it.cuft=String(cu); if(rate) it.price=String(cu*rate); }
+    unit = dimsToCuft(it.dims) ?? (parseFloat(st.cuft)||null);
+    if(unit!=null && rate) price = unit*rate;
   } else {
-    /* Box, Other, anything with measurements typed in */
-    const cu = dimsToCuft(it.dims);
-    if(cu!=null){ it.cuft=String(cu); if(rate) it.price=String(cu*rate); }
+    unit = dimsToCuft(it.dims);
+    if(unit!=null && rate) price = unit*rate;
   }
+  it._unitCuft = unit;
+  /* cubic feet scale with quantity: 2 barrels = 30 cu ft */
+  if(unit!=null) it.cuft = String(unit*q);
+  /* $65 floor on computed freight prices */
+  if(price!=null) it.price = String(Math.max(MIN_FREIGHT, Math.round(price*100)/100));
   it.amount='';
+}
+function syncQtyCuft(it){
+  if(it.kind==='product') return;
+  const q = Math.max(1, parseFloat(it.qty)||1);
+  const unit = it._unitCuft ?? dimsToCuft(it.dims) ??
+    (String(it.desc).toLowerCase()==='barrel'?15:String(it.desc).toLowerCase()==='commercial bin'?20:null);
+  if(unit!=null){ it._unitCuft=unit; it.cuft=String(unit*q); }
 }
 function repriceAll(){
   draft.items.forEach(it=>{ if(it.kind!=='product' && ['barrel','commercial bin','box'].includes(String(it.desc||'').toLowerCase())) priceItem(it, draft.co.city); });
@@ -1040,13 +1054,37 @@ function monthOrders(ym, dest){
     return cl.includes(dl) || dl.includes(cl && cl.slice(0,8) || '␀');
   }).sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
 }
+let cargoSort={k:'date',dir:1}, cargoPage=0;
+const PAGE_SIZE=30;
+const SORT_VAL={
+  date:o=>String(o.invDate||''), type:o=>o.paid?1:0, dest:o=>String(o.co.city||''),
+  recv:o=>String(o.recv||''), inv:o=>isNaN(+o.inv)?String(o.inv):+o.inv,
+  freight:o=>orderTotal(o), amt:o=>parseFloat(o.amtRecd)||0, bal:o=>orderBal(o),
+};
+function sortRows(rows){
+  const f=SORT_VAL[cargoSort.k]||SORT_VAL.date;
+  return rows.slice().sort((a,b)=>{
+    const x=f(a), y=f(b);
+    return (x<y?-1:x>y?1:0)*cargoSort.dir;
+  });
+}
 function cargoTable(rows, actions){
   if(!rows.length) return `<div class="empty"><b>No cargo yet.</b> Hit Create to write the first order.</div>`;
+  const arrow=(k)=>cargoSort.k===k?(cargoSort.dir===1?' ↑':' ↓'):'';
+  const th=(k,label,num)=>`<th${num?' class="num"':''} data-sort="${k}" style="cursor:pointer;user-select:none">${label}${arrow(k)}</th>`;
+  const pages=Math.ceil(rows.length/PAGE_SIZE);
+  if(cargoPage>=pages) cargoPage=Math.max(0,pages-1);
+  const view=rows.slice(cargoPage*PAGE_SIZE,(cargoPage+1)*PAGE_SIZE);
+  const pager = pages>1 ? `<div style="display:flex;gap:10px;align-items:center;justify-content:center;padding:10px">
+      <button class="btn ghost sm" data-page="prev" ${cargoPage===0?'disabled':''}>← Prev</button>
+      <span style="font-size:12.5px;color:var(--muted)">Page ${cargoPage+1} of ${pages} · ${rows.length} cargo</span>
+      <button class="btn ghost sm" data-page="next" ${cargoPage>=pages-1?'disabled':''}>Next →</button>
+    </div>` : '';
   return `
     <table class="list"><thead><tr>
-      <th>Date</th><th>Type</th><th>Destination</th><th>Received From</th><th>Invoice #</th>
-      <th class="num">Freight $</th><th class="num">Amt Rec'd</th><th class="num">BAL/COD</th>${actions?'<th></th>':''}
-    </tr></thead><tbody>${rows.map(o=>{
+      ${th('date','Date')}${th('type','Type')}${th('dest','Destination')}${th('recv','Received From')}${th('inv','Invoice #')}
+      ${th('freight','Freight $',1)}${th('amt',"Amt Rec'd",1)}${th('bal','BAL/COD',1)}${actions?'<th></th>':''}
+    </tr></thead><tbody>${view.map(o=>{
       const bal = orderBal(o);
       return `<tr>
         <td>${esc(usDate(o.invDate))}</td>
@@ -1063,7 +1101,7 @@ function cargoTable(rows, actions){
           <button class="btn ghost sm" data-dupo="${o.id}">Dup</button>
           <button class="btn warn sm" data-delo="${o.id}">Del</button>
         </td>`:''}
-      </tr>`;}).join('')}</tbody></table>`;
+      </tr>`;}).join('')}</tbody></table>${pager}`;
 }
 function statCards(rows){
   const freight = rows.reduce((s,o)=>s+freightTotal(o),0);
@@ -1079,10 +1117,20 @@ function renderOrders(){
   let rows = monthOrders(ym);
   $('#cOrders').textContent = rows.length;
   if(q) rows = rows.filter(o=>[o.inv,o.sh.name,o.co.name,o.co.city].join(' ').toLowerCase().includes(q));
+  rows = sortRows(rows);
   $('#cargoTitle').textContent = 'Cargo — '+monthLabel(ym);
   $('#cargoSub').textContent = userName ? ('Welcome, '+userName) : 'Older months live in Previous Activity.';
   $('#cargoStats').innerHTML = statCards(monthOrders(ym));
   $('#ordersList').innerHTML = cargoTable(rows, true);
+  $$('#ordersList [data-sort]').forEach(h=>h.addEventListener('click',()=>{
+    const k=h.dataset.sort;
+    if(cargoSort.k===k) cargoSort.dir*=-1; else cargoSort={k,dir:1};
+    renderOrders();
+  }));
+  $$('#ordersList [data-page]').forEach(b=>b.addEventListener('click',()=>{
+    cargoPage += b.dataset.page==='next'?1:-1;
+    renderOrders();
+  }));
 }
 /* ---------- 9. QUOTES ---------- */
 async function loadQuotes(){
@@ -1096,7 +1144,7 @@ async function loadQuotes(){
   $('#custList').innerHTML = quotes.length ? `
     <table class="list"><thead><tr><th>Name</th><th>Contact</th><th>Cargo</th><th class="num">Est.</th><th></th></tr></thead>
     <tbody>${quotes.map(q=>`<tr>
-      <td><strong>${esc(q.name)}</strong>${q.pickup_slot?`<div style="color:var(--muted);font-size:11.5px">${esc(q.pickup_slot)}</div>`:''}</td>
+      <td><strong>${esc(q.name)}</strong></td>
       <td>${esc(q.phone)}<div style="color:var(--muted);font-size:11.5px">${esc(q.email||'')}</div>${q.address?`<div style="color:var(--muted);font-size:11.5px">${esc(q.address)}</div>`:''}</td>
       <td style="max-width:340px">${esc(q.cargo)} → ${esc(q.destination)}</td>
       <td class="num">${money((q.total_cents||0)/100)}</td>
@@ -1413,23 +1461,36 @@ function revenuePayload(ym){
         isNaN(+o.inv)?o.inv:+o.inv, orderTotal(o), parseFloat(o.amtRecd)||0 ];
     })};
 }
-function masterPayload(ym,dest,hdr){
-  const rows=mfRows(ym,dest);
+/* one truck per week: week 1 = days 1-7, week 2 = 8-14 … cargo rides its week's truck */
+function weekOf(dateIso){ const d=parseInt(String(dateIso).slice(8,10),10)||1; return Math.min(5, Math.ceil(d/7)); }
+function currentTruck(){ return 'Truck '+weekOf(todayISO()); }
+function truckFilter(rows, truck){
+  if(!truck || truck==='FULL MONTH') return rows;
+  const wk=parseInt(truck.replace(/\D/g,''),10)||1;
+  return rows.filter(x=>weekOf((x.o||x).invDate)===wk);
+}
+function masterPayload(ym,dest,hdr,truck){
+  truck = truck || currentTruck();
+  const rows = truckFilter(mfRows(ym,dest), truck);
   const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}}; const lines=[];
   rows.forEach(x=>{
     const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
     if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
-    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*20;}
-    else lines.push([ 'BL#'+x.o.inv, parseFloat(x.it.qty)||1, String(x.it.desc).toUpperCase(),
+    /* the ship line rates bins at 19 cu ft even though we charge 20 */
+    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*19;}
+    else lines.push([ 'BL#'+x.o.inv, q, String(x.it.desc).toUpperCase(),
       parseFloat(x.it.cuft)||'', x.it.dims||'' ]);
   });
-  return { action:'master', month:ym, dest,
+  return { action:'master', month:ym, dest, truck,
     template: /castries/i.test(dest)?'her':'ella',
     header: hdr, barrels:agg.barrel, bins:agg.bin, lines };
 }
-function manifestPayload(ym,dest){
-  const os=monthOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
-  return { action:'manifest', month:ym, dest,
+function manifestPayload(ym,dest,truck){
+  truck = truck || currentTruck();
+  const wk=parseInt(String(truck).replace(/\D/g,''),10)||null;
+  let os=monthOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
+  if(truck!=='FULL MONTH' && wk) os=os.filter(o=>weekOf(o.invDate)===wk);
+  return { action:'manifest', month:ym, dest, truck,
     from:{ name:V2.mbl.manFrom, addr:V2.mbl.manFromAddr, city:V2.mbl.manFromCity,
       state:V2.mbl.manFromState, zip:V2.mbl.manFromZip, tel:V2.mbl.manFromTel },
     to:{ name:hdrBrokerName||'', addr:hdrBrokerAddr||'', tel:V2.mbl.relTel||'' },
@@ -1437,9 +1498,11 @@ function manifestPayload(ym,dest){
       senderCity:[o.sh.city,o.sh.state].filter(Boolean).join(', '), senderTel:o.sh.phone||'',
       consignee:o.co.name||'', dest:o.co.city||'', consTel:o.co.phone||'',
       hold: orderBal(o)>0,
-      lines:o.items.filter(it=>it.kind!=='product'&&it.desc).map(it=>[
-        parseFloat(it.qty)||1, String(it.desc).toUpperCase()+' S.T.C PERSONAL EFFECTS',
-        parseFloat(it.cuft)||'', itemAmount(it) ]) })) };
+      lines:o.items.filter(it=>it.kind!=='product'&&it.desc).map(it=>{
+        const q=parseFloat(it.qty)||1;
+        const cu = /commercial bin/i.test(it.desc) ? 19*q : (parseFloat(it.cuft)||'');
+        return [ q, String(it.desc).toUpperCase()+' S.T.C PERSONAL EFFECTS', cu, itemAmount(it) ];
+      }) })) };
 }
 /* master B/L header confirm flow */
 let hdrBrokerName='', hdrBrokerAddr='', hdrVessel='', hdrBkg='';
@@ -1495,12 +1558,12 @@ function renderPrev(){
   $('#pvList').innerHTML = cargoTable(rows, true);
 }
 $('#pvMonth').addEventListener('change',renderPrev);
-$('#pvManifest').addEventListener('click',()=>gsSync(manifestPayload($('#pvMonth').value,$('#pvDest').value),
+$('#pvManifest').addEventListener('click',()=>gsSync(manifestPayload($('#pvMonth').value,$('#pvDest').value,'FULL MONTH'),
   ()=>buildManifestXlsx($('#pvMonth').value,$('#pvDest').value)));
 $('#pvMaster').addEventListener('click',()=>{
   const broker=V2.brokers[0]; hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
   const hdr={ ...V2.mbl, brokerName:broker.name, consignee:broker.name+'\n'+broker.addr, bkg:'', vessel:'' };
-  gsSync(masterPayload($('#pvMonth').value,$('#pvDest').value,hdr),
+  gsSync(masterPayload($('#pvMonth').value,$('#pvDest').value,hdr,'FULL MONTH'),
     ()=>buildMasterBL($('#pvMonth').value,$('#pvDest').value,hdr));
 });
 $('#pvRev').addEventListener('click',()=>gsSync(revenuePayload($('#pvMonth').value),
@@ -1635,6 +1698,11 @@ $('#itemRows').addEventListener('input',e=>{
   }
   if(k==='qty' || k==='price'){
     draft.items[i].amount='';
+    if(k==='qty'){
+      /* 2 barrels → 30 cu ft, live, no re-render */
+      syncQtyCuft(draft.items[i]);
+      const cuEl=tr.querySelector('[data-k="cuft"]'); if(cuEl) cuEl.value=draft.items[i].cuft;
+    }
     const aEl=tr.querySelector('[data-k="amount"]'); if(aEl){ aEl.value=''; aEl.placeholder=itemAmount(draft.items[i])?itemAmount(draft.items[i]).toFixed(2):''; }
   }
   $('#orderTotal').textContent = money(orderTotal(draft));
