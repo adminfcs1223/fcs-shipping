@@ -363,6 +363,10 @@ table.list tbody tr:hover{background:#fafcfd}
             <div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
               <label class="f" style="margin:0">Amount received $</label>
               <input class="f" id="fAmtRecd" inputmode="decimal" style="max-width:120px" placeholder="0.00">
+              <label class="f" style="margin:0">Payment</label>
+              <select class="f" id="fPayMethod" style="max-width:110px">
+                <option value=""></option><option>CASH</option><option>ZELLE</option><option>COD</option><option>CHECK</option>
+              </select>
               <span style="font-size:12.5px;color:var(--muted)">Balance shows on the Cargo page as BAL/COD.</span>
             </div>
           </div>
@@ -429,7 +433,7 @@ table.list tbody tr:hover{background:#fafcfd}
         <h2>Master B/L header — confirm before it generates</h2>
         <div class="grid g2" id="mfHeadFields"></div>
         <div style="margin-top:14px;display:flex;gap:8px">
-          <button class="btn" id="mfHeadGo">Looks right — generate .xlsx</button>
+          <button class="btn" id="mfHeadGo">Generate Master B/L</button>
           <button class="btn ghost" id="mfHeadCancel">Cancel</button>
         </div>
       </div>
@@ -773,6 +777,7 @@ function draftToForm(){
   for(const id in CO){ const el=$('#'+id); if(el) el.value = draft.co[CO[id]] ?? ''; }
   $('#fRecv').value = draft.recv || V2.recv[0] || '';
   $('#fAmtRecd').value = draft.amtRecd ?? '';
+  $('#fPayMethod').value = draft.payMethod || '';
   $('#fShowTotal').checked = !!draft.showTotal;
   renderHdrExtra();
   renderItems();
@@ -787,6 +792,7 @@ function formToDraft(){
   for(const id in CO){ const el=$('#'+id); if(el) draft.co[CO[id]] = el.value; }
   draft.recv = $('#fRecv').value;
   draft.amtRecd = $('#fAmtRecd').value;
+  draft.payMethod = $('#fPayMethod').value;
   draft.showTotal = $('#fShowTotal').checked;
 }
 /* ---------- 5. line items ---------- */
@@ -1209,6 +1215,8 @@ $('#custList').addEventListener('click', async e=>{
 $('#btnQuotesRefresh').addEventListener('click',loadQuotes);
 /* ---------- 10. MANIFEST ---------- */
 let mfMode='tally';
+/* the ship line rates commercial bins at 19 cu ft on the docs (order entry still charges 20) */
+function tallyCu(it){ const q=parseFloat(it.qty)||1; return /commercial bin/i.test(it.desc||'') ? 19*q : (parseFloat(it.cuft)||0); }
 function mfRows(ym,dest){
   const list=[];
   monthOrders(ym,dest).forEach(o=>{
@@ -1226,7 +1234,7 @@ function renderManifest(){
   if(!rows.length){ $('#mfList').innerHTML='<div class="empty"><b>No cargo for '+esc(dest||'—')+' yet this month.</b></div>'; return; }
   if(mfMode==='tally'){
     const pk = rows.reduce((s,r)=>s+(parseFloat(r.it.qty)||0),0);
-    const cf = rows.reduce((s,r)=>s+(parseFloat(r.it.cuft)||0),0);
+    const cf = rows.reduce((s,r)=>s+tallyCu(r.it),0);
     $('#mfList').innerHTML = `
       <table class="list"><thead><tr>
         <th style="width:110px">B/L #</th><th style="width:64px">Pkgs</th><th>Description</th>
@@ -1236,7 +1244,7 @@ function renderManifest(){
         <td><strong>BL#${esc(r.o.inv)}</strong><div style="color:var(--muted);font-size:11px">${esc(r.o.sh.name||'')}</div></td>
         <td><input class="f" data-mf="${n}" data-k="qty" value="${esc(r.it.qty)}" style="padding:4px 6px"></td>
         <td><input class="f" data-mf="${n}" data-k="desc" value="${esc(r.it.desc)}" style="padding:4px 6px"></td>
-        <td><input class="f" data-mf="${n}" data-k="cuft" value="${esc(r.it.cuft)}" style="padding:4px 6px;text-align:center"></td>
+        <td><input class="f" data-mf="${n}" data-k="cuft" value="${esc(String(tallyCu(r.it)))}" style="padding:4px 6px;text-align:center"${/commercial bin/i.test(r.it.desc||'')?' title="Bins ride at 19 cu ft on the docs; order entry still charges 20" readonly':''}></td>
         <td><input class="f" data-mf="${n}" data-k="dims" value="${esc(r.it.dims)}" style="padding:4px 6px"></td>
         <td class="num">${money(itemAmount(r.it))}</td>
         <td><button class="x" data-mfdel="${n}" title="Remove from cargo too">×</button></td>
@@ -1266,12 +1274,16 @@ function renderManifest(){
         <div style="font-weight:700">${i+1}<br><span style="font-size:15px">${esc(g.o.inv)}</span></div>
         <div><b>${esc(g.o.sh.name||'')}</b><br>${esc(g.o.sh.street||'')}<br>${esc([g.o.sh.city,g.o.sh.state].filter(Boolean).join(', '))}<br><span style="color:var(--muted)">TEL# ${esc(g.o.sh.phone||'')}</span></div>
         <div><b>${esc(g.o.co.name||'')}</b><br>${esc(g.o.co.city||'')}<br>ST. LUCIA<br><span style="color:var(--muted)">TEL# ${esc(g.o.co.phone||'')}</span></div>
-        <div>${g.items.map(it=>`${esc(it.qty)} ${esc(it.desc)} S.T.C PERSONAL EFFECTS &nbsp; <b>${esc(it.cuft)}</b> &nbsp; ${money(itemAmount(it))}`).join('<br>')}
+        <div>${g.items.map(it=>`${esc(it.qty)} ${esc(it.desc)} S.T.C PERSONAL EFFECTS &nbsp; <b>${tallyCu(it)}</b> &nbsp; ${money(itemAmount(it))}`).join('<br>')}
           ${orderBal(g.o)>0?'<div style="color:#C22B1E;font-weight:800;margin-top:4px">HOLD</div>':''}</div>
       </div>`).join('');
   }
 }
-$('#mfDest').addEventListener('change',renderManifest);
+$('#mfDest').addEventListener('change',()=>{
+  renderManifest();
+  /* header card open? rebuild it so the broker follows the destination */
+  if(!$('#mfHeadCard').hidden) $('#mfMaster').click();
+});
 $('#mfToggle').addEventListener('click',()=>{ mfMode = mfMode==='tally'?'manifest':'tally'; $('#mfToggle').textContent = mfMode==='tally'?'Manifest view':'Tally view'; renderManifest(); });
 /* ---------- 11. XLSX exports (ExcelJS) ---------- */
 function dl(buf,name){
@@ -1555,13 +1567,25 @@ function renderPrev(){
   $('#pvMonth').value=ym;
   const rows=monthOrders(ym);
   $('#pvStats').innerHTML = statCards(rows);
-  $('#pvList').innerHTML = cargoTable(rows, true);
+  $('#pvList').innerHTML = cargoTable(sortRows(rows), true);
+  $$('#pvList [data-sort]').forEach(h=>h.addEventListener('click',()=>{
+    const k=h.dataset.sort;
+    if(cargoSort.k===k) cargoSort.dir*=-1; else cargoSort={k,dir:1};
+    renderPrev();
+  }));
+  $$('#pvList [data-page]').forEach(b=>b.addEventListener('click',()=>{
+    cargoPage += b.dataset.page==='next'?1:-1;
+    renderPrev();
+  }));
 }
 $('#pvMonth').addEventListener('change',renderPrev);
 $('#pvManifest').addEventListener('click',()=>gsSync(manifestPayload($('#pvMonth').value,$('#pvDest').value,'FULL MONTH'),
   ()=>buildManifestXlsx($('#pvMonth').value,$('#pvDest').value)));
 $('#pvMaster').addEventListener('click',()=>{
-  const broker=V2.brokers[0]; hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
+  /* Ella rides Vieux-Fort, Hermens rides Castries — same rule as the live master */
+  const vf=/vieux/i.test($('#pvDest').value);
+  const broker=V2.brokers.find(b=> vf ? /ella/i.test(b.name) : /hermle?n/i.test(b.name)) || V2.brokers[0];
+  hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
   const hdr={ ...V2.mbl, brokerName:broker.name, consignee:broker.name+'\n'+broker.addr, bkg:'', vessel:'' };
   gsSync(masterPayload($('#pvMonth').value,$('#pvDest').value,hdr,'FULL MONTH'),
     ()=>buildMasterBL($('#pvMonth').value,$('#pvDest').value,hdr));
@@ -1676,6 +1700,7 @@ Object.keys(HDR).concat(Object.keys(SH),Object.keys(CO)).forEach(id=>{
 });
 $('#fRecv').addEventListener('change',()=>{ formToDraft(); });
 $('#fAmtRecd').addEventListener('input',()=>{ formToDraft(); });
+$('#fPayMethod').addEventListener('change',()=>{ formToDraft(); });
 $('#fShowTotal').addEventListener('change',()=>{ formToDraft(); renderPreview(); });
 $('#itemRows').addEventListener('input',e=>{
   const tr=e.target.closest('tr'); if(!tr) return;
