@@ -1,0 +1,211 @@
+/* ==== FCS ADMIN V2 -> GOOGLE SHEETS BRIDGE ====
+   setup(): converts the xlsx templates to native Sheets, organizes Drive
+   doPost(): receives Update clicks from fcsshipping.com/admin */
+
+var XLSX = {
+  revenue:'1GoZFfLUaXk-cyHsPrNJtXu8E0MSuTtne',
+  manHer:'1YuS_Q4PcyAJhSIYfKuZPQsOYOCEJnITk',
+  manElla:'1ON1sjCNxBPMtzIbO0nxfS8V9COuxlFJM',
+  her:'1H_Q525fumuwWEGBw4ByUnX1rjZM_nKQk',
+  ella:'1EXPtev7nqluTimVBEuYZ4ion7JfTi6ew'
+};
+var ARCHIVE_ALSO = ['1FxoJ4V522UeTRMzdFf2YOOLZ6_n3WhtY','1D25nMqMrDcE27E2pruzOSatOvfx1Nk0_','10xeFmYZZZjyn5pKBpU2aT927aSYEzDKT'];
+
+function getFolder(name, parent){
+  var it = parent ? parent.getFoldersByName(name) : DriveApp.getFoldersByName(name);
+  return it.hasNext() ? it.next() : (parent||DriveApp).createFolder(name);
+}
+function setup(){
+  var root=getFolder('FCS Shipping');
+  var fT=getFolder('Templates',root); getFolder('Monthly Docs',root); var fA=getFolder('Archive',root);
+  var props=PropertiesService.getScriptProperties();
+  var names={revenue:'Monthly Revenues 2026 (LIVE)',manHer:'Hermen Manifest TEMPLATE',manElla:'Ella Manifest TEMPLATE',her:'Hermen Master B/L TEMPLATE',ella:'Ella Master B/L TEMPLATE'};
+  var conv={};
+  Object.keys(XLSX).forEach(function(k){
+    var res=UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/'+XLSX[k]+'/copy?supportsAllDrives=true',{
+      method:'post',contentType:'application/json',
+      headers:{Authorization:'Bearer '+ScriptApp.getOAuthToken()},
+      payload:JSON.stringify({name:names[k],mimeType:'application/vnd.google-apps.spreadsheet',
+        parents:[(k==='revenue'?root:fT).getId()]})});
+    conv[k]=JSON.parse(res.getContentText()).id;
+    try{ DriveApp.getFileById(XLSX[k]).moveTo(fA); }catch(e){}
+  });
+  ARCHIVE_ALSO.forEach(function(id){ try{ DriveApp.getFileById(id).moveTo(fA); }catch(e){} });
+  props.setProperty('ids', JSON.stringify(conv));
+  Logger.log(conv);
+  return conv;
+}
+function IDS(){ return JSON.parse(PropertiesService.getScriptProperties().getProperty('ids')||'{}'); }
+
+function doPost(e){
+  try{
+    var p=JSON.parse(e.postData.contents);
+    var url='';
+    if(p.action==='revenue') url=doRevenue(p);
+    else if(p.action==='master') url=doMaster(p);
+    else if(p.action==='manifest') url=doManifest(p);
+    else throw 'Unknown action';
+    return out({ok:true,url:url});
+  }catch(err){ return out({ok:false,error:String(err)}); }
+}
+function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+function monthFile(kind, key, name){
+  var props=PropertiesService.getScriptProperties();
+  var k='mf2:'+kind+':'+key;
+  var id=props.getProperty(k);
+  if(id){ try{ DriveApp.getFileById(id); return SpreadsheetApp.openById(id); }catch(e){} }
+  var root=getFolder('FCS Shipping'); var fM=getFolder('Monthly Docs',root);
+  var copy=DriveApp.getFileById(IDS()[kind]).makeCopy(name,fM);
+  props.setProperty(k,copy.getId());
+  return SpreadsheetApp.openById(copy.getId());
+}
+function find(sh,t){ return sh.createTextFinder(t).findNext(); }
+function findAll(sh,t){ return sh.createTextFinder(t).findAll(); }
+function rowStars(sh,r){
+  /* every placeholder cell in the row, classified by what it means */
+  var out={}; var vals=sh.getRange(r,1,1,16).getValues()[0];
+  for(var c=0;c<vals.length;c++){
+    var t=String(vals[c]||'');
+    if(t.indexOf('*')!==0) continue;
+    var col=c+1;
+    if(/bl/i.test(t)) out.mark=col;
+    else if(/pkg/i.test(t)) out.pkgs=col;
+    else if(/cargo|barrel|commercial/i.test(t)) out.desc=col;
+    else if(/cu ?ft|weight|cu$/i.test(t)) out.cuft=col;
+    else if(/meas/i.test(t)) out.meas=col;
+  }
+  return out;
+}
+function setIf(sh,r,col,v){ if(col && v!==undefined && v!=='') sh.getRange(r,col).setValue(v); }
+function clearStars(sh,r){
+  var rng=sh.getRange(r,1,1,16); var vals=rng.getValues()[0];
+  for(var c=0;c<vals.length;c++) if(String(vals[c]||'').indexOf('*')===0) sh.getRange(r,c+1).clearContent();
+}
+function monthName(ym){
+  var M=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  return M[parseInt(String(ym).split('-')[1],10)-1];
+}
+
+function doRevenue(p){
+  var ss=SpreadsheetApp.openById(IDS().revenue);
+  var sh=ss.getSheetByName(p.month)||ss.insertSheet(p.month);
+  sh.getRange('A2').setValue(p.month.charAt(0)+p.month.slice(1).toLowerCase()+', '+p.year);
+  sh.getRange(4,1,Math.max(sh.getLastRow(),400),8).clearContent();
+  var n=p.rows.length;
+  if(n){
+    sh.getRange(4,1,n,7).setValues(p.rows);
+    for(var r=4;r<4+n;r++) sh.getRange(r,8).setFormula('=F'+r+'-G'+r);
+    var t=4+n+1;
+    sh.getRange(t,5).setValue('TOTALS').setFontWeight('bold');
+    sh.getRange(t,6).setFormula('=SUM(F4:F'+(3+n)+')').setFontWeight('bold');
+    sh.getRange(t,7).setFormula('=SUM(G4:G'+(3+n)+')').setFontWeight('bold');
+    sh.getRange(t,8).setFormula('=SUM(H4:H'+(3+n)+')').setFontWeight('bold');
+  }
+  return ss.getUrl()+'#gid='+sh.getSheetId();
+}
+
+function doMaster(p){
+  var label=(p.dest||'').toUpperCase()+' MASTER BL - '+monthName(p.month)+' '+p.month.split('-')[0];
+  var ss=monthFile(p.template==='her'?'her':'ella', p.month+':'+p.dest, label);
+  var sh=ss.getSheets()[0];
+  var H=p.header||{};
+  var c=find(sh,'*Shipper');
+  if(c){ var L=(H.shipper||'').split('\n'); for(var i=0;i<L.length;i++) sh.getRange(c.getRow()+i,c.getColumn()).setValue(L[i]); }
+  c=find(sh,'*carrier');
+  if(c){ var L2=(H.consignee||'').split('\n'); for(var j=0;j<Math.min(L2.length,7);j++) sh.getRange(c.getRow()+j,c.getColumn()).setValue(L2[j]); }
+  c=find(sh,'*freight forwarder');
+  if(c){ var L3=(H.forwarder||'').split('\n'); for(var q=0;q<L3.length;q++) sh.getRange(c.getRow()+q,c.getColumn()).setValue(L3[q]); }
+  c=find(sh,'BKG#'); if(c&&H.bkg) c.setValue('BKG# '+H.bkg);
+  /* aggregate rows FIRST, then wipe their leftover placeholders so the
+     per-BL loop can never eat them */
+  var bar=find(sh,'*BARRELS');
+  if(bar){ var rb=bar.getRow(); var st=rowStars(sh,rb);
+    bar.setValue('BARRELS');
+    setIf(sh,rb,st.pkgs||3,p.barrels.n||0); setIf(sh,rb,st.cuft,p.barrels.cu||0);
+    clearStars(sh,rb); }
+  var bin=find(sh,'*COMMERCIAL BIN');
+  if(bin){ var rn=bin.getRow(); var st2=rowStars(sh,rn);
+    bin.setValue('COMMERCIAL BIN');
+    setIf(sh,rn,st2.pkgs||3,p.bins.n||0); setIf(sh,rn,st2.cuft,p.bins.cu||0);
+    clearStars(sh,rn); }
+  var slots=findAll(sh,'*BL#');
+  for(var s=0;s<slots.length;s++){
+    var r=slots[s].getRow();
+    if(s<p.lines.length){
+      var Ln=p.lines[s]; var stt=rowStars(sh,r);
+      setIf(sh,r,stt.mark||1,Ln[0]); setIf(sh,r,stt.pkgs||3,Ln[1]);
+      setIf(sh,r,stt.desc||9,Ln[2]); setIf(sh,r,stt.cuft||11,Ln[3]);
+      setIf(sh,r,stt.meas||12,Ln[4]);
+      clearStars(sh,r);
+    } else {
+      clearStars(sh,r);
+    }
+  }
+  /* overflow: more BLs than template rows — append right below the last slot */
+  if(p.lines.length>slots.length && slots.length){
+    var last=slots[slots.length-1].getRow(); var proto=rowStars(sh,slots[slots.length-1].getRow());
+    for(var x=slots.length;x<p.lines.length;x++){
+      var rr=last+(x-slots.length)+1;
+      sh.insertRowsAfter(rr-1,1);
+      var Lx=p.lines[x];
+      sh.getRange(rr,1).setValue(Lx[0]); sh.getRange(rr,3).setValue(Lx[1]);
+      sh.getRange(rr,9).setValue(Lx[2]); sh.getRange(rr,11).setValue(Lx[3]);
+      sh.getRange(rr,12).setValue(Lx[4]);
+    }
+  }
+  return ss.getUrl();
+}
+function doManifest(p){
+  var tpl=/castries/i.test(p.dest)?'manHer':'manElla';
+  var label=(p.dest||'').toUpperCase()+' MANIFEST - '+monthName(p.month)+' '+p.month.split('-')[0];
+  var ss=monthFile(tpl, p.month+':'+p.dest, label);
+  var sh=ss.getSheets()[0];
+  var c=find(sh,'*Freight Forwarder'); if(c&&p.from&&p.from.name) c.setValue(p.from.name);
+  c=find(sh,'*Carrier'); if(c) c.setValue((p.header&&p.header.vessel)||' ');
+  var to=find(sh,'TO:');
+  if(to&&p.to&&p.to.name){
+    var lines=[p.to.name].concat(String(p.to.addr||'').split('\n')).slice(0,6);
+    for(var i=0;i<lines.length;i++) sh.getRange(to.getRow()+i,to.getColumn()+1).setValue(lines[i]);
+  }
+  var ds=find(sh,'DATE SHIPPED:'); if(ds) sh.getRange(ds.getRow(),ds.getColumn()+3).setValue(new Date());
+  var dst=find(sh,'DESTINATION:'); if(dst) sh.getRange(dst.getRow(),dst.getColumn()+3).setValue((p.dest||'').toUpperCase()+', ST. LUCIA');
+  var totPk=0,totCu=0;
+  p.blocks.forEach(function(b){ b.lines.forEach(function(l){ totPk+=(l[0]||0); totCu+=(l[2]||0); }); });
+  var tp=find(sh,'TOTAL # PACKAGES'); if(tp) sh.getRange(tp.getRow(),tp.getColumn()+4).setValue(totPk);
+  var tv=find(sh,'TOTAL VOLUME'); if(tv) sh.getRange(tv.getRow(),tv.getColumn()+4).setValue(Math.round(totCu*10)/10);
+  /* find the B/L block header row: "B/L #" (with or without placeholders below) */
+  var hdr=null; var HN=['B/L #','B/L#','BL #'];
+  for(var h=0;h<HN.length&&!hdr;h++) hdr=find(sh,HN[h]);
+  if(!hdr) throw 'Template missing the B/L # header row';
+  var start=hdr.getRow()+2;         /* first block starts 2 rows under the header */
+  var BH=8;                          /* block height: id/addr/city rows + tel row + gap */
+  var need=start+p.blocks.length*BH+4;
+  if(sh.getMaxRows()<need) sh.insertRowsAfter(sh.getMaxRows(), need-sh.getMaxRows());
+  /* wipe any sample content in the block zone */
+  sh.getRange(start,1,Math.max(BH*p.blocks.length,BH)+2,16).clearContent();
+  for(var b2=0;b2<p.blocks.length;b2++){
+    var B=p.blocks[b2]; var r0=start+BH*b2;
+    sh.getRange(r0,2).setValue(b2+1);
+    sh.getRange(r0+1,3).setValue(B.bl).setFontWeight('bold');
+    sh.getRange(r0+1,4).setValue('Name:');
+    sh.getRange(r0+1,5).setValue(B.sender);
+    sh.getRange(r0+1,7).setValue(B.consignee);
+    sh.getRange(r0+2,4).setValue('Address:');
+    sh.getRange(r0+2,5).setValue(B.senderAddr||'');
+    sh.getRange(r0+2,7).setValue(B.dest||'');
+    sh.getRange(r0+3,5).setValue(B.senderCity||'');
+    sh.getRange(r0+3,7).setValue('St. Lucia');
+    for(var j2=0;j2<B.lines.length&&j2<4;j2++){
+      sh.getRange(r0+1+j2,8).setValue(B.lines[j2][0]);
+      sh.getRange(r0+1+j2,9).setValue(B.lines[j2][1]);
+      sh.getRange(r0+1+j2,11).setValue(B.lines[j2][2]);
+      sh.getRange(r0+1+j2,13).setValue(B.lines[j2][3]);
+    }
+    sh.getRange(r0+5,4).setValue('tel#'); sh.getRange(r0+5,5).setValue(B.senderTel||'');
+    sh.getRange(r0+5,6).setValue('tel#'); sh.getRange(r0+5,7).setValue(B.consTel||'');
+    if(B.hold){ sh.getRange(r0+5,9).setValue('HOLD').setFontColor('#C00000').setFontWeight('bold'); }
+    sh.getRange(r0+BH-1,2,1,12).setBorder(null,null,true,null,null,null);
+  }
+  return ss.getUrl();
+}
