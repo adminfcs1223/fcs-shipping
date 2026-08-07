@@ -1459,8 +1459,11 @@ $('#mfMaster').addEventListener('click',()=>{
   const card=$('#mfHeadCard'); card.hidden=false;
   $('#mfHeadFields').innerHTML = mblHeaderFields(dest).map(([k,l,v,rows])=>{
     if(v==='select'){
+      /* the right broker for the destination comes preselected */
+      const vf=/vieux/i.test(dest);
+      const pick=V2.brokers.find(b=> vf ? /ella/i.test(b.name) : /hermle?n/i.test(b.name)) || V2.brokers[0];
       return `<div style="grid-column:span 2"><label class="f">${l}</label>
-        <select class="f" data-mh="${k}">${V2.brokers.map(b=>`<option>${esc(b.name)}</option>`).join('')}</select></div>`;
+        <select class="f" data-mh="${k}">${V2.brokers.map(b=>`<option${b.name===pick.name?' selected':''}>${esc(b.name)}</option>`).join('')}</select></div>`;
     }
     return rows
       ? `<div><label class="f">${l}</label><textarea class="f" data-mh="${k}" rows="${rows}">${esc(v)}</textarea></div>`
