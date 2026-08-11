@@ -437,6 +437,14 @@ table.list tbody tr:hover{background:#fafcfd}
           <button class="btn ghost" id="mfHeadCancel">Cancel</button>
         </div>
       </div>
+      <div class="card" id="mfManCard" hidden>
+        <h2>Manifest header — confirm before it generates</h2>
+        <div class="grid g2" id="mfManFields"></div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn" id="mfManGo">Generate Manifest</button>
+          <button class="btn ghost" id="mfManCancel">Cancel</button>
+        </div>
+      </div>
       <div class="card" style="padding:10px;overflow:auto"><div id="mfList"></div></div>
     </section>
     <!-- ===================== PREVIOUS ACTIVITY ===================== -->
@@ -1283,6 +1291,7 @@ $('#mfDest').addEventListener('change',()=>{
   renderManifest();
   /* header card open? rebuild it so the broker follows the destination */
   if(!$('#mfHeadCard').hidden) $('#mfMaster').click();
+  else if(!$('#mfManCard').hidden) $('#mfXlsx').click();
 });
 $('#mfToggle').addEventListener('click',()=>{ mfMode = mfMode==='tally'?'manifest':'tally'; $('#mfToggle').textContent = mfMode==='tally'?'Manifest view':'Tally view'; renderManifest(); });
 /* ---------- 11. XLSX exports (ExcelJS) ---------- */
@@ -1460,8 +1469,21 @@ async function gsSync(payload, fallback){
     const d=await res.json().catch(()=>({}));
     if(!res.ok||!d.ok) throw new Error(d.error||'sync failed');
     toast('Sheet updated ✓');
-    if(d.url) window.open(d.url,'_blank');
+    if(d.url) showSheetLink(d.url);
   }catch(e){ alert('Could not update the sheet: '+e.message); }
+}
+/* browsers block window.open after an await — hand the user a real link instead */
+function showSheetLink(url){
+  let b=$('#sheetLinkBar');
+  if(!b){
+    b=document.createElement('div'); b.id='sheetLinkBar';
+    b.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0F2E46;color:#fff;padding:12px 18px;border-radius:9px;box-shadow:0 8px 30px rgba(0,0,0,.35);z-index:9999;display:flex;gap:14px;align-items:center;font-size:14px';
+    document.body.appendChild(b);
+  }
+  b.innerHTML=`<span>Sheet updated ✓</span>
+    <a href="${url}" target="_blank" rel="noopener" style="color:#7FD1FF;font-weight:700;text-decoration:underline">Open the sheet →</a>
+    <button style="background:none;border:0;color:#9FB6C6;font-size:16px;cursor:pointer" onclick="this.parentNode.remove()">×</button>`;
+  clearTimeout(b._t); b._t=setTimeout(()=>{ b.remove(); }, 60000);
 }
 function revenuePayload(ym){
   const [y,m]=ym.split('-');
@@ -1497,15 +1519,16 @@ function masterPayload(ym,dest,hdr,truck){
     template: /castries/i.test(dest)?'her':'ella',
     header: hdr, barrels:agg.barrel, bins:agg.bin, lines };
 }
-function manifestPayload(ym,dest,truck){
-  truck = truck || currentTruck();
+function manifestPayload(ym,dest,truck,x){
+  truck = truck || currentTruck(); x = x || {};
   const wk=parseInt(String(truck).replace(/\D/g,''),10)||null;
   let os=monthOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
   if(truck!=='FULL MONTH' && wk) os=os.filter(o=>weekOf(o.invDate)===wk);
   return { action:'manifest', month:ym, dest, truck,
+    date: x.date||'', container: x.container||'',
     from:{ name:V2.mbl.manFrom, addr:V2.mbl.manFromAddr, city:V2.mbl.manFromCity,
       state:V2.mbl.manFromState, zip:V2.mbl.manFromZip, tel:V2.mbl.manFromTel },
-    to:{ name:hdrBrokerName||'', addr:hdrBrokerAddr||'', tel:V2.mbl.relTel||'' },
+    to:{ name:x.brokerName||hdrBrokerName||'', addr:x.brokerAddr||hdrBrokerAddr||'', tel:V2.mbl.relTel||'' },
     blocks: os.map(o=>({ bl:o.inv, sender:o.sh.name||'', senderAddr:o.sh.street||'',
       senderCity:[o.sh.city,o.sh.state].filter(Boolean).join(', '), senderTel:o.sh.phone||'',
       consignee:o.co.name||'', dest:o.co.city||'', consTel:o.co.phone||'',
@@ -1518,9 +1541,20 @@ function manifestPayload(ym,dest,truck){
 }
 /* master B/L header confirm flow */
 let hdrBrokerName='', hdrBrokerAddr='', hdrVessel='', hdrBkg='';
+const TRUCK_OPTS=['Truck 1','Truck 2','Truck 3','Truck 4','Truck 5','FULL MONTH'];
+function truckSelectHTML(k, picked){
+  return `<div><label class="f">Truck (bottom tab)</label>
+    <select class="f" data-mh="${k}">${TRUCK_OPTS.map(t=>`<option${t===picked?' selected':''}>${t}</option>`).join('')}</select></div>`;
+}
+function brokerFor(dest){
+  const vf=/vieux/i.test(dest);
+  return V2.brokers.find(b=> vf ? /ella/i.test(b.name) : /hermle?n/i.test(b.name)) || V2.brokers[0];
+}
 function mblHeaderFields(dest){
   const M=V2.mbl;
   return [
+    ['date','Date', todayISO(), 0, 'date'],
+    ['truck','Truck (bottom tab)', 'truck'],
     ['brokerName','Broker / Consignee', 'select'],
     ['carrier','Carrier', M.carrier], ['trucking','Trucking', M.trucking],
     ['shipper','Shipper / Exporter', M.shipper, 5], ['forwarder','Freight Forwarder / CHB', M.forwarder, 3],
@@ -1529,14 +1563,13 @@ function mblHeaderFields(dest){
     ['loadNote','Note to carrier', M.loadNote],
   ];
 }
-$('#mfMaster').addEventListener('click',()=>{
-  const dest=$('#mfDest').value;
-  const card=$('#mfHeadCard'); card.hidden=false;
-  $('#mfHeadFields').innerHTML = mblHeaderFields(dest).map(([k,l,v,rows])=>{
+function renderHeaderFields(holder, fields, dest){
+  $(holder).innerHTML = fields.map(([k,l,v,rows,typ])=>{
+    if(typ==='date') return `<div><label class="f">${l}</label><input class="f" type="date" data-mh="${k}" value="${esc(v)}"></div>`;
+    if(v==='truck') return truckSelectHTML(k, currentTruck());
     if(v==='select'){
       /* the right broker for the destination comes preselected */
-      const vf=/vieux/i.test(dest);
-      const pick=V2.brokers.find(b=> vf ? /ella/i.test(b.name) : /hermle?n/i.test(b.name)) || V2.brokers[0];
+      const pick=brokerFor(dest);
       return `<div style="grid-column:span 2"><label class="f">${l}</label>
         <select class="f" data-mh="${k}">${V2.brokers.map(b=>`<option${b.name===pick.name?' selected':''}>${esc(b.name)}</option>`).join('')}</select></div>`;
     }
@@ -1544,21 +1577,56 @@ $('#mfMaster').addEventListener('click',()=>{
       ? `<div><label class="f">${l}</label><textarea class="f" data-mh="${k}" rows="${rows}">${esc(v)}</textarea></div>`
       : `<div><label class="f">${l}</label><input class="f" data-mh="${k}" value="${esc(v)}"></div>`;
   }).join('');
+  /* picking a date moves the truck to that week */
+  const d=$(holder+' [data-mh="date"]'), t=$(holder+' [data-mh="truck"]');
+  if(d&&t) d.addEventListener('change',()=>{ if(d.value) t.value='Truck '+weekOf(d.value); });
+}
+$('#mfMaster').addEventListener('click',()=>{
+  $('#mfManCard').hidden=true;
+  const dest=$('#mfDest').value;
+  const card=$('#mfHeadCard'); card.hidden=false;
+  renderHeaderFields('#mfHeadFields', mblHeaderFields(dest), dest);
   card.scrollIntoView({behavior:'smooth'});
 });
 $('#mfHeadCancel').addEventListener('click',()=>{ $('#mfHeadCard').hidden=true; });
 $('#mfHeadGo').addEventListener('click',async ()=>{
   const dest=$('#mfDest').value; const vals={};
   $$('#mfHeadFields [data-mh]').forEach(f=>vals[f.dataset.mh]=f.value);
-  const broker=V2.brokers.find(b=>b.name===vals.brokerName)||V2.brokers[0];
+  const broker=V2.brokers.find(b=>b.name===vals.brokerName)||brokerFor(dest);
   hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr; hdrVessel=vals.vessel; hdrBkg=vals.bkg;
   const hdr={ ...vals, brokerName:broker.name,
     consignee: broker.name+'\n'+broker.addr };
   $('#mfHeadCard').hidden=true;
-  await gsSync(masterPayload(thisMonth(), dest, hdr), ()=>buildMasterBL(thisMonth(), dest, hdr));
+  await gsSync(masterPayload(thisMonth(), dest, hdr, vals.truck), ()=>buildMasterBL(thisMonth(), dest, hdr));
 });
-$('#mfXlsx').addEventListener('click',()=>gsSync(manifestPayload(thisMonth(),$('#mfDest').value),
-  ()=>buildManifestXlsx(thisMonth(),$('#mfDest').value)));
+/* manifest gets the same confirm-first treatment */
+function manHeaderFields(){
+  return [
+    ['date','Date shipped', todayISO(), 0, 'date'],
+    ['truck','Truck (bottom tab)', 'truck'],
+    ['brokerName','Broker / Consignee (TO)', 'select'],
+    ['container','Container #', ''],
+  ];
+}
+$('#mfXlsx').addEventListener('click',()=>{
+  $('#mfHeadCard').hidden=true;
+  const dest=$('#mfDest').value;
+  const card=$('#mfManCard'); card.hidden=false;
+  renderHeaderFields('#mfManFields', manHeaderFields(), dest);
+  card.scrollIntoView({behavior:'smooth'});
+});
+$('#mfManCancel').addEventListener('click',()=>{ $('#mfManCard').hidden=true; });
+$('#mfManGo').addEventListener('click',async ()=>{
+  const dest=$('#mfDest').value; const vals={};
+  $$('#mfManFields [data-mh]').forEach(f=>vals[f.dataset.mh]=f.value);
+  const broker=V2.brokers.find(b=>b.name===vals.brokerName)||brokerFor(dest);
+  hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
+  $('#mfManCard').hidden=true;
+  await gsSync(manifestPayload(thisMonth(), dest, vals.truck, {
+    date: vals.date?usDate(vals.date):'', container: vals.container||'',
+    brokerName: broker.name, brokerAddr: broker.addr,
+  }), ()=>buildManifestXlsx(thisMonth(), dest));
+});
 $('#btnRevXlsx').addEventListener('click',()=>gsSync(revenuePayload(thisMonth()),
   ()=>buildRevenueXlsx(thisMonth())));
 /* ---------- 12. PREVIOUS ACTIVITY ---------- */
