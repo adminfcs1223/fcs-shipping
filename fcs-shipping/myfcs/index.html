@@ -15,12 +15,14 @@
   #app{display:flex;min-height:100vh}
   /* ---------- left rail ---------- */
   .rail{width:118px;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;
-    padding:22px 10px 16px;position:sticky;top:0;height:100vh;flex:0 0 118px}
+    padding:calc(22px + env(safe-area-inset-top,0px)) 10px calc(16px + env(safe-area-inset-bottom,0px));
+    position:sticky;top:0;height:100vh;flex:0 0 118px}
   .logo{width:58px;height:58px;border-radius:14px;background:linear-gradient(145deg,#1D4E74,#0E2A40);
     border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;
     font-weight:800;font-size:19px;letter-spacing:.04em}
-  .logoname{margin-top:9px;font-size:12.5px;font-weight:700;letter-spacing:.14em;opacity:.9}
-  .rail nav{margin-top:30px;display:flex;flex-direction:column;gap:6px;width:100%}
+  .logoimg{width:92px;height:auto;border-radius:12px;background:#fff;padding:7px 6px;display:block}
+  .logoslot{display:flex;justify-content:center;margin-bottom:18px}
+  .rail nav{margin:auto 0;display:flex;flex-direction:column;gap:6px;width:100%}
   .rl{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 4px;border-radius:12px;
     cursor:pointer;color:#B9CBDA;border:0;background:none;font-size:10.5px;font-weight:700;letter-spacing:.08em;width:100%}
   .rl svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -31,7 +33,7 @@
   .net.on i{background:#3FBF7F}
   /* ---------- main ---------- */
   .main{flex:1;min-width:0}
-  .wrap{max-width:900px;margin:0 auto;padding:34px 28px 60px}
+  .wrap{max-width:900px;margin:0 auto;padding:calc(34px + env(safe-area-inset-top,0px)) 28px calc(60px + env(safe-area-inset-bottom,0px))}
   h1{font-size:23px;margin:0 0 4px;letter-spacing:-.01em}
   .sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
   h2{font-size:15px;margin:0 0 14px;color:var(--navy);letter-spacing:.02em;text-transform:uppercase;font-weight:700}
@@ -58,13 +60,13 @@
   .step.on{color:var(--navy)} .step.on::before{background:var(--accent)}
   .step.done::before{background:var(--green)}
   /* home app grid */
-  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:22px 14px;margin-top:8px}
-  .appic{display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;background:none;border:0;padding:6px 2px;border-radius:12px}
-  .appic:active{transform:scale(.96)}
-  .appic .ic{width:76px;height:76px;border-radius:19px;background:linear-gradient(150deg,var(--navy3),var(--navy));
-    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(14,42,64,.22)}
-  .appic .ic svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  .appic span{font-size:12.5px;font-weight:700;color:var(--ink)}
+  .apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:34px 26px;margin-top:26px}
+  .appic{display:flex;flex-direction:column;align-items:center;gap:16px;cursor:pointer;background:none;border:0;padding:10px 4px;border-radius:16px}
+  .appic:active{transform:scale(.97)}
+  .appic .ic{width:170px;height:170px;border-radius:38px;background:linear-gradient(150deg,var(--navy3),var(--navy));
+    display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(14,42,64,.28)}
+  .appic .ic svg{width:72px;height:72px;stroke:#fff;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .appic span{font-size:16.5px;font-weight:700;color:var(--ink);letter-spacing:.01em}
   /* items table */
   table.items{width:100%;border-collapse:collapse;font-size:14.5px}
   table.items th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:6px;border-bottom:2px solid var(--rule)}
@@ -289,14 +291,15 @@ function tabletToAdmin(o){
     po:'',container:'',code:'',shipVia:'',cross:'',service:'',
     recv:o.recv, sh:o.sh, co:o.co, items:o.items, showTotal:true,
     amtRecd:o.amtRecd||'', payMethod:o.payMethod||'', created:true,
-    qbInvoiceNo:'', qbOk:null, paid:false, _v2:true, _tablet:true,
+    qbInvoiceNo:'', qbOk:null, paid:!!o.paid, _v2:true, _tablet:true,
     shEmail:o.shEmail||'', mailReceipt:!!o.mailReceipt,
     signature:o.signature||'', termsAcceptedAt:o.termsAcceptedAt||'' };
 }
 function adminToTablet(r,local){
   return { ...local, inv:r.inv, invDate:r.invDate, pickup:r.pickup, time:r.time,
-    recv:r.recv, sh:r.sh, co:r.co, items:r.items, amtRecd:r.amtRecd||'', payMethod:r.payMethod||'' };
+    recv:r.recv, sh:r.sh, co:r.co, items:r.items, amtRecd:r.amtRecd||'', payMethod:r.payMethod||'', paid:!!r.paid };
 }
+function pieces(o){ return o.items.reduce((s,it)=>s+(parseFloat(it.qty)||0),0); }
 /* pull settings + prices + next B/L, and reconcile orders with admin:
    anything deleted in admin disappears here too; admin edits flow down. */
 async function syncDown(){
@@ -326,6 +329,26 @@ async function doRefresh(){
   catch(e){ if(String(e.message)==='signin'){ go('login'); return; } toast('Could not sync: '+e.message); }
   render();
 }
+/* e-mail the customer their receipt through the site (same function admin uses) */
+async function emailReceipt(o){
+  if(!o.shEmail || o.mailReceipt || o._emailed) return false;
+  try{
+    const r=await fetch('https://fcsshipping.com/.netlify/functions/email-receipt',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',...(AUTH?{Authorization:'Bearer '+AUTH.access_token}:{})},
+      body:JSON.stringify({ to:String(o.shEmail).trim(), order:{
+        inv:o.inv, date:usDate(o.invDate), customer:o.sh.name||'',
+        destination:(o.co&&o.co.city)||'',
+        items:o.items.filter(it=>it.desc).map(it=>({qty:it.qty,desc:it.desc,amount:money(itemAmount(it))})),
+        total:money(orderTotal(o)),
+        eblNo:String(o.inv), paid:!!o.paid,
+        trackNote:'Track your shipment with B/L '+o.inv+' at www.fcsshipping.com',
+      }})});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok&&d.ok){ o._emailed=true; return true; }
+  }catch(e){}
+  return false;
+}
 async function doUpload(){
   const pending=orders.filter(o=>!o._uploaded||o._dirty);
   if(!pending.length){ toast('Nothing to upload — all synced.'); return; }
@@ -339,16 +362,30 @@ async function doUpload(){
       if(i>-1) remote[i]=up; else remote.push(up);
     });
     await kvSave('fcs:orders',remote);
+    /* re-sync the running B/L number with admin — offline (first-digit-bumped)
+       numbers are parked out of sequence and must NOT advance admin's counter */
     try{
       const s=await kvLoad('fcs:settings',{});
-      const maxNum=Math.max(...remote.map(r=>parseInt(String(r.inv).replace(/\D/g,''),10)||0));
+      const seq=pending.filter(o=>!o._offlineBL).map(o=>parseInt(String(o.inv).replace(/\D/g,''),10)||0);
+      const maxNum=seq.length?Math.max(...seq):0;
       const curNext=parseInt(String(s.next||'0').replace(/\D/g,''),10)||0;
-      if(maxNum>=curNext){ s.next=String(maxNum+1); await kvSave('fcs:settings',s); }
+      if(maxNum>=curNext){ s.next=String(maxNum+1); await kvSave('fcs:settings',s);
+        NEXT=String(s.next); FRESH=true; LS.set('myfcs:next',NEXT); LS.set('myfcs:nextFresh',true); }
     }catch(e){}
     const now=Date.now();
     pending.forEach(o=>{ o._uploaded=true; o._dirty=false; o._uploadedAt=now; });
     saveOrders();
-    toast(pending.length+' order(s) uploaded to FCS Admin.');
+    /* keep the site's shipment-tracking paid status in line (best effort) */
+    pending.forEach(o=>{
+      fetch('https://fcsshipping.com/.netlify/functions/ebl-status',{method:'POST',
+        headers:{'Content-Type':'application/json',...(AUTH?{Authorization:'Bearer '+AUTH.access_token}:{})},
+        body:JSON.stringify({eblNo:String(o.inv),status:o.paid?'paid':'open'})}).catch(()=>{});
+    });
+    /* send receipts to customers who gave an e-mail (and didn't ask for paper mail) */
+    let sent=0;
+    for(const o of pending){ if(await emailReceipt(o)) sent++; }
+    saveOrders();
+    toast(pending.length+' order(s) uploaded'+(sent?' — '+sent+' receipt(s) e-mailed':'')+'.');
   }catch(e){
     if(String(e.message)==='signin'){ go('login'); return; }
     toast('Upload failed: '+e.message+' — your orders are safe on this tablet.');
@@ -382,19 +419,24 @@ const TERMS = [
 ];
 
 /* ---------------- screens ---------------- */
-let scr='home', cur=null, editing=false;
+let scr=(AUTH?'home':'login'), cur=null, editing=false;
 function blankTabletOrder(){
   return { id:'tab-'+Date.now()+'-'+Math.floor(Math.random()*1e4),
     inv:nextBL(), invDate:todayISO(), pickup:todayISO(), time:nowTime(),
     recv:(V2.recv&&V2.recv[0])||'SEA FREIGHT',
     sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
     co:{name:'',name2:'',city:'',phone:''},
-    shEmail:'', mailReceipt:false,
+    shEmail:'', mailReceipt:false, paid:false,
     items:[{qty:'1',desc:'',cuft:'',dims:'',price:'',amount:'',kind:'freight'}],
     amtRecd:'', payMethod:'', signature:'', termsAcceptedAt:'',
+    _offlineBL:!(NEXT&&FRESH), _emailed:false,
     _uploaded:false, _dirty:false, _savedAt:null };
 }
-function go(s){ scr=s; render(); window.scrollTo(0,0); }
+const CREATE_SCREENS=['shipper','handoff','items','review'];
+function saveDraft(){ if(!editing && cur && CREATE_SCREENS.includes(scr)) LS.set('myfcs:draft',{cur,scr}); }
+function clearDraft(){ localStorage.removeItem('myfcs:draft'); }
+function startNew(){ clearDraft(); cur=blankTabletOrder(); editing=false; go('shipper'); }
+function go(s){ scr=s; saveDraft(); render(); window.scrollTo(0,0); }
 
 /* auto-sync before an app opens */
 async function openApp(dest){
@@ -405,23 +447,39 @@ async function openApp(dest){
     catch(e){ if(String(e.message)==='signin'){ document.getElementById('syncSplash')?.remove(); go('login'); return; } }
     document.getElementById('syncSplash')?.remove();
   }
-  if(dest==='create'){ cur=blankTabletOrder(); editing=false; go('shipper'); }
+  if(dest==='create'){
+    const d=LS.get('myfcs:draft',null);
+    if(d && d.cur){ cur=d.cur; editing=false; go(CREATE_SCREENS.includes(d.scr)?d.scr:'shipper'); }
+    else { cur=blankTabletOrder(); editing=false; go('shipper'); }
+  }
   else go(dest);
 }
 
+/* Real FCS logo: fetched from the site once, then cached on the tablet for offline use. */
+const LOGO_URL='https://fcsshipping.com/assets/fcs-logo.png';
+function logoHTML(){
+  const d=localStorage.getItem('myfcs:logo');
+  return d ? `<img class="logoimg" src="${d}" alt="FCS Shipping">` : `<div class="logo">FCS</div>`;
+}
+async function ensureLogo(){
+  if(localStorage.getItem('myfcs:logo')||!navigator.onLine) return;
+  try{
+    const b=await (await fetch(LOGO_URL,{cache:'force-cache'})).blob();
+    const d=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});
+    if(d&&d.startsWith('data:image')){ localStorage.setItem('myfcs:logo',d); render(); }
+  }catch(e){}
+}
 function rail(active){
   const online=navigator.onLine;
   const item=(id,ic,label,fn)=>`<button class="rl ${active===id?'on':''}" onclick="${fn}">${IC[ic]}<span>${label}</span></button>`;
   return `<div class="rail">
-    <div class="logo">FCS</div>
-    <div class="logoname">MyFCS</div>
     <nav>
+      <div class="logoslot">${logoHTML()}</div>
       ${item('home','home','HOME',"go('home')")}
       ${item('create','create','CREATE',"openApp('create')")}
       ${item('orders','orders','ORDERS',"openApp('orders')")}
       ${item('settings','settings','SETTINGS',"go('settings')")}
     </nav>
-    <div class="spacer"></div>
     <div class="net ${online?'on':''}"><i></i>${online?'ONLINE':'OFFLINE'}</div>
   </div>`;
 }
@@ -430,9 +488,9 @@ function shell(active,inner){ return rail(active)+`<div class="main"><div class=
 /* ---- HOME ---- */
 function vHome(){
   const app=(ic,label,fn)=>`<button class="appic" onclick="${fn}"><span class="ic">${IC[ic]}</span><span>${label}</span></button>`;
+  const dateStr=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   return shell('home',`
-    <h1>FCS Shipping</h1>
-    <p class="sub">Select an application. Work is saved on this tablet and synced with FCS Admin.</p>
+    <h1 style="font-size:28px;margin-bottom:10px">${dateStr}</h1>
     <div class="apps">
       ${app('create','Create',"openApp('create')")}
       ${app('orders','Orders',"openApp('orders')")}
@@ -447,11 +505,20 @@ function steps(n){
 }
 function vShipper(){
   const o=cur;
+  const blbar = editing
+    ? `<div class="blbar"><div><small>BILL OF LADING #</small>
+         <input class="f" data-k="inv" value="${esc(o.inv)}" inputmode="numeric" style="width:140px;font-size:19px;font-weight:800;margin-top:3px"></div>
+       <div style="text-align:right"><small>DATE</small><br>
+         <input class="f" type="date" data-k="invDate" value="${esc(o.invDate)}" style="width:170px;margin-top:3px"></div></div>`
+    : `<div class="blbar"><div><small>BILL OF LADING</small><b>BL# ${esc(o.inv)}</b></div>
+       <div style="text-align:right;display:flex;align-items:center;gap:18px">
+         <div><small>DATE</small><b style="font-size:16px;display:block">${usDate(o.invDate)}</b></div>
+         <button class="btn ghost" style="padding:8px 14px;font-size:12.5px" onclick="startNew()">Start over</button>
+       </div></div>`;
   return shell('create',`
     ${editing?svChanges():''}
     ${steps(0)}
-    <div class="blbar"><div><small>BILL OF LADING</small><b>BL# ${esc(o.inv)}</b></div>
-      <div style="text-align:right"><small>DATE</small><b style="font-size:16px">${usDate(o.invDate)}</b></div></div>
+    ${blbar}
     <div class="card">
       <h2>Shipper — bill to</h2>
       <div class="g2">
@@ -487,7 +554,11 @@ function bindInputs(){
       const p=el.dataset.k.split('.');
       const v=el.type==='checkbox'?el.checked:el.value;
       if(p.length===2) cur[p[0]][p[1]]=v; else cur[p[0]]=v;
+      if(el.dataset.k==='paid' && v===true && !(parseFloat(cur.amtRecd)>0)){
+        cur.amtRecd=String(orderTotal(cur)); render();
+      }
       if(editing) cur._dirty=true;
+      saveDraft();
     });
   });
 }
@@ -546,6 +617,8 @@ function vItems(){
         <div><label class="f">Payment method</label><select class="f" data-k="payMethod">
           <option value=""></option>${['CASH','ZELLE','COD','CHECK'].map(p=>`<option${p===o.payMethod?' selected':''}>${p}</option>`).join('')}</select></div>
         <div><label class="f">Amount received $</label><input class="f" inputmode="decimal" data-k="amtRecd" value="${esc(o.amtRecd)}"></div>
+        <div><label class="f">Payment status</label>
+          <label class="checkbox" style="padding:11px 0 0"><input type="checkbox" data-k="paid" ${o.paid?'checked':''}> Paid in full — stamps PAID on the printed B/L</label></div>
       </div>
     </div>
     <button class="btn big" onclick="goReview()">Review order</button>`);
@@ -651,7 +724,7 @@ function finishOrder(){
   const o=cur;
   if(!o._savedAt){ consumeBL(o.inv); o._savedAt=Date.now(); orders.push(o); }
   else { const i=orders.findIndex(x=>x.id===o.id); if(i>-1) orders[i]=o; }
-  o._uploaded=false; saveOrders();
+  o._uploaded=false; saveOrders(); clearDraft();
   if(navigator.onLine && AUTO) doUpload();
   go('done');
 }
@@ -683,17 +756,34 @@ function quickSave(){
   const i=orders.findIndex(x=>x.id===cur.id);
   if(i>-1){ cur._dirty=true; orders[i]=cur; saveOrders(); toast('Saved on tablet — Upload to send to FCS Admin.'); }
 }
+let ORD_SORT=LS.get('myfcs:sort','new');
+function setSort(v){ ORD_SORT=v; LS.set('myfcs:sort',v); render(); }
+function sortedOrders(){
+  const l=[...orders];
+  const num=o=>parseInt(String(o.inv).replace(/\D/g,''),10)||0;
+  const when=o=>o._savedAt||0;
+  switch(ORD_SORT){
+    case 'old':    return l.sort((a,b)=>when(a)-when(b));
+    case 'bl':     return l.sort((a,b)=>num(a)-num(b));
+    case 'name':   return l.sort((a,b)=>String(a.sh.name).localeCompare(String(b.sh.name)));
+    case 'pieces': return l.sort((a,b)=>pieces(b)-pieces(a));
+    default:       return l.sort((a,b)=>when(b)-when(a));
+  }
+}
 function vOrders(){
   const today=todayISO();
-  const createdToday=orders.filter(o=>o.invDate===today).length;
+  const todays=orders.filter(o=>o.invDate===today);
   const upToday=orders.filter(o=>o._uploaded&&o._uploadedAt&&new Date(o._uploadedAt).toISOString().slice(0,10)===today).length;
   const waiting=orders.filter(o=>!o._uploaded||o._dirty).length;
-  const list=[...orders].reverse();
+  const pcsToday=todays.reduce((s,o)=>s+pieces(o),0);
+  const list=sortedOrders();
+  const dateStr=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   return shell('orders',`
-    <h1>Orders</h1>
-    <p class="sub">Receipts created on this tablet. FCS Admin is the master record — syncing keeps both sides matched.</p>
+    <h1>Today's Orders</h1>
+    <p class="sub">${dateStr} — FCS Admin is the master record; syncing keeps both sides matched.</p>
     <div class="stats">
-      <div class="stat"><b>${createdToday}</b><span>Created today</span></div>
+      <div class="stat"><b>${todays.length}</b><span>Created today</span></div>
+      <div class="stat"><b>${pcsToday}</b><span>Pieces today</span></div>
       <div class="stat"><b>${upToday}</b><span>Uploaded today</span></div>
       <div class="stat"><b>${waiting}</b><span>Waiting to upload</span></div>
       <div class="stat" style="display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:170px">
@@ -701,10 +791,18 @@ function vOrders(){
         <button class="btn" style="padding:9px" onclick="doUpload()">${icon('upload',15)} Upload</button>
       </div>
     </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted)">SORT BY</label>
+      <select class="f" style="width:auto;padding:8px 12px;font-size:13.5px" onchange="setSort(this.value)">
+        ${[['new','Newest first'],['old','Oldest first'],['bl','B/L number'],['name','Shipper A–Z'],['pieces','Most pieces']]
+          .map(([v,l])=>`<option value="${v}"${ORD_SORT===v?' selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>
     <div class="olist">
       ${list.length? list.map(o=>`<div class="o">
           <div class="inv">BL# ${esc(o.inv)}</div>
-          <div class="who">${esc(o.sh.name)} → ${esc(o.co.name)}<small>${usDate(o.invDate)} · ${esc(o.co.city)} · ${money(orderTotal(o))}</small></div>
+          <div class="who">${esc(o.sh.name)} → ${esc(o.co.name)}
+            <small>${usDate(o.invDate)} · ${esc(o.co.city)} · ${pieces(o)} pcs · ${money(orderTotal(o))}${o._emailed?' · receipt e-mailed':''}</small></div>
           <span class="st ${o._uploaded&&!o._dirty?'up':'local'}">${o._uploaded&&!o._dirty?'Synced':(o._dirty?'Edited':'On tablet')}</span>
           <button class="btn ghost" style="padding:9px 20px;font-size:13px" onclick="openOrder('${o.id}')">Open</button>
         </div>`).join('')
@@ -776,7 +874,16 @@ function render(){
 window.addEventListener('online',()=>render());
 window.addEventListener('offline',()=>{ FRESH=false; LS.set('myfcs:nextFresh',false); render(); });
 render();
-if(navigator.onLine){ loadConfig(); if(AUTO) syncDown().then(()=>render()).catch(()=>{}); }
+if(navigator.onLine){ loadConfig(); ensureLogo(); if(AUTO) syncDown().then(()=>render()).catch(()=>{}); }
+/* new day = fresh screen: counters, dates and titles roll over automatically */
+window.__day=todayISO();
+setInterval(()=>{
+  if(todayISO()!==window.__day){
+    window.__day=todayISO();
+    if(navigator.onLine&&AUTO) syncDown().then(()=>render()).catch(()=>render());
+    else render();
+  }
+},60000);
 </script>
 </body>
 </html>
