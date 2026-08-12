@@ -867,7 +867,8 @@ function formHTML(o){
   const partyRow = (a,b) => `<div class="r"><span>${esc(a)}</span><span>${esc(b)}</span></div>`;
   const F = V2.fields;
   return `
-<div class="page">
+<div class="page" style="position:relative">
+  ${o.paid?'<div style="position:absolute;top:2.05in;right:.5in;transform:rotate(-14deg);border:3pt solid #C62828;color:#C62828;font-weight:800;font-size:24pt;letter-spacing:.1em;padding:1pt 12pt;border-radius:5pt;opacity:.85">PAID</div>':''}
   <div class="p-top">
     <div class="p-co">
       <img src="/assets/fcs-logo.png" alt="" style="width:.55in;height:.55in;object-fit:contain;float:left;margin:-2pt 6pt 0 -2pt">
@@ -925,8 +926,8 @@ function formHTML(o){
   <div class="p-track">You can track your shipment at <b>www.fcsshipping.com</b><br>
     <span style="font-size:10pt">Track using your B/L number</span></div>
   <div class="p-sign">
-    <div class="s"><div class="line"></div><div class="cap2">Customer&rsquo;s Signature</div></div>
-    <div class="d"><div class="line"></div><div class="cap2">Date</div></div>
+    <div class="s">${o.signature?'<img src="'+o.signature+'" alt="" style="height:.5in;max-width:2.6in;object-fit:contain;display:block;margin:0 auto -4pt">':''}<div class="line"></div><div class="cap2">Customer&rsquo;s Signature</div></div>
+    <div class="d">${o.signature?'<div style="text-align:center;font-size:10pt;margin-bottom:-2pt">'+esc(o.termsAcceptedAt?usDate(String(o.termsAcceptedAt).slice(0,10)):usDate(o.invDate))+'</div>':''}<div class="line"></div><div class="cap2">Date</div></div>
   </div>
 </div>`;
 }
