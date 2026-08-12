@@ -6,101 +6,144 @@
 <title>MyFCS</title>
 <style>
   :root{
-    --navy:#0F2E46; --navy2:#16405f; --ink:#12222f; --muted:#5b7285;
-    --bg:#F2F6F9; --card:#ffffff; --rule:#dde7ee; --green:#1E9E56; --amber:#B45309; --red:#C22B1E;
+    --navy:#0E2A40; --navy2:#143A57; --navy3:#1D4E74; --accent:#2E86C1;
+    --ink:#17242F; --muted:#64788A; --bg:#EEF2F6; --card:#FFFFFF; --rule:#DCE4EB;
+    --green:#1E8E5A; --amber:#B45309; --red:#B3261E;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:var(--bg);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink)}
-  #app{min-height:100%;display:flex;flex-direction:column}
-  .top{background:var(--navy);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:5}
-  .top .logo{font-weight:800;font-size:20px;letter-spacing:.02em}
-  .top .logo small{display:block;font-weight:500;font-size:11px;opacity:.75;letter-spacing:.12em}
-  .top .grow{flex:1}
-  .chip{font-size:12px;padding:5px 12px;border-radius:99px;background:rgba(255,255,255,.15)}
-  .chip.on{background:#1E9E56}
-  .wrap{flex:1;max-width:860px;width:100%;margin:0 auto;padding:22px 18px 40px}
-  .card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(15,46,70,.05)}
-  h1{font-size:24px;margin:0 0 4px}
-  h2{font-size:17px;margin:0 0 12px;color:var(--navy)}
-  p.hint{color:var(--muted);font-size:13.5px;margin:4px 0 14px}
-  label.f{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:12px 0 5px}
-  input.f,select.f,textarea.f{width:100%;font-size:17px;padding:13px 14px;border:1.5px solid var(--rule);border-radius:10px;background:#fff;color:var(--ink)}
-  input.f:focus,select.f:focus{outline:none;border-color:var(--navy2)}
-  .g2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
-  @media(max-width:560px){.g2{grid-template-columns:1fr}}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;padding:15px 26px;border-radius:12px;border:0;cursor:pointer;background:var(--navy);color:#fff}
-  .btn.big{width:100%;font-size:19px;padding:18px}
-  .btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--rule)}
+  #app{display:flex;min-height:100vh}
+  /* ---------- left rail ---------- */
+  .rail{width:118px;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;
+    padding:22px 10px 16px;position:sticky;top:0;height:100vh;flex:0 0 118px}
+  .logo{width:58px;height:58px;border-radius:14px;background:linear-gradient(145deg,#1D4E74,#0E2A40);
+    border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:19px;letter-spacing:.04em}
+  .logoname{margin-top:9px;font-size:12.5px;font-weight:700;letter-spacing:.14em;opacity:.9}
+  .rail nav{margin-top:30px;display:flex;flex-direction:column;gap:6px;width:100%}
+  .rl{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 4px;border-radius:12px;
+    cursor:pointer;color:#B9CBDA;border:0;background:none;font-size:10.5px;font-weight:700;letter-spacing:.08em;width:100%}
+  .rl svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .rl.on{background:rgba(255,255,255,.10);color:#fff}
+  .rail .spacer{flex:1}
+  .net{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.06em;color:#B9CBDA}
+  .net i{width:8px;height:8px;border-radius:50%;background:#5A6E80;display:inline-block}
+  .net.on i{background:#3FBF7F}
+  /* ---------- main ---------- */
+  .main{flex:1;min-width:0}
+  .wrap{max-width:900px;margin:0 auto;padding:34px 28px 60px}
+  h1{font-size:23px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+  h2{font-size:15px;margin:0 0 14px;color:var(--navy);letter-spacing:.02em;text-transform:uppercase;font-weight:700}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:22px 24px;margin-bottom:16px}
+  label.f{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:13px 0 5px}
+  input.f,select.f{width:100%;font-size:16px;padding:12px 13px;border:1px solid var(--rule);border-radius:9px;background:#FBFCFE;color:var(--ink)}
+  input.f:focus,select.f:focus{outline:none;border-color:var(--accent);background:#fff}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+  @media(max-width:640px){.g2{grid-template-columns:1fr}}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:700;
+    padding:13px 24px;border-radius:10px;border:0;cursor:pointer;background:var(--navy);color:#fff;letter-spacing:.01em}
+  .btn.big{width:100%;font-size:16px;padding:16px}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--rule)}
   .btn.green{background:var(--green)}
-  .btn.warn{background:#fff;color:var(--red);border:1.5px solid #f2c9c4}
   .btn:disabled{opacity:.45}
-  .btnrow{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:10px}
-  .tile{background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:26px 22px;cursor:pointer;box-shadow:0 1px 3px rgba(15,46,70,.06)}
-  .tile:active{transform:scale(.985)}
-  .tile .em{font-size:34px}
-  .tile b{display:block;font-size:20px;margin:10px 0 4px;color:var(--navy)}
-  .tile span{color:var(--muted);font-size:13.5px}
-  table.items{width:100%;border-collapse:collapse;font-size:15px}
-  table.items th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:6px 6px;border-bottom:2px solid var(--rule)}
+  .btnrow{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+  .backlink{background:none;border:0;color:var(--accent);font-size:13.5px;font-weight:700;cursor:pointer;padding:0 0 14px;letter-spacing:.02em}
+  /* steps */
+  .steps{display:flex;gap:0;margin:0 0 22px}
+  .step{flex:1;text-align:center;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);position:relative;padding-top:16px}
+  .step::before{content:'';position:absolute;top:4px;left:50%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;background:var(--rule)}
+  .step::after{content:'';position:absolute;top:8px;left:calc(50% + 8px);right:calc(-50% + 8px);height:1.5px;background:var(--rule)}
+  .step:last-child::after{display:none}
+  .step.on{color:var(--navy)} .step.on::before{background:var(--accent)}
+  .step.done::before{background:var(--green)}
+  /* home app grid */
+  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:22px 14px;margin-top:8px}
+  .appic{display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;background:none;border:0;padding:6px 2px;border-radius:12px}
+  .appic:active{transform:scale(.96)}
+  .appic .ic{width:76px;height:76px;border-radius:19px;background:linear-gradient(150deg,var(--navy3),var(--navy));
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(14,42,64,.22)}
+  .appic .ic svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .appic span{font-size:12.5px;font-weight:700;color:var(--ink)}
+  /* items table */
+  table.items{width:100%;border-collapse:collapse;font-size:14.5px}
+  table.items th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:6px;border-bottom:2px solid var(--rule)}
   table.items td{padding:6px 4px;border-bottom:1px solid var(--rule);vertical-align:middle}
-  table.items input,table.items select{width:100%;font-size:15px;padding:9px 8px;border:1.5px solid var(--rule);border-radius:8px}
-  .x{background:none;border:0;color:var(--red);font-size:20px;cursor:pointer;padding:4px 8px}
-  .total{font-size:20px;font-weight:800;text-align:right;padding:12px 6px 0}
-  /* full-screen green check overlay */
-  .overlay{position:fixed;inset:0;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;z-index:50}
-  .overlay h1{font-size:30px;margin:22px 0 8px}
-  .overlay p{font-size:17px;opacity:.85;max-width:480px;margin:0 0 8px}
-  .checkwrap{width:130px;height:130px}
+  table.items input,table.items select{width:100%;font-size:14.5px;padding:9px 8px;border:1px solid var(--rule);border-radius:8px;background:#FBFCFE}
+  .x{background:none;border:0;color:var(--red);font-size:19px;cursor:pointer;padding:4px 8px}
+  .total{font-size:19px;font-weight:800;text-align:right;padding:14px 6px 0;color:var(--navy)}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:linear-gradient(165deg,#12395A,#0B2236);color:#fff;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:30px;z-index:50}
+  .overlay h1{font-size:27px;margin:24px 0 8px;color:#fff}
+  .overlay p{font-size:15.5px;opacity:.82;max-width:460px;margin:0 0 6px}
+  .checkwrap{width:112px;height:112px}
   .checkwrap svg{width:100%;height:100%}
-  .ck-circle{stroke:#38C172;stroke-width:4;fill:none;stroke-dasharray:302;stroke-dashoffset:302;animation:draw .7s ease forwards}
-  .ck-mark{stroke:#38C172;stroke-width:6;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:80;stroke-dashoffset:80;animation:draw .45s .55s ease forwards}
+  .ck-circle{stroke:#3FBF7F;stroke-width:3.5;fill:none;stroke-dasharray:302;stroke-dashoffset:302;animation:draw .7s ease forwards}
+  .ck-mark{stroke:#3FBF7F;stroke-width:5.5;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:80;stroke-dashoffset:80;animation:draw .45s .55s ease forwards}
   @keyframes draw{to{stroke-dashoffset:0}}
-  .arrowbtn{margin-top:34px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);color:#fff;border-radius:99px;width:76px;height:76px;font-size:32px;cursor:pointer;animation:bob 1.6s ease-in-out infinite}
-  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
-  .recap{background:rgba(255,255,255,.09);border-radius:12px;padding:16px 20px;margin-top:18px;text-align:left;font-size:15px;max-width:440px;width:100%}
-  .recap div{display:flex;justify-content:space-between;gap:18px;padding:4px 0}
-  .recap span:first-child{opacity:.7}
-  /* review list */
-  .rv{font-size:15.5px}
-  .rv .sec{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
-  .rv .row{display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px dashed var(--rule)}
+  .arrowbtn{margin-top:32px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.3);color:#fff;
+    border-radius:50%;width:68px;height:68px;cursor:pointer;display:flex;align-items:center;justify-content:center;animation:bob 1.8s ease-in-out infinite}
+  .arrowbtn svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+  .recap{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:18px 22px;margin-top:20px;
+    text-align:left;font-size:14.5px;max-width:430px;width:100%}
+  .recap div{display:flex;justify-content:space-between;gap:18px;padding:5px 0}
+  .recap span:first-child{opacity:.65}
+  /* review */
+  .rv{font-size:14.5px}
+  .rv .sec{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px}
+  .rv .row{display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid #EDF1F5}
   .rv .row span:first-child{color:var(--muted)}
-  /* terms modal */
-  .modal{position:fixed;inset:0;background:rgba(10,25,38,.65);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
-  .mcard{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
-  .mcard header{padding:16px 22px;border-bottom:1px solid var(--rule);font-weight:800;color:var(--navy)}
-  .terms{overflow-y:auto;padding:18px 22px;font-size:13.5px;line-height:1.55;color:#233;flex:1}
+  /* terms */
+  .modal{position:fixed;inset:0;background:rgba(9,22,34,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
+  .mcard{background:#fff;border-radius:14px;max-width:660px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+  .mcard header{padding:16px 24px;border-bottom:1px solid var(--rule);font-weight:800;color:var(--navy);letter-spacing:.01em}
+  .terms{overflow-y:auto;padding:18px 24px;font-size:13px;line-height:1.6;color:#25333F;flex:1}
   .terms p{margin:0 0 10px}
-  .mfoot{padding:14px 22px;border-top:1px solid var(--rule)}
-  .sig{border:1.5px dashed var(--rule);border-radius:10px;background:#fbfdfe;position:relative}
-  .sig canvas{display:block;width:100%;height:150px;touch-action:none}
-  .sig .clear{position:absolute;top:6px;right:8px;font-size:12px;color:var(--muted);background:none;border:0;cursor:pointer}
-  .siglabel{font-size:12px;color:var(--muted);margin:10px 0 6px}
-  /* orders list */
-  .ocount{display:flex;gap:22px;font-size:15px}
-  .ocount b{font-size:26px;display:block;color:var(--navy)}
-  .olist .o{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--rule);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-  .olist .o .inv{font-weight:800;color:var(--navy);min-width:86px}
-  .olist .o .who{flex:1;font-size:14.5px}
-  .olist .o .who small{display:block;color:var(--muted)}
-  .st{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:99px}
-  .st.local{background:#FEF3C7;color:#92400E}
-  .st.up{background:#D1FAE5;color:#065F46}
-  .savechanges{position:sticky;top:64px;z-index:4;background:#FEF3C7;border:1px solid #FDE68A;color:#92400E;font-weight:700;padding:12px 16px;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;gap:14px}
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 22px;border-radius:10px;font-size:15px;z-index:80;box-shadow:0 8px 30px rgba(0,0,0,.3)}
-  .mailbox{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--muted);margin-top:8px}
-  .mailbox input{width:18px;height:18px;margin-top:1px}
-  .backlink{background:none;border:0;color:var(--navy);font-size:15px;font-weight:700;cursor:pointer;padding:6px 0}
+  .mfoot{padding:14px 24px;border-top:1px solid var(--rule)}
+  .sig{border:1.5px dashed var(--rule);border-radius:10px;background:#FBFDFE;position:relative}
+  .sig canvas{display:block;width:100%;height:140px;touch-action:none}
+  .sig .clear{position:absolute;top:6px;right:8px;font-size:11.5px;color:var(--muted);background:none;border:0;cursor:pointer}
+  .siglabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:8px 0 6px}
+  /* orders */
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .stat{flex:1;min-width:130px;background:#fff;border:1px solid var(--rule);border-radius:12px;padding:14px 18px}
+  .stat b{display:block;font-size:26px;color:var(--navy)}
+  .stat span{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .olist .o{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--rule);border-radius:11px;padding:13px 18px;margin-bottom:9px}
+  .olist .inv{font-weight:800;color:var(--navy);min-width:88px;font-size:14.5px}
+  .olist .who{flex:1;font-size:13.5px}
+  .olist .who small{display:block;color:var(--muted);margin-top:2px}
+  .st{font-size:10.5px;font-weight:800;letter-spacing:.05em;padding:4px 11px;border-radius:99px;text-transform:uppercase}
+  .st.local{background:#FDF0DC;color:#8A5A08}
+  .st.up{background:#DDF3E7;color:#136B43}
+  .savechanges{position:sticky;top:14px;z-index:4;background:#FDF3DF;border:1px solid #F4DFB4;color:#7A5104;
+    font-weight:700;font-size:13.5px;padding:11px 16px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:14px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;
+    padding:12px 22px;border-radius:10px;font-size:14px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  .mailbox{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--muted);margin-top:9px}
+  .mailbox input{width:17px;height:17px;margin-top:1px}
+  .blbar{background:var(--navy);color:#fff;border-radius:12px;padding:16px 22px;display:flex;align-items:center;
+    justify-content:space-between;margin-bottom:16px}
+  .blbar small{display:block;font-size:10.5px;letter-spacing:.12em;opacity:.7;font-weight:700}
+  .blbar b{font-size:26px;letter-spacing:.03em}
+  /* sync splash */
+  .sync{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:90;gap:16px}
+  .spin{width:34px;height:34px;border:3px solid var(--rule);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .sync p{color:var(--muted);font-size:13.5px;font-weight:600;letter-spacing:.03em}
+  .checkbox{display:flex;align-items:center;gap:10px;font-size:14.5px;padding:6px 0}
+  .checkbox input{width:19px;height:19px}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
-/* ================= MyFCS — FCS Shipping tablet app =================
-   Offline-first: everything saves to this tablet immediately.
-   Refresh pulls settings/prices/next B/L from the admin database.
-   Upload pushes local orders into the same fcs:orders the admin reads. */
+/* ================= MyFCS v2 — FCS Shipping tablet app =================
+   The admin database is the single source of truth. The tablet keeps a
+   local copy so everything works offline; opening an app syncs first
+   (when online and auto-sync is on), Upload pushes local work up. */
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -116,187 +159,204 @@ function usDate(iso){ const [y,m,d]=String(iso||'').split('-'); return m?`${+m}/
 function bumpInvoice(v){ const m=String(v||'').match(/^(\D*)(\d+)(\D*)$/); if(!m) return String(v||''); return m[1]+String(Number(m[2])+1).padStart(m[2].length,'0')+m[3]; }
 function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2800); }
 
-/* ---------------- config + Supabase (REST, no SDK needed) ---------------- */
+/* ---------------- icons (inline SVG, no emoji) ---------------- */
+const IC = {
+  home:'<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9"/></svg>',
+  create:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M12 9v6M9 12h6"/></svg>',
+  orders:'<svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg>',
+  settings:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.4M12 18.1v2.4M3.5 12h2.4M18.1 12h2.4M6 6l1.7 1.7M16.3 16.3 18 18M18 6l-1.7 1.7M7.7 16.3 6 18"/></svg>',
+  down:'<svg viewBox="0 0 24 24"><path d="M12 4v14M6 12l6 6 6-6"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3.8v4.5h-4.5"/></svg>',
+  upload:'<svg viewBox="0 0 24 24"><path d="M12 20V7M6 12l6-6 6 6"/><path d="M4 20h16"/></svg>',
+};
+function icon(name,w){ return `<span style="display:inline-flex;width:${w||18}px;height:${w||18}px;vertical-align:-3px">${IC[name].replace('<svg','<svg style="stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"')}</span>`; }
+
+/* ---------------- config + Supabase REST ---------------- */
 const CONFIG_URL = 'https://fcsshipping.com/admin/config.js';
-let CFG = LS.get('myfcs:cfg', null);          /* {url, key} */
-let AUTH = LS.get('myfcs:auth', null);        /* {access_token, refresh_token, email} */
+let CFG  = LS.get('myfcs:cfg', null);
+let AUTH = LS.get('myfcs:auth', null);
 async function loadConfig(){
   try{
-    const t = await (await fetch(CONFIG_URL, {cache:'no-store'})).text();
-    const u = t.match(/SUPABASE_URL\s*:\s*'([^']+)'/), k = t.match(/SUPABASE_ANON_KEY\s*:\s*'([^']+)'/);
-    if(u && k && !u[1].includes('YOUR')){ CFG={url:u[1], key:k[1]}; LS.set('myfcs:cfg', CFG); return true; }
+    const t = await (await fetch(CONFIG_URL,{cache:'no-store'})).text();
+    const u=t.match(/SUPABASE_URL\s*:\s*'([^']+)'/), k=t.match(/SUPABASE_ANON_KEY\s*:\s*'([^']+)'/);
+    if(u&&k&&!u[1].includes('YOUR')){ CFG={url:u[1],key:k[1]}; LS.set('myfcs:cfg',CFG); return true; }
   }catch(e){}
   return !!CFG;
 }
-async function signIn(email, password){
+async function signIn(email,password){
   if(!CFG) await loadConfig();
-  if(!CFG) throw new Error('No connection — connect to Wi-Fi first.');
-  const r = await fetch(CFG.url+'/auth/v1/token?grant_type=password',{
-    method:'POST', headers:{apikey:CFG.key,'Content-Type':'application/json'},
-    body:JSON.stringify({email,password})});
-  const d = await r.json();
+  if(!CFG) throw new Error('No connection. Join Wi-Fi first.');
+  const r=await fetch(CFG.url+'/auth/v1/token?grant_type=password',{method:'POST',
+    headers:{apikey:CFG.key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const d=await r.json();
   if(!r.ok) throw new Error(d.error_description||d.msg||'Sign-in failed');
-  AUTH = {access_token:d.access_token, refresh_token:d.refresh_token, email};
-  LS.set('myfcs:auth', AUTH);
+  AUTH={access_token:d.access_token,refresh_token:d.refresh_token,email}; LS.set('myfcs:auth',AUTH);
 }
 async function refreshToken(){
   if(!AUTH||!CFG) return false;
   try{
-    const r = await fetch(CFG.url+'/auth/v1/token?grant_type=refresh_token',{
-      method:'POST', headers:{apikey:CFG.key,'Content-Type':'application/json'},
-      body:JSON.stringify({refresh_token:AUTH.refresh_token})});
-    const d = await r.json();
-    if(!r.ok) return false;
-    AUTH = {access_token:d.access_token, refresh_token:d.refresh_token, email:AUTH.email};
-    LS.set('myfcs:auth', AUTH); return true;
+    const r=await fetch(CFG.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+      headers:{apikey:CFG.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:AUTH.refresh_token})});
+    const d=await r.json(); if(!r.ok) return false;
+    AUTH={access_token:d.access_token,refresh_token:d.refresh_token,email:AUTH.email}; LS.set('myfcs:auth',AUTH); return true;
   }catch(e){ return false; }
 }
-async function rest(path, opts={}, retry=true){
+async function rest(path,opts={},retry=true){
   if(!CFG) throw new Error('offline');
-  const r = await fetch(CFG.url+'/rest/v1/'+path, {...opts, headers:{
-    apikey:CFG.key, Authorization:'Bearer '+(AUTH?AUTH.access_token:CFG.key),
-    'Content-Type':'application/json', ...(opts.headers||{}) }});
-  if(r.status===401 && retry && await refreshToken()) return rest(path, opts, false);
-  if(r.status===401){ throw new Error('signin'); }
+  const r=await fetch(CFG.url+'/rest/v1/'+path,{...opts,headers:{
+    apikey:CFG.key,Authorization:'Bearer '+(AUTH?AUTH.access_token:CFG.key),
+    'Content-Type':'application/json',...(opts.headers||{})}});
+  if(r.status===401&&retry&&await refreshToken()) return rest(path,opts,false);
+  if(r.status===401) throw new Error('signin');
   return r;
 }
-async function kvLoad(key, fallback){
-  const r = await rest('settings?key=eq.'+encodeURIComponent(key)+'&select=value');
-  if(!r.ok) throw new Error('load '+key+' failed ('+r.status+')');
-  const d = await r.json();
-  return (d[0] && d[0].value!=null) ? d[0].value : fallback;
+async function kvLoad(key,fallback){
+  const r=await rest('settings?key=eq.'+encodeURIComponent(key)+'&select=value');
+  if(!r.ok) throw new Error('load failed ('+r.status+')');
+  const d=await r.json(); return (d[0]&&d[0].value!=null)?d[0].value:fallback;
 }
-async function kvSave(key, value){
-  const r = await rest('settings',{method:'POST',
-    headers:{Prefer:'resolution=merge-duplicates'},
-    body:JSON.stringify({key, value, updated_at:new Date().toISOString()})});
-  if(!r.ok) throw new Error('save '+key+' failed ('+r.status+')');
+async function kvSave(key,value){
+  const r=await rest('settings',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},
+    body:JSON.stringify({key,value,updated_at:new Date().toISOString()})});
+  if(!r.ok) throw new Error('save failed ('+r.status+')');
 }
 
-/* ---------------- local data ---------------- */
+/* ---------------- local state ---------------- */
 const DEFAULT_V2 = {
   dests:[{name:'Vieux-Fort St. Lucia',rate:7,barrel:105,bin:190},{name:'Port Castries St. Lucia',rate:7,barrel:100,bin:190}],
   products:[{name:'Empty Barrel',price:60},{name:'Pickup Fee',price:25}],
   shipTypes:[{name:'TV/Crate',dims:'',cuft:''},{name:'Crate',dims:'',cuft:''},{name:'Pallet',dims:'',cuft:''},{name:'Bag',dims:'',cuft:''}],
   recv:['SEA FREIGHT','AIR FREIGHT','STANDARD'],
 };
-let V2      = LS.get('myfcs:v2', DEFAULT_V2);
-let orders  = LS.get('myfcs:orders', []);
-let NEXT    = LS.get('myfcs:next', null);       /* last known "next B/L" from admin */
-let FRESH   = LS.get('myfcs:nextFresh', false); /* true when NEXT came from a live refresh */
+let V2     = LS.get('myfcs:v2', DEFAULT_V2);
+let orders = LS.get('myfcs:orders', []);
+let NEXT   = LS.get('myfcs:next', null);
+let FRESH  = LS.get('myfcs:nextFresh', false);
+let AUTO   = LS.get('myfcs:autosync', true);
 function saveOrders(){ LS.set('myfcs:orders', orders); }
 
-/* ---------------- pricing (ported from admin) ---------------- */
+/* ---------------- pricing (identical to admin) ---------------- */
 const MIN_FREIGHT = 65;
 function destOf(name){ return V2.dests.find(d=>d.name===name)||null; }
 function dimsToCuft(dims){
   const m=String(dims||'').match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
-  return m ? Math.max(1, Math.round(m[1]*m[2]*m[3]/1728)) : null;
+  return m?Math.max(1,Math.round(m[1]*m[2]*m[3]/1728)):null;
 }
-function priceItem(it, destName){
+function priceItem(it,destName){
   const d=destOf(destName); const rate=d?Number(d.rate)||0:0;
   const desc=String(it.desc||'').toLowerCase();
   if(it.kind==='product'){ it.cuft=''; it.dims=''; return; }
   const st=V2.shipTypes.find(x=>String(x.name).toLowerCase()===desc);
   const q=Math.max(1,parseFloat(it.qty)||1);
-  let unit=null, price=null;
-  if(desc==='barrel'){ it.dims='24X24X44'; unit=15; price = d&&d.barrel?Number(d.barrel):(rate?15*rate:null); }
-  else if(desc==='commercial bin'){ it.dims='48X24X44'; unit=20; price = d&&d.bin?Number(d.bin):(rate?20*rate:null); }
-  else if(st){ if(st.dims&&!it.dims) it.dims=st.dims; unit = dimsToCuft(it.dims) ?? (parseFloat(st.cuft)||null); if(unit!=null&&rate) price=unit*rate; }
+  let unit=null,price=null;
+  if(desc==='barrel'){ it.dims='24X24X44'; unit=15; price=d&&d.barrel?Number(d.barrel):(rate?15*rate:null); }
+  else if(desc==='commercial bin'){ it.dims='48X24X44'; unit=20; price=d&&d.bin?Number(d.bin):(rate?20*rate:null); }
+  else if(st){ if(st.dims&&!it.dims) it.dims=st.dims; unit=dimsToCuft(it.dims)??(parseFloat(st.cuft)||null); if(unit!=null&&rate) price=unit*rate; }
   else { unit=dimsToCuft(it.dims); if(unit!=null&&rate) price=unit*rate; }
   if(unit!=null) it.cuft=String(unit*q);
-  if(price!=null) it.price=String(Math.max(MIN_FREIGHT, Math.round(price*100)/100));
+  if(price!=null) it.price=String(Math.max(MIN_FREIGHT,Math.round(price*100)/100));
   it.amount='';
 }
 function itemAmount(it){
   if(it.amount!==''&&it.amount!=null) return Number(String(it.amount).replace(/[^0-9.\-]/g,''))||0;
-  const q=parseFloat(it.qty), p=parseFloat(String(it.price).replace(/[^0-9.\-]/g,''));
+  const q=parseFloat(it.qty),p=parseFloat(String(it.price).replace(/[^0-9.\-]/g,''));
   return (isFinite(q)&&isFinite(p))?q*p:0;
 }
 function orderTotal(o){ return o.items.reduce((s,it)=>s+itemAmount(it),0); }
 
 /* ---------------- B/L numbers ----------------
-   Online (refreshed): use the admin's next number, then advance it locally.
-   Offline: last number with a "2" in front so it can never collide. */
+   Online (fresh sync): the admin's next number.
+   Offline: same 5 digits, first digit + 1  (16512 -> 26512). */
+function offlineFrom(numStr){
+  const d=String(numStr).replace(/\D/g,'')||'16000';
+  const first=(parseInt(d[0],10)+1)%10;
+  return String(first)+d.slice(1);
+}
 function nextBL(){
   let inv;
-  if(NEXT && FRESH){ inv = String(NEXT); }
-  else {
-    const base = NEXT || (orders.length ? orders[orders.length-1].inv : '16000');
-    const digits = String(base).replace(/\D/g,'') || '16000';
-    inv = '2'+digits;
-  }
-  while(orders.some(o=>String(o.inv)===String(inv))) inv = bumpInvoice(inv);
+  if(NEXT&&FRESH) inv=String(NEXT);
+  else inv=offlineFrom(NEXT||(orders.length?orders[orders.length-1].inv:'16000'));
+  while(orders.some(o=>String(o.inv)===String(inv))) inv=bumpInvoice(inv);
   return inv;
 }
 function consumeBL(inv){
-  if(NEXT && FRESH && String(inv)===String(NEXT)){ NEXT=bumpInvoice(NEXT); LS.set('myfcs:next',NEXT); }
-  else if(!FRESH){ NEXT = String(inv).replace(/^2/,''); LS.set('myfcs:next',NEXT); }
+  if(NEXT&&FRESH&&String(inv)===String(NEXT)){ NEXT=bumpInvoice(NEXT); LS.set('myfcs:next',NEXT); }
 }
 
-/* ---------------- sync ---------------- */
+/* ---------------- sync: admin is the tether ---------------- */
+function tabletToAdmin(o){
+  return { id:o.id, inv:o.inv, invDate:o.invDate, pickup:o.pickup, time:o.time,
+    po:'',container:'',code:'',shipVia:'',cross:'',service:'',
+    recv:o.recv, sh:o.sh, co:o.co, items:o.items, showTotal:true,
+    amtRecd:o.amtRecd||'', payMethod:o.payMethod||'', created:true,
+    qbInvoiceNo:'', qbOk:null, paid:false, _v2:true, _tablet:true,
+    shEmail:o.shEmail||'', mailReceipt:!!o.mailReceipt,
+    signature:o.signature||'', termsAcceptedAt:o.termsAcceptedAt||'' };
+}
+function adminToTablet(r,local){
+  return { ...local, inv:r.inv, invDate:r.invDate, pickup:r.pickup, time:r.time,
+    recv:r.recv, sh:r.sh, co:r.co, items:r.items, amtRecd:r.amtRecd||'', payMethod:r.payMethod||'' };
+}
+/* pull settings + prices + next B/L, and reconcile orders with admin:
+   anything deleted in admin disappears here too; admin edits flow down. */
+async function syncDown(){
+  if(!await loadConfig()) throw new Error('No connection.');
+  const v2=await kvLoad('fcs:v2',null);
+  if(v2) { V2={...DEFAULT_V2,...v2}; LS.set('myfcs:v2',V2); }
+  const s=await kvLoad('fcs:settings',{});
+  if(s&&s.next){ NEXT=String(s.next); FRESH=true; LS.set('myfcs:next',NEXT); LS.set('myfcs:nextFresh',true); }
+  const remote=await kvLoad('fcs:orders',[]);
+  const ids=new Set(remote.map(r=>r.id));
+  const before=orders.length;
+  orders = orders.filter(o=>!o._uploaded || ids.has(o.id));           /* admin deleted it -> gone here */
+  orders = orders.map(o=>{
+    if(o._uploaded && !o._dirty){
+      const r=remote.find(x=>x.id===o.id);
+      if(r) return adminToTablet(r,o);                                 /* admin edits win */
+    }
+    return o;
+  });
+  saveOrders();
+  LS.set('myfcs:lastSync', Date.now());
+  return before-orders.length;
+}
 async function doRefresh(){
-  toast('Refreshing from admin…');
-  try{
-    if(!await loadConfig()) throw new Error('No connection.');
-    const v2 = await kvLoad('fcs:v2', null);
-    if(v2){ V2 = {...DEFAULT_V2, ...v2}; LS.set('myfcs:v2', V2); }
-    const s = await kvLoad('fcs:settings', {});
-    if(s && s.next){ NEXT=String(s.next); FRESH=true; LS.set('myfcs:next',NEXT); LS.set('myfcs:nextFresh',true); }
-    LS.set('myfcs:lastRefresh', Date.now());
-    toast('Up to date ✓  (prices, products, B/L number)');
-  }catch(e){
-    if(String(e.message)==='signin'){ go('login'); return; }
-    toast('Could not refresh: '+e.message);
-  }
+  toast('Syncing with FCS Admin…');
+  try{ const removed=await syncDown(); toast('Up to date'+(removed>0?' — '+removed+' order(s) removed to match admin':'')); }
+  catch(e){ if(String(e.message)==='signin'){ go('login'); return; } toast('Could not sync: '+e.message); }
   render();
 }
 async function doUpload(){
-  const pending = orders.filter(o=>!o._uploaded || o._dirty);
-  if(!pending.length){ toast('Nothing new to upload — all synced ✓'); return; }
+  const pending=orders.filter(o=>!o._uploaded||o._dirty);
+  if(!pending.length){ toast('Nothing to upload — all synced.'); return; }
   toast('Uploading '+pending.length+' order(s)…');
   try{
     if(!await loadConfig()) throw new Error('No connection.');
-    const remote = await kvLoad('fcs:orders', []);
-    /* merge without duplicating: match by id, else append */
+    const remote=await kvLoad('fcs:orders',[]);
     pending.forEach(o=>{
-      const up = tabletToAdmin(o);
-      const i = remote.findIndex(r=>r.id===up.id);
+      const up=tabletToAdmin(o);
+      const i=remote.findIndex(r=>r.id===up.id);
       if(i>-1) remote[i]=up; else remote.push(up);
     });
-    await kvSave('fcs:orders', remote);
-    /* keep the admin's next B/L ahead of anything we used */
+    await kvSave('fcs:orders',remote);
     try{
-      const s = await kvLoad('fcs:settings', {});
-      const maxNum = Math.max(...remote.map(r=>parseInt(String(r.inv).replace(/\D/g,''),10)||0));
-      const curNext = parseInt(String(s.next||'0').replace(/\D/g,''),10)||0;
-      if(maxNum>=curNext && String(maxNum).length===String(curNext||maxNum).length){
-        s.next = String(maxNum+1); await kvSave('fcs:settings', s);
-      }
+      const s=await kvLoad('fcs:settings',{});
+      const maxNum=Math.max(...remote.map(r=>parseInt(String(r.inv).replace(/\D/g,''),10)||0));
+      const curNext=parseInt(String(s.next||'0').replace(/\D/g,''),10)||0;
+      if(maxNum>=curNext){ s.next=String(maxNum+1); await kvSave('fcs:settings',s); }
     }catch(e){}
     const now=Date.now();
     pending.forEach(o=>{ o._uploaded=true; o._dirty=false; o._uploadedAt=now; });
     saveOrders();
-    toast(pending.length+' order(s) uploaded to admin ✓');
+    toast(pending.length+' order(s) uploaded to FCS Admin.');
   }catch(e){
     if(String(e.message)==='signin'){ go('login'); return; }
     toast('Upload failed: '+e.message+' — your orders are safe on this tablet.');
   }
   render();
 }
-function tabletToAdmin(o){
-  return {
-    id:o.id, inv:o.inv, invDate:o.invDate, pickup:o.pickup, time:o.time,
-    po:'',container:'',code:'',shipVia:'',cross:'',service:'',
-    recv:o.recv, sh:o.sh, co:o.co, items:o.items,
-    showTotal:true, amtRecd:o.amtRecd||'', payMethod:o.payMethod||'',
-    created:true, qbInvoiceNo:'', qbOk:null, paid:false, _v2:true,
-    _tablet:true, shEmail:o.shEmail||'', mailReceipt:!!o.mailReceipt,
-    signature:o.signature||'', termsAcceptedAt:o.termsAcceptedAt||'',
-  };
-}
 
-/* ---------------- terms & conditions ---------------- */
+/* ---------------- terms ---------------- */
 const TERMS = [
 "Whereas the Consignor desires to ship a container or containers to certain destination(s); and whereas FCS Shipping LLC is in the business of performing personalized services; and whereas the Consignor has requested such services from FCS Shipping LLC — now this agreement witnesseth that, in consideration of the payment by the Consignor of the sums hereinafter mentioned, the parties agree as follows:",
 "1. Quotations are given on the basis of immediate acceptance and are subject to the right of withdrawal or revision thereafter without notice.",
@@ -321,78 +381,96 @@ const TERMS = [
 "20. The parties agree that there is no condition, express or implied, representation or warranty of any kind, except the terms and conditions contained herein.",
 ];
 
-/* ---------------- app state + screens ---------------- */
-let scr = 'home';
-let cur = null;          /* order being built/edited */
-let editing = false;     /* opened from Orders */
+/* ---------------- screens ---------------- */
+let scr='home', cur=null, editing=false;
 function blankTabletOrder(){
-  return {
-    id:'tab-'+Date.now()+'-'+Math.floor(Math.random()*1e4),
+  return { id:'tab-'+Date.now()+'-'+Math.floor(Math.random()*1e4),
     inv:nextBL(), invDate:todayISO(), pickup:todayISO(), time:nowTime(),
     recv:(V2.recv&&V2.recv[0])||'SEA FREIGHT',
     sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
     co:{name:'',name2:'',city:'',phone:''},
     shEmail:'', mailReceipt:false,
     items:[{qty:'1',desc:'',cuft:'',dims:'',price:'',amount:'',kind:'freight'}],
-    amtRecd:'', payMethod:'',
-    signature:'', termsAcceptedAt:'',
-    _uploaded:false, _dirty:false, _savedAt:null,
-  };
+    amtRecd:'', payMethod:'', signature:'', termsAcceptedAt:'',
+    _uploaded:false, _dirty:false, _savedAt:null };
 }
 function go(s){ scr=s; render(); window.scrollTo(0,0); }
 
-function header(){
-  const online = navigator.onLine;
-  return `<div class="top">
-    <div class="logo">MyFCS<small>FCS SHIPPING LLC</small></div>
-    <span class="grow"></span>
-    <span class="chip ${online?'on':''}">${online?'Online':'Offline — saving to tablet'}</span>
+/* auto-sync before an app opens */
+async function openApp(dest){
+  if(AUTO && navigator.onLine){
+    $('#app').insertAdjacentHTML('beforeend',
+      '<div class="sync" id="syncSplash"><div class="spin"></div><p>Syncing with FCS Admin…</p></div>');
+    try{ await Promise.race([syncDown(), new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))]); }
+    catch(e){ if(String(e.message)==='signin'){ document.getElementById('syncSplash')?.remove(); go('login'); return; } }
+    document.getElementById('syncSplash')?.remove();
+  }
+  if(dest==='create'){ cur=blankTabletOrder(); editing=false; go('shipper'); }
+  else go(dest);
+}
+
+function rail(active){
+  const online=navigator.onLine;
+  const item=(id,ic,label,fn)=>`<button class="rl ${active===id?'on':''}" onclick="${fn}">${IC[ic]}<span>${label}</span></button>`;
+  return `<div class="rail">
+    <div class="logo">FCS</div>
+    <div class="logoname">MyFCS</div>
+    <nav>
+      ${item('home','home','HOME',"go('home')")}
+      ${item('create','create','CREATE',"openApp('create')")}
+      ${item('orders','orders','ORDERS',"openApp('orders')")}
+      ${item('settings','settings','SETTINGS',"go('settings')")}
+    </nav>
+    <div class="spacer"></div>
+    <div class="net ${online?'on':''}"><i></i>${online?'ONLINE':'OFFLINE'}</div>
   </div>`;
 }
+function shell(active,inner){ return rail(active)+`<div class="main"><div class="wrap">${inner}</div></div>`; }
 
 /* ---- HOME ---- */
 function vHome(){
-  return header()+`<div class="wrap">
-    <h1>Welcome 👋</h1>
-    <p class="hint">Pick an app. Everything you do is saved on this tablet even without internet.</p>
-    <div class="tiles">
-      <div class="tile" onclick="startCreate()"><div class="em">🧾</div><b>Create</b><span>New receipt / order — in the warehouse or on the road.</span></div>
-      <div class="tile" onclick="go('orders')"><div class="em">📦</div><b>Orders</b><span>Every receipt made on this tablet. Upload to admin here.</span></div>
-    </div>
-    <p class="hint" style="margin-top:26px">More FCS apps will appear here as they're added.</p>
-  </div>`;
+  const app=(ic,label,fn)=>`<button class="appic" onclick="${fn}"><span class="ic">${IC[ic]}</span><span>${label}</span></button>`;
+  return shell('home',`
+    <h1>FCS Shipping</h1>
+    <p class="sub">Select an application. Work is saved on this tablet and synced with FCS Admin.</p>
+    <div class="apps">
+      ${app('create','Create',"openApp('create')")}
+      ${app('orders','Orders',"openApp('orders')")}
+      ${app('settings','Settings',"go('settings')")}
+    </div>`);
 }
-function startCreate(){ cur=blankTabletOrder(); editing=false; go('shipper'); }
 
-/* ---- 1. SHIPPER + CONSIGNEE (customer fills) ---- */
+/* ---- CREATE: steps ---- */
+function steps(n){
+  const names=['Customer','Cargo','Review','Terms'];
+  return `<div class="steps">${names.map((x,i)=>`<div class="step ${i<n?'done':i===n?'on':''}">${x}</div>`).join('')}</div>`;
+}
 function vShipper(){
   const o=cur;
-  return header()+`<div class="wrap">
-    <button class="backlink" onclick="go('${editing?'orders':'home'}')">‹ Back</button>
+  return shell('create',`
     ${editing?svChanges():''}
-    <div class="card" style="text-align:center;background:var(--navy);color:#fff">
-      <div style="font-size:12px;letter-spacing:.1em;opacity:.75">YOUR B/L NUMBER</div>
-      <div style="font-size:34px;font-weight:800;letter-spacing:.04em">BL# ${esc(o.inv)}</div>
-    </div>
+    ${steps(0)}
+    <div class="blbar"><div><small>BILL OF LADING</small><b>BL# ${esc(o.inv)}</b></div>
+      <div style="text-align:right"><small>DATE</small><b style="font-size:16px">${usDate(o.invDate)}</b></div></div>
     <div class="card">
       <h2>Shipper — bill to</h2>
       <div class="g2">
-        <div><label class="f">Name *</label><input class="f" data-k="sh.name" value="${esc(o.sh.name)}"></div>
+        <div><label class="f">Full name *</label><input class="f" data-k="sh.name" value="${esc(o.sh.name)}"></div>
         <div><label class="f">Co-shipper</label><input class="f" data-k="sh.name2" value="${esc(o.sh.name2)}"></div>
-        <div><label class="f">Street *</label><input class="f" data-k="sh.street" value="${esc(o.sh.street)}"></div>
+        <div><label class="f">Street address *</label><input class="f" data-k="sh.street" value="${esc(o.sh.street)}"></div>
         <div><label class="f">City *</label><input class="f" data-k="sh.city" value="${esc(o.sh.city)}"></div>
         <div><label class="f">State / ZIP</label><input class="f" data-k="sh.state" value="${esc(o.sh.state)}"></div>
         <div><label class="f">Phone *</label><input class="f" inputmode="tel" data-k="sh.phone" value="${esc(o.sh.phone)}"></div>
       </div>
-      <label class="f">Email — for your receipt</label>
-      <input class="f" inputmode="email" data-k="shEmail" value="${esc(o.shEmail)}" placeholder="you@example.com">
+      <label class="f">Email — to receive your receipt</label>
+      <input class="f" inputmode="email" data-k="shEmail" value="${esc(o.shEmail)}" placeholder="name@example.com">
       <label class="mailbox"><input type="checkbox" data-k="mailReceipt" ${o.mailReceipt?'checked':''}>
-        <span>I'd rather be <b>mailed</b> a paper receipt. <em>(By checking this you agree to our mail terms &amp; conditions.)</em></span></label>
+        <span>I would rather be <b>mailed</b> a paper receipt. <em>By selecting this option you agree to our mail terms and conditions.</em></span></label>
     </div>
     <div class="card">
       <h2>Consignee — deliver to</h2>
       <div class="g2">
-        <div><label class="f">Name *</label><input class="f" data-k="co.name" value="${esc(o.co.name)}"></div>
+        <div><label class="f">Full name *</label><input class="f" data-k="co.name" value="${esc(o.co.name)}"></div>
         <div><label class="f">Co-consignee</label><input class="f" data-k="co.name2" value="${esc(o.co.name2)}"></div>
         <div><label class="f">Destination *</label><select class="f" data-k="co.city">
           <option value=""></option>
@@ -401,61 +479,57 @@ function vShipper(){
         <div><label class="f">Phone *</label><input class="f" inputmode="tel" data-k="co.phone" value="${esc(o.co.phone)}"></div>
       </div>
     </div>
-    <button class="btn big green" onclick="submitShipper()">Continue →</button>
-  </div>`;
+    <button class="btn big" onclick="submitShipper()">Continue</button>`);
 }
 function bindInputs(){
   $$('[data-k]').forEach(el=>{
     el.addEventListener('input',()=>{
-      const path=el.dataset.k.split('.');
-      const val = el.type==='checkbox'?el.checked:el.value;
-      if(path.length===2) cur[path[0]][path[1]]=val; else cur[path[0]]=val;
+      const p=el.dataset.k.split('.');
+      const v=el.type==='checkbox'?el.checked:el.value;
+      if(p.length===2) cur[p[0]][p[1]]=v; else cur[p[0]]=v;
       if(editing) cur._dirty=true;
     });
   });
 }
 function submitShipper(){
   const o=cur;
-  if(!o.sh.name.trim()||!o.sh.phone.trim()||!o.co.name.trim()||!o.co.city){ toast('Please fill the starred fields (name, phone, destination).'); return; }
+  if(!o.sh.name.trim()||!o.sh.phone.trim()||!o.co.name.trim()||!o.co.city){ toast('Please complete the required fields marked with *'); return; }
   go('handoff');
 }
-
-/* ---- 2. HANDOFF green check ---- */
 function vHandoff(){
   return `<div class="overlay">
     <div class="checkwrap"><svg viewBox="0 0 100 100">
-      <circle class="ck-circle" cx="50" cy="50" r="46"/>
-      <path class="ck-mark" d="M30 52 L45 66 L72 36"/>
-    </svg></div>
-    <h1>Thank you!</h1>
-    <p>Please pass this tablet back to your <b>FCS Shipping agent</b>.</p>
-    <button class="arrowbtn" onclick="go('items')" title="Agent: tap to continue">↓</button>
+      <circle class="ck-circle" cx="50" cy="50" r="46"/><path class="ck-mark" d="M30 52 L45 66 L72 36"/></svg></div>
+    <h1>Thank you</h1>
+    <p>Please hand the tablet back to your <b>FCS Shipping agent</b> to continue.</p>
+    <button class="arrowbtn" onclick="go('items')" title="Agent: continue">${IC.down}</button>
   </div>`;
 }
 
-/* ---- 3. LINE ITEMS (agent) ---- */
+/* ---- CREATE: items (agent) ---- */
 function descOptions(sel){
   const std=['Barrel','Commercial Bin','Box'].concat(V2.shipTypes.map(s=>s.name).filter(Boolean));
   return '<option value=""></option>'
-    + std.map(x=>`<option${x===sel?' selected':''}>${esc(x)}</option>`).join('')
-    + '<optgroup label="Products">'+V2.products.map(p=>`<option value="P:${esc(p.name)}"${('P:'+p.name)===sel?' selected':''}>${esc(p.name)}</option>`).join('')+'</optgroup>'
-    + '<option value="OTHER">Other…</option>';
+    +std.map(x=>`<option${x===sel?' selected':''}>${esc(x)}</option>`).join('')
+    +'<optgroup label="Products">'+V2.products.map(p=>`<option value="P:${esc(p.name)}"${('P:'+p.name)===sel?' selected':''}>${esc(p.name)}</option>`).join('')+'</optgroup>'
+    +'<option value="OTHER">Other…</option>';
 }
 function vItems(){
   const o=cur;
-  return header()+`<div class="wrap">
-    <button class="backlink" onclick="go('shipper')">‹ Back to customer info</button>
+  return shell('create',`
+    <button class="backlink" onclick="go('shipper')">‹ Customer information</button>
     ${editing?svChanges():''}
+    ${steps(1)}
     <div class="card">
       <h2>Cargo — BL# ${esc(o.inv)} · ${esc(o.co.city||'')}</h2>
-      <p class="hint">Barrels &amp; bins price themselves. Boxes: type the dims (L×W×H) and it calculates. $65 minimum applies automatically.</p>
-      <table class="items"><thead><tr><th style="width:64px">Qty</th><th>Description</th><th style="width:70px">Cu ft</th><th style="width:110px">Dims</th><th style="width:90px">Price</th><th style="width:34px"></th></tr></thead>
+      <p class="sub" style="margin-bottom:14px">Barrels and bins price themselves. For boxes, enter dimensions (L×W×H) and pricing calculates. A $65 minimum applies.</p>
+      <table class="items"><thead><tr><th style="width:60px">Qty</th><th>Description</th><th style="width:66px">Cu ft</th><th style="width:106px">Dims</th><th style="width:88px">Price</th><th style="width:30px"></th></tr></thead>
       <tbody>
       ${o.items.map((it,i)=>`<tr>
         <td><input inputmode="numeric" data-it="${i}" data-f="qty" value="${esc(it.qty)}"></td>
         <td>${it._other||((it.desc&&!['Barrel','Commercial Bin','Box'].includes(it.desc)&&!V2.shipTypes.some(s=>s.name===it.desc)&&it.kind!=='product'))
-             ? `<input data-it="${i}" data-f="desc" value="${esc(it.desc)}" placeholder="Describe it…">`
-             : `<select data-it="${i}" data-f="desc">${descOptions(it.kind==='product'?'P:'+it.desc:it.desc)}</select>`}</td>
+             ?`<input data-it="${i}" data-f="desc" value="${esc(it.desc)}" placeholder="Description">`
+             :`<select data-it="${i}" data-f="desc">${descOptions(it.kind==='product'?'P:'+it.desc:it.desc)}</select>`}</td>
         <td><input inputmode="numeric" data-it="${i}" data-f="cuft" value="${esc(it.cuft)}"></td>
         <td><input data-it="${i}" data-f="dims" value="${esc(it.dims)}" placeholder="LxWxH"></td>
         <td><input inputmode="decimal" data-it="${i}" data-f="price" value="${esc(it.price)}"></td>
@@ -463,33 +537,30 @@ function vItems(){
       </tr>`).join('')}
       </tbody></table>
       <div class="btnrow">
-        <button class="btn ghost" onclick="addItem('freight')">+ Add line</button>
-        <button class="btn ghost" onclick="addItem('product')">+ Add product</button>
-        <span style="flex:1"></span>
+        <button class="btn ghost" onclick="addItem('freight')">Add line</button>
+        <button class="btn ghost" onclick="addItem('product')">Add product</button>
       </div>
       <div class="total">Total ${money(orderTotal(o))}</div>
-      <div class="g2" style="margin-top:8px">
+      <div class="g2" style="margin-top:6px">
         <div><label class="f">Received from</label><select class="f" data-k="recv">${(V2.recv||['SEA FREIGHT']).map(r=>`<option${r===o.recv?' selected':''}>${esc(r)}</option>`).join('')}</select></div>
-        <div><label class="f">Payment</label><select class="f" data-k="payMethod">
+        <div><label class="f">Payment method</label><select class="f" data-k="payMethod">
           <option value=""></option>${['CASH','ZELLE','COD','CHECK'].map(p=>`<option${p===o.payMethod?' selected':''}>${p}</option>`).join('')}</select></div>
         <div><label class="f">Amount received $</label><input class="f" inputmode="decimal" data-k="amtRecd" value="${esc(o.amtRecd)}"></div>
       </div>
     </div>
-    <button class="btn big" onclick="goReview()">Review order →</button>
-  </div>`;
+    <button class="btn big" onclick="goReview()">Review order</button>`);
 }
 function bindItems(){
   $$('[data-it]').forEach(el=>{
     el.addEventListener('change',()=>{
-      const it=cur.items[+el.dataset.it]; const f=el.dataset.f;
-      let v=el.value;
+      const it=cur.items[+el.dataset.it]; const f=el.dataset.f; let v=el.value;
       if(f==='desc'){
         if(v==='OTHER'){ it._other=true; it.desc=''; it.kind='freight'; render(); return; }
         if(v.startsWith('P:')){ it.kind='product'; it.desc=v.slice(2);
           const p=V2.products.find(x=>x.name===it.desc); if(p) it.price=String(p.price);
         } else { it.kind='freight'; it.desc=v; }
       } else it[f]=v;
-      if(it.kind!=='product' && (f==='desc'||f==='dims'||f==='qty')) priceItem(it, cur.co.city);
+      if(it.kind!=='product'&&(f==='desc'||f==='dims'||f==='qty')) priceItem(it,cur.co.city);
       if(editing) cur._dirty=true;
       render();
     });
@@ -498,20 +569,21 @@ function bindItems(){
 function addItem(kind){ cur.items.push({qty:'1',desc:'',cuft:'',dims:'',price:'',amount:'',kind}); render(); }
 function delItem(i){ cur.items.splice(i,1); if(!cur.items.length) addItem('freight'); render(); }
 function goReview(){
-  cur.items = cur.items.filter(it=>it.desc);
+  cur.items=cur.items.filter(it=>it.desc);
   if(!cur.items.length){ toast('Add at least one cargo line.'); addItem('freight'); return; }
   go('review');
 }
 
-/* ---- 4. REVIEW (customer) ---- */
+/* ---- CREATE: review ---- */
 function vReview(){
   const o=cur;
-  return header()+`<div class="wrap">
-    <button class="backlink" onclick="go('items')">‹ Back to cargo</button>
+  return shell('create',`
+    <button class="backlink" onclick="go('items')">‹ Cargo</button>
+    ${steps(2)}
     <div class="card rv">
-      <h2>Please review your order</h2>
+      <h2>Review your order</h2>
       <div class="sec">Receipt</div>
-      <div class="row"><span>B/L #</span><b>${esc(o.inv)}</b></div>
+      <div class="row"><span>B/L number</span><b>${esc(o.inv)}</b></div>
       <div class="row"><span>Date</span><b>${usDate(o.invDate)} · ${esc(o.time)}</b></div>
       <div class="row"><span>Received from</span><b>${esc(o.recv)}</b></div>
       <div class="sec">Shipper — bill to</div>
@@ -519,29 +591,28 @@ function vReview(){
       <div class="row"><span>Address</span><b>${esc(o.sh.street)}, ${esc(o.sh.city)} ${esc(o.sh.state)}</b></div>
       <div class="row"><span>Phone</span><b>${esc(o.sh.phone)}</b></div>
       ${o.shEmail?`<div class="row"><span>Email</span><b>${esc(o.shEmail)}</b></div>`:''}
-      ${o.mailReceipt?`<div class="row"><span>Receipt</span><b>By mail ✉️</b></div>`:''}
+      ${o.mailReceipt?`<div class="row"><span>Receipt</span><b>By mail</b></div>`:''}
       <div class="sec">Consignee — deliver to</div>
       <div class="row"><span>Name</span><b>${esc(o.co.name)}${o.co.name2?' / '+esc(o.co.name2):''}</b></div>
       <div class="row"><span>Destination</span><b>${esc(o.co.city)}</b></div>
       <div class="row"><span>Phone</span><b>${esc(o.co.phone)}</b></div>
       <div class="sec">Cargo</div>
       ${o.items.map(it=>`<div class="row"><span>${esc(it.qty)} × ${esc(it.desc)}${it.dims?' ('+esc(it.dims)+')':''}${it.cuft?' · '+esc(it.cuft)+' cu ft':''}</span><b>${money(itemAmount(it))}</b></div>`).join('')}
-      <div class="row" style="border-bottom:0"><span style="font-weight:800;color:var(--ink)">Total</span><b style="font-size:19px">${money(orderTotal(o))}</b></div>
+      <div class="row" style="border-bottom:0"><span style="font-weight:800;color:var(--ink)">Total</span><b style="font-size:18px">${money(orderTotal(o))}</b></div>
       ${o.amtRecd?`<div class="row" style="border-bottom:0"><span>Amount received${o.payMethod?' ('+esc(o.payMethod)+')':''}</span><b>${money(o.amtRecd)}</b></div>`:''}
     </div>
-    <button class="btn big green" onclick="openTerms()">Looks good ✓</button>
-  </div>`;
+    <button class="btn big green" onclick="openTerms()">Everything looks correct</button>`);
 }
 
-/* ---- 5. TERMS + SIGNATURE ---- */
+/* ---- terms + signature ---- */
 function openTerms(){
   const m=document.createElement('div'); m.className='modal'; m.id='termsModal';
   m.innerHTML=`<div class="mcard">
-    <header>Terms &amp; Conditions of Agreement</header>
+    <header>Terms and Conditions of Agreement</header>
     <div class="terms" id="termsScroll">${TERMS.map(t=>`<p>${esc(t)}</p>`).join('')}
-      <p style="color:var(--muted)"><em>— End of terms. You can accept below. —</em></p></div>
+      <p style="color:var(--muted)"><em>End of terms. Please accept below.</em></p></div>
     <div class="mfoot">
-      <div class="siglabel">Sign with your finger (optional but appreciated):</div>
+      <div class="siglabel">Signature</div>
       <div class="sig"><canvas id="sigpad"></canvas><button class="clear" onclick="clearSig()">clear</button></div>
       <div class="btnrow">
         <button class="btn ghost" onclick="document.getElementById('termsModal').remove()">Back</button>
@@ -551,22 +622,22 @@ function openTerms(){
   </div>`;
   document.body.appendChild(m);
   const sc=$('#termsScroll');
-  const check=()=>{ if(sc.scrollTop+sc.clientHeight>=sc.scrollHeight-30){ const b=$('#acceptBtn'); b.disabled=false; b.textContent='I Accept ✓'; } };
+  const check=()=>{ if(sc.scrollTop+sc.clientHeight>=sc.scrollHeight-30){ const b=$('#acceptBtn'); b.disabled=false; b.textContent='I Accept'; } };
   sc.addEventListener('scroll',check); check();
   initSig();
 }
 let sigDrawn=false;
 function initSig(){
   const c=$('#sigpad'); const dpr=window.devicePixelRatio||1;
-  const w=c.offsetWidth,h=150; c.width=w*dpr; c.height=h*dpr;
-  const x=c.getContext('2d'); x.scale(dpr,dpr); x.lineWidth=2.4; x.lineCap='round'; x.strokeStyle='#12222f';
+  const w=c.offsetWidth,h=140; c.width=w*dpr; c.height=h*dpr;
+  const x=c.getContext('2d'); x.scale(dpr,dpr); x.lineWidth=2.2; x.lineCap='round'; x.strokeStyle='#17242F';
   let down=false,px=0,py=0;
   const pos=e=>{ const r=c.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [t.clientX-r.left,t.clientY-r.top]; };
-  const start=e=>{ down=true; [px,py]=pos(e); e.preventDefault(); };
-  const move=e=>{ if(!down) return; const [nx,ny]=pos(e); x.beginPath(); x.moveTo(px,py); x.lineTo(nx,ny); x.stroke(); px=nx;py=ny; sigDrawn=true; e.preventDefault(); };
-  const end=()=>{ down=false; };
-  c.addEventListener('touchstart',start); c.addEventListener('touchmove',move); c.addEventListener('touchend',end);
-  c.addEventListener('mousedown',start); c.addEventListener('mousemove',move); c.addEventListener('mouseup',end);
+  const st=e=>{ down=true; [px,py]=pos(e); e.preventDefault(); };
+  const mv=e=>{ if(!down)return; const [nx,ny]=pos(e); x.beginPath(); x.moveTo(px,py); x.lineTo(nx,ny); x.stroke(); px=nx;py=ny; sigDrawn=true; e.preventDefault(); };
+  const en=()=>{ down=false; };
+  c.addEventListener('touchstart',st); c.addEventListener('touchmove',mv); c.addEventListener('touchend',en);
+  c.addEventListener('mousedown',st); c.addEventListener('mousemove',mv); c.addEventListener('mouseup',en);
   sigDrawn=false;
 }
 function clearSig(){ const c=$('#sigpad'); c.getContext('2d').clearRect(0,0,c.width,c.height); sigDrawn=false; }
@@ -576,110 +647,136 @@ function acceptTerms(){
   document.getElementById('termsModal').remove();
   finishOrder();
 }
-
-/* ---- 6. SAVE + FINAL green check ---- */
 function finishOrder(){
   const o=cur;
   if(!o._savedAt){ consumeBL(o.inv); o._savedAt=Date.now(); orders.push(o); }
   else { const i=orders.findIndex(x=>x.id===o.id); if(i>-1) orders[i]=o; }
   o._uploaded=false; saveOrders();
+  if(navigator.onLine && AUTO) doUpload();
   go('done');
 }
 function vDone(){
   const o=cur;
   return `<div class="overlay">
     <div class="checkwrap"><svg viewBox="0 0 100 100">
-      <circle class="ck-circle" cx="50" cy="50" r="46"/>
-      <path class="ck-mark" d="M30 52 L45 66 L72 36"/>
-    </svg></div>
-    <h1>Your stuff is on the way! 🚢</h1>
-    <p>Saved on this tablet${navigator.onLine?'':' — it will upload to the office when back online'}.</p>
+      <circle class="ck-circle" cx="50" cy="50" r="46"/><path class="ck-mark" d="M30 52 L45 66 L72 36"/></svg></div>
+    <h1>Your shipment is booked</h1>
+    <p>${navigator.onLine?'Your order has been recorded with FCS Shipping.':'Saved on this tablet — it will upload to the office when back online.'}</p>
     <div class="recap">
-      <div><span>B/L #</span><b>${esc(o.inv)}</b></div>
+      <div><span>B/L number</span><b>${esc(o.inv)}</b></div>
       <div><span>Shipper</span><b>${esc(o.sh.name)}</b></div>
-      <div><span>To</span><b>${esc(o.co.name)} · ${esc(o.co.city)}</b></div>
+      <div><span>Deliver to</span><b>${esc(o.co.name)} · ${esc(o.co.city)}</b></div>
       <div><span>Pieces</span><b>${o.items.reduce((s,it)=>s+(parseFloat(it.qty)||0),0)}</b></div>
       <div><span>Total</span><b>${money(orderTotal(o))}</b></div>
-      ${o.shEmail?`<div><span>Receipt</span><b>${esc(o.shEmail)}</b></div>`:''}
+      ${o.shEmail?`<div><span>Receipt to</span><b>${esc(o.shEmail)}</b></div>`:''}
     </div>
-    <button class="btn big green" style="max-width:440px;margin-top:26px" onclick="go('home')">Done</button>
+    <button class="btn big green" style="max-width:430px;margin-top:26px" onclick="go('home')">Done</button>
   </div>`;
 }
 
-/* ---- ORDERS sub-app ---- */
+/* ---- ORDERS ---- */
 function svChanges(){
-  return `<div class="savechanges">✏️ Editing BL# ${esc(cur.inv)} <span style="flex:1"></span>
-    <button class="btn" style="padding:9px 18px;font-size:14px" onclick="quickSave()">Save changes</button></div>`;
+  return `<div class="savechanges">Editing BL# ${esc(cur.inv)}<span style="flex:1"></span>
+    <button class="btn" style="padding:9px 18px;font-size:13px" onclick="quickSave()">Save changes</button></div>`;
 }
 function quickSave(){
   const i=orders.findIndex(x=>x.id===cur.id);
-  if(i>-1){ cur._dirty=true; orders[i]=cur; saveOrders(); toast('Changes saved on tablet ✓ (upload to send to admin)'); }
+  if(i>-1){ cur._dirty=true; orders[i]=cur; saveOrders(); toast('Saved on tablet — Upload to send to FCS Admin.'); }
 }
 function vOrders(){
   const today=todayISO();
   const createdToday=orders.filter(o=>o.invDate===today).length;
-  const upToday=orders.filter(o=>o._uploaded && o._uploadedAt && new Date(o._uploadedAt).toISOString().slice(0,10)===today).length;
+  const upToday=orders.filter(o=>o._uploaded&&o._uploadedAt&&new Date(o._uploadedAt).toISOString().slice(0,10)===today).length;
+  const waiting=orders.filter(o=>!o._uploaded||o._dirty).length;
   const list=[...orders].reverse();
-  return header()+`<div class="wrap">
-    <button class="backlink" onclick="go('home')">‹ Home</button>
-    <div class="card" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
-      <div class="ocount">
-        <div><b>${createdToday}</b>created today</div>
-        <div><b>${upToday}</b>uploaded today</div>
-        <div><b>${orders.filter(o=>!o._uploaded||o._dirty).length}</b>waiting to upload</div>
+  return shell('orders',`
+    <h1>Orders</h1>
+    <p class="sub">Receipts created on this tablet. FCS Admin is the master record — syncing keeps both sides matched.</p>
+    <div class="stats">
+      <div class="stat"><b>${createdToday}</b><span>Created today</span></div>
+      <div class="stat"><b>${upToday}</b><span>Uploaded today</span></div>
+      <div class="stat"><b>${waiting}</b><span>Waiting to upload</span></div>
+      <div class="stat" style="display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:170px">
+        <button class="btn ghost" style="padding:9px" onclick="doRefresh()">${icon('refresh',15)} Refresh</button>
+        <button class="btn" style="padding:9px" onclick="doUpload()">${icon('upload',15)} Upload</button>
       </div>
-      <span style="flex:1"></span>
-      <button class="btn ghost" onclick="doRefresh()">⟳ Refresh</button>
-      <button class="btn" onclick="doUpload()">⇧ Upload</button>
     </div>
     <div class="olist">
       ${list.length? list.map(o=>`<div class="o">
           <div class="inv">BL# ${esc(o.inv)}</div>
           <div class="who">${esc(o.sh.name)} → ${esc(o.co.name)}<small>${usDate(o.invDate)} · ${esc(o.co.city)} · ${money(orderTotal(o))}</small></div>
-          <span class="st ${o._uploaded&&!o._dirty?'up':'local'}">${o._uploaded&&!o._dirty?'Uploaded ✓':(o._dirty?'Edited — re-upload':'On tablet')}</span>
-          <button class="btn ghost" style="padding:10px 18px;font-size:14px" onclick="openOrder('${o.id}')">Open</button>
+          <span class="st ${o._uploaded&&!o._dirty?'up':'local'}">${o._uploaded&&!o._dirty?'Synced':(o._dirty?'Edited':'On tablet')}</span>
+          <button class="btn ghost" style="padding:9px 20px;font-size:13px" onclick="openOrder('${o.id}')">Open</button>
         </div>`).join('')
-      : '<div class="card" style="text-align:center;color:var(--muted)">No receipts yet — make one in <b>Create</b>.</div>'}
-    </div>
-  </div>`;
+      : '<div class="card" style="text-align:center;color:var(--muted)">No receipts yet. Create one from the Create app.</div>'}
+    </div>`);
 }
 function openOrder(id){
   const o=orders.find(x=>x.id===id); if(!o) return;
   cur=o; editing=true; go('shipper');
 }
 
-/* ---- LOGIN (only needed for Upload/Refresh) ---- */
-function vLogin(){
-  return header()+`<div class="wrap" style="max-width:460px">
+/* ---- SETTINGS ---- */
+function vSettings(){
+  const last=LS.get('myfcs:lastSync',null);
+  return shell('settings',`
+    <h1>Settings</h1>
+    <p class="sub">Tablet configuration. FCS Admin remains the master record.</p>
     <div class="card">
+      <h2>B/L numbering</h2>
+      <label class="f">Next B/L number</label>
+      <input class="f" id="setNext" inputmode="numeric" value="${esc(NEXT||'')}" style="max-width:240px">
+      <p class="sub" style="margin-top:8px">When online this comes from FCS Admin automatically. Offline orders use the same digits with the first digit raised by one (16512 becomes 26512) so numbers never collide.</p>
+      <button class="btn" onclick="saveNext()">Save number</button>
+    </div>
+    <div class="card">
+      <h2>Sync</h2>
+      <label class="checkbox"><input type="checkbox" id="setAuto" ${AUTO?'checked':''} onchange="AUTO=this.checked;LS.set('myfcs:autosync',AUTO);toast(AUTO?'Auto-sync on':'Auto-sync off')">
+        Sync with FCS Admin automatically when opening apps</label>
+      <p class="sub" style="margin:8px 0 0">Last sync: ${last?new Date(last).toLocaleString():'never'}${AUTH?' · Signed in as '+esc(AUTH.email):' · Not signed in'}</p>
+      <div class="btnrow">
+        <button class="btn ghost" onclick="doRefresh()">Sync now</button>
+        ${AUTH?'<button class="btn ghost" onclick="signOut()">Sign out</button>':'<button class="btn ghost" onclick="go(\'login\')">Sign in</button>'}
+      </div>
+    </div>`);
+}
+function saveNext(){
+  const v=$('#setNext').value.replace(/\D/g,'');
+  if(!v){ toast('Enter a number.'); return; }
+  NEXT=v; FRESH=true; LS.set('myfcs:next',NEXT); LS.set('myfcs:nextFresh',true);
+  toast('Next B/L set to '+v);
+}
+function signOut(){ AUTH=null; localStorage.removeItem('myfcs:auth'); render(); toast('Signed out'); }
+
+/* ---- LOGIN ---- */
+function vLogin(){
+  return shell('settings',`
+    <div class="card" style="max-width:440px">
       <h2>Sign in to sync</h2>
-      <p class="hint">Use your FCS admin login. You only need this to Refresh or Upload — creating receipts works without it.</p>
+      <p class="sub">Use your FCS admin login. Creating receipts works without signing in — this is only for syncing.</p>
       <label class="f">Email</label><input class="f" id="liEmail" inputmode="email" value="${esc(AUTH?AUTH.email:'')}">
       <label class="f">Password</label><input class="f" id="liPass" type="password">
       <div class="btnrow">
-        <button class="btn ghost" onclick="go('orders')">Cancel</button>
+        <button class="btn ghost" onclick="go('home')">Cancel</button>
         <button class="btn" onclick="doLogin()">Sign in</button>
       </div>
-    </div>
-  </div>`;
+    </div>`);
 }
 async function doLogin(){
-  try{ await signIn($('#liEmail').value.trim(), $('#liPass').value); toast('Signed in ✓'); go('orders'); }
+  try{ await signIn($('#liEmail').value.trim(),$('#liPass').value); toast('Signed in'); go('orders'); }
   catch(e){ toast(e.message); }
 }
 
-/* ---- render loop ---- */
+/* ---- render ---- */
 function render(){
-  const views={home:vHome,shipper:vShipper,handoff:vHandoff,items:vItems,review:vReview,done:vDone,orders:vOrders,login:vLogin};
+  const views={home:vHome,shipper:vShipper,handoff:vHandoff,items:vItems,review:vReview,done:vDone,orders:vOrders,settings:vSettings,login:vLogin};
   $('#app').innerHTML=(views[scr]||vHome)();
   bindInputs(); bindItems();
 }
-window.addEventListener('online', ()=>render());
-window.addEventListener('offline', ()=>{ FRESH=false; LS.set('myfcs:nextFresh',false); render(); });
-/* going offline means our fetched B/L may go stale on the admin side */
+window.addEventListener('online',()=>render());
+window.addEventListener('offline',()=>{ FRESH=false; LS.set('myfcs:nextFresh',false); render(); });
 render();
-/* quietly try to refresh config on boot when online */
-if(navigator.onLine) loadConfig();
+if(navigator.onLine){ loadConfig(); if(AUTO) syncDown().then(()=>render()).catch(()=>{}); }
 </script>
 </body>
 </html>
