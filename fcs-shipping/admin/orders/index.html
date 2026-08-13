@@ -425,6 +425,17 @@ table.list tbody tr:hover{background:#fafcfd}
         <p id="mfSub">This month's cargo, by destination.</p>
         <span class="grow"></span>
         <select class="f" id="mfDest" style="max-width:220px"></select>
+        <select class="f" id="mfWeekSel" style="max-width:150px" title="Filter the list AND what generates">
+          <option value="0">All weeks</option>
+          <option value="1">Week 1 · Truck 1</option>
+          <option value="2">Week 2 · Truck 2</option>
+          <option value="3">Week 3 · Truck 3</option>
+          <option value="4">Week 4 · Truck 4</option>
+          <option value="5">Week 5 · Truck 5</option>
+        </select>
+        <input type="date" class="f" id="mfFrom" style="max-width:150px" title="From date — can reach into last month">
+        <input type="date" class="f" id="mfTo" style="max-width:150px" title="To date">
+        <button class="btn ghost" id="mfRangeClear" hidden>× Range</button>
         <button class="btn ghost" id="mfToggle">Manifest view</button>
         <button class="btn ghost" id="mfXlsx">Update Manifest sheet</button>
         <button class="btn" id="mfMaster">Update Master B/L</button>
@@ -1072,7 +1083,7 @@ function monthOrders(ym, dest){
 let cargoSort={k:'date',dir:1}, cargoPage=0;
 const PAGE_SIZE=30;
 const SORT_VAL={
-  date:o=>String(o.invDate||''), type:o=>o.paid?1:0, dest:o=>String(o.co.city||''),
+  date:o=>String(o.invDate||''), week:o=>weekOf(o.invDate), type:o=>o.paid?1:0, dest:o=>String(o.co.city||''),
   recv:o=>String(o.recv||''), inv:o=>isNaN(+o.inv)?String(o.inv):+o.inv,
   freight:o=>orderTotal(o), amt:o=>parseFloat(o.amtRecd)||0, bal:o=>orderBal(o),
 };
@@ -1097,12 +1108,13 @@ function cargoTable(rows, actions){
     </div>` : '';
   return `
     <table class="list"><thead><tr>
-      ${th('date','Date')}${th('type','Type')}${th('dest','Destination')}${th('recv','Received From')}${th('inv','Invoice #')}
+      ${th('date','Date')}${th('week','Week / Truck')}${th('type','Type')}${th('dest','Destination')}${th('recv','Received From')}${th('inv','Invoice #')}
       ${th('freight','Freight $',1)}${th('amt',"Amt Rec'd",1)}${th('bal','BAL/COD',1)}${actions?'<th></th>':''}
     </tr></thead><tbody>${view.map(o=>{
       const bal = orderBal(o);
       return `<tr>
         <td>${esc(usDate(o.invDate))}</td>
+        <td><b>Wk ${weekOf(o.invDate)}</b> <span style="color:var(--muted);font-size:11.5px">Truck ${weekOf(o.invDate)}</span></td>
         <td>${o.paid?'<b style="color:#177245">PAID</b>':'<b style="color:#B45309">BALANCE</b>'}</td>
         <td>${esc(o.co.city||'')}</td>
         <td>${esc(o.recv||'')}</td>
@@ -1226,9 +1238,30 @@ $('#btnQuotesRefresh').addEventListener('click',loadQuotes);
 let mfMode='tally';
 /* the ship line rates commercial bins at 19 cu ft on the docs (order entry still charges 20) */
 function tallyCu(it){ const q=parseFloat(it.qty)||1; return /commercial bin/i.test(it.desc||'') ? 19*q : (parseFloat(it.cuft)||0); }
+let mfWeek=0;               /* 0 = all weeks */
+let mfFrom='', mfTo='';     /* date range — may reach across the month edge */
+let mfSel=new Set();        /* hand-picked cargo (order ids) — wins over everything */
+function destMatches(o,dest){
+  if(!dest) return true;
+  const dl=String(dest).toLowerCase().replace(/[^a-z]/g,'');
+  const cl=String(o.co.city||'').toLowerCase().replace(/[^a-z]/g,'');
+  return cl.includes(dl) || dl.includes(cl && cl.slice(0,8) || '␀');
+}
+/* the cargo the manifest works from: date range (any month) > week > whole month */
+function mfOrders(ym,dest){
+  if(mfFrom||mfTo){
+    return orders.filter(o=>destMatches(o,dest)
+        && (!mfFrom || String(o.invDate)>=mfFrom)
+        && (!mfTo   || String(o.invDate)<=mfTo))
+      .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
+  }
+  let os=monthOrders(ym,dest);
+  if(mfWeek) os=os.filter(o=>weekOf(o.invDate)===mfWeek);
+  return os;
+}
 function mfRows(ym,dest){
   const list=[];
-  monthOrders(ym,dest).forEach(o=>{
+  mfOrders(ym,dest).forEach(o=>{
     o.items.forEach((it,ix)=>{
       if(it.kind==='product' || !it.desc) return;
       list.push({o,ix,it});
@@ -1236,21 +1269,29 @@ function mfRows(ym,dest){
   });
   return list;
 }
+function mfScopeLabel(){
+  if(mfSel.size) return mfSel.size+' selected B/L(s)';
+  if(mfFrom||mfTo) return (mfFrom?usDate(mfFrom):'start')+' → '+(mfTo?usDate(mfTo):'today');
+  if(mfWeek) return 'Week '+mfWeek+' (Truck '+mfWeek+')';
+  return 'whole month';
+}
 function renderManifest(){
   const dest=$('#mfDest').value; const ym=thisMonth();
-  $('#mfSub').textContent = monthLabel(ym)+' · '+(mfMode==='tally'?'tally sheet':'manifest view');
+  $('#mfSub').textContent = monthLabel(ym)+' · '+(mfMode==='tally'?'tally sheet':'manifest view')+' · generates: '+mfScopeLabel();
   const rows=mfRows(ym,dest);
-  if(!rows.length){ $('#mfList').innerHTML='<div class="empty"><b>No cargo for '+esc(dest||'—')+' yet this month.</b></div>'; return; }
+  if(!rows.length){ $('#mfList').innerHTML='<div class="empty"><b>No cargo for '+esc(dest||'—')+(mfWeek?' in week '+mfWeek:'')+' yet this month.</b></div>'; return; }
+  const seen=new Set();
+  const selBox=(id)=>seen.has(id)?'':(seen.add(id),`<input type="checkbox" data-msel="${id}"${mfSel.has(id)?' checked':''} title="Only checked B/Ls generate" style="width:16px;height:16px;vertical-align:middle;margin-right:6px">`);
   if(mfMode==='tally'){
     const pk = rows.reduce((s,r)=>s+(parseFloat(r.it.qty)||0),0);
     const cf = rows.reduce((s,r)=>s+tallyCu(r.it),0);
     $('#mfList').innerHTML = `
       <table class="list"><thead><tr>
-        <th style="width:110px">B/L #</th><th style="width:64px">Pkgs</th><th>Description</th>
+        <th style="width:130px">B/L #</th><th style="width:64px">Pkgs</th><th>Description</th>
         <th style="width:70px">Cu ft</th><th style="width:120px">Dims</th><th style="width:90px" class="num">$</th><th style="width:34px"></th>
       </tr></thead><tbody>
       ${rows.map((r,n)=>`<tr>
-        <td><strong>BL#${esc(r.o.inv)}</strong><div style="color:var(--muted);font-size:11px">${esc(r.o.sh.name||'')}</div></td>
+        <td>${selBox(r.o.id)}<strong>BL#${esc(r.o.inv)}</strong><div style="color:var(--muted);font-size:11px">Wk ${weekOf(r.o.invDate)} · ${esc(r.o.sh.name||'')}</div></td>
         <td><input class="f" data-mf="${n}" data-k="qty" value="${esc(r.it.qty)}" style="padding:4px 6px"></td>
         <td><input class="f" data-mf="${n}" data-k="desc" value="${esc(r.it.desc)}" style="padding:4px 6px"></td>
         <td><input class="f" data-mf="${n}" data-k="cuft" value="${esc(String(tallyCu(r.it)))}" style="padding:4px 6px;text-align:center"${/commercial bin/i.test(r.it.desc||'')?' title="Bins ride at 19 cu ft on the docs; order entry still charges 20" readonly':''}></td>
@@ -1279,21 +1320,45 @@ function renderManifest(){
     const byOrder={};
     rows.forEach(r=>{ (byOrder[r.o.id]=byOrder[r.o.id]||{o:r.o,items:[]}).items.push(r.it); });
     $('#mfList').innerHTML = Object.values(byOrder).map((g,i)=>`
-      <div style="border:1px solid var(--rule);border-radius:7px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:60px 1.2fr 1.2fr 1.6fr;gap:8px;align-items:start">
-        <div style="font-weight:700">${i+1}<br><span style="font-size:15px">${esc(g.o.inv)}</span></div>
+      <div style="border:1px solid var(--rule);border-radius:7px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:76px 1.2fr 1.2fr 1.6fr;gap:8px;align-items:start">
+        <div style="font-weight:700">${selBox(g.o.id)}${i+1}<br><span style="font-size:15px">${esc(g.o.inv)}</span><div style="color:var(--muted);font-size:11px;font-weight:400">Wk ${weekOf(g.o.invDate)}</div></div>
         <div><b>${esc(g.o.sh.name||'')}</b><br>${esc(g.o.sh.street||'')}<br>${esc([g.o.sh.city,g.o.sh.state].filter(Boolean).join(', '))}<br><span style="color:var(--muted)">TEL# ${esc(g.o.sh.phone||'')}</span></div>
         <div><b>${esc(g.o.co.name||'')}</b><br>${esc(g.o.co.city||'')}<br>ST. LUCIA<br><span style="color:var(--muted)">TEL# ${esc(g.o.co.phone||'')}</span></div>
         <div>${g.items.map(it=>`${esc(it.qty)} ${esc(it.desc)} S.T.C PERSONAL EFFECTS &nbsp; <b>${tallyCu(it)}</b> &nbsp; ${money(itemAmount(it))}`).join('<br>')}
           ${orderBal(g.o)>0?'<div style="color:#C22B1E;font-weight:800;margin-top:4px">HOLD</div>':''}</div>
       </div>`).join('');
   }
+  /* selection wiring — checked B/Ls override the week filter when generating */
+  if(mfSel.size) $('#mfList').insertAdjacentHTML('afterbegin',
+    `<div style="display:flex;align-items:center;gap:12px;background:#FDF3DF;border:1px solid #F4DFB4;color:#7A5104;border-radius:7px;padding:9px 14px;margin-bottom:10px;font-size:13px;font-weight:600">
+       Generating ONLY the ${mfSel.size} checked B/L(s). <button class="btn ghost sm" id="mfSelClear">Clear selection</button></div>`);
+  const clr=$('#mfSelClear'); if(clr) clr.addEventListener('click',()=>{ mfSel.clear(); renderManifest(); });
+  $$('#mfList [data-msel]').forEach(cb=>cb.addEventListener('change',()=>{
+    if(cb.checked) mfSel.add(cb.dataset.msel); else mfSel.delete(cb.dataset.msel);
+    renderManifest();
+  }));
 }
 $('#mfDest').addEventListener('change',()=>{
+  mfSel.clear();
   renderManifest();
   /* header card open? rebuild it so the broker follows the destination */
   if(!$('#mfHeadCard').hidden) $('#mfMaster').click();
   else if(!$('#mfManCard').hidden) $('#mfXlsx').click();
 });
+$('#mfWeekSel').addEventListener('change',()=>{
+  mfWeek = parseInt($('#mfWeekSel').value,10)||0;
+  renderManifest();
+  if(!$('#mfManCard').hidden) $('#mfXlsx').click();
+});
+function mfRangeChanged(){
+  mfFrom=$('#mfFrom').value||''; mfTo=$('#mfTo').value||'';
+  $('#mfRangeClear').hidden = !(mfFrom||mfTo);
+  renderManifest();
+  if(!$('#mfManCard').hidden) $('#mfXlsx').click();
+}
+$('#mfFrom').addEventListener('change',mfRangeChanged);
+$('#mfTo').addEventListener('change',mfRangeChanged);
+$('#mfRangeClear').addEventListener('click',()=>{ $('#mfFrom').value=''; $('#mfTo').value=''; mfRangeChanged(); });
 $('#mfToggle').addEventListener('click',()=>{ mfMode = mfMode==='tally'?'manifest':'tally'; $('#mfToggle').textContent = mfMode==='tally'?'Manifest view':'Tally view'; renderManifest(); });
 /* ---------- 11. XLSX exports (ExcelJS) ---------- */
 function dl(buf,name){
@@ -1523,8 +1588,11 @@ function masterPayload(ym,dest,hdr,truck){
 function manifestPayload(ym,dest,truck,x){
   truck = truck || currentTruck(); x = x || {};
   const wk=parseInt(String(truck).replace(/\D/g,''),10)||null;
-  let os=monthOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
-  if(truck!=='FULL MONTH' && wk) os=os.filter(o=>weekOf(o.invDate)===wk);
+  /* what goes on the sheet: hand-picked cargo wins, then the date range,
+     then the week filter, then the truck's own week */
+  let os=mfOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
+  if(mfSel.size) os=os.filter(o=>mfSel.has(o.id));
+  else if(!mfFrom && !mfTo && !mfWeek && truck!=='FULL MONTH' && wk) os=os.filter(o=>weekOf(o.invDate)===wk);
   return { action:'manifest', month:ym, dest, truck,
     date: x.date||'', container: x.container||'',
     from:{ name:V2.mbl.manFrom, addr:V2.mbl.manFromAddr, city:V2.mbl.manFromCity,
@@ -1567,7 +1635,7 @@ function mblHeaderFields(dest){
 function renderHeaderFields(holder, fields, dest){
   $(holder).innerHTML = fields.map(([k,l,v,rows,typ])=>{
     if(typ==='date') return `<div><label class="f">${l}</label><input class="f" type="date" data-mh="${k}" value="${esc(v)}"></div>`;
-    if(v==='truck') return truckSelectHTML(k, currentTruck());
+    if(v==='truck') return truckSelectHTML(k, mfWeek ? ('Truck '+mfWeek) : currentTruck());
     if(v==='select'){
       /* the right broker for the destination comes preselected */
       const pick=brokerFor(dest);
