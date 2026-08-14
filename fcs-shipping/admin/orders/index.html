@@ -401,6 +401,9 @@ table.list tbody tr:hover{background:#fafcfd}
         <p id="cargoSub">This month.</p>
         <span class="grow"></span>
         <input class="f" id="qOrders" placeholder="Search invoice, name…" style="max-width:240px">
+        <input type="date" class="f" id="cgFrom" style="max-width:150px" title="From date — can reach into other months">
+        <input type="date" class="f" id="cgTo" style="max-width:150px" title="To date">
+        <button class="btn ghost" id="cgRangeClear" hidden>× Range</button>
         <button class="btn ghost" id="btnCsv">CSV</button>
         <button class="btn ghost" id="btnRevXlsx">Update Revenue sheet</button>
         <button class="btn" id="btnCargoCreate">Create</button>
@@ -1075,7 +1078,7 @@ function monthOrders(ym, dest){
 let cargoSort={k:'date',dir:1}, cargoPage=0;
 const PAGE_SIZE=30;
 const SORT_VAL={
-  date:o=>String(o.invDate||''), week:o=>weekOf(o.invDate), type:o=>o.paid?1:0, dest:o=>String(o.co.city||''),
+  date:o=>String(o.invDate||''), type:o=>o.paid?1:0, dest:o=>String(o.co.city||''),
   recv:o=>String(o.recv||''), inv:o=>isNaN(+o.inv)?String(o.inv):+o.inv,
   freight:o=>orderTotal(o), amt:o=>parseFloat(o.amtRecd)||0, bal:o=>orderBal(o),
 };
@@ -1100,13 +1103,12 @@ function cargoTable(rows, actions){
     </div>` : '';
   return `
     <table class="list"><thead><tr>
-      ${th('date','Date')}${th('week','Week / Truck')}${th('type','Type')}${th('dest','Destination')}${th('recv','Received From')}${th('inv','Invoice #')}
+      ${th('date','Date')}${th('type','Type')}${th('dest','Destination')}${th('recv','Received From')}${th('inv','Invoice #')}
       ${th('freight','Freight $',1)}${th('amt',"Amt Rec'd",1)}${th('bal','BAL/COD',1)}${actions?'<th></th>':''}
     </tr></thead><tbody>${view.map(o=>{
       const bal = orderBal(o);
       return `<tr>
         <td>${esc(usDate(o.invDate))}</td>
-        <td><b>Wk ${weekOf(o.invDate)}</b> <span style="color:var(--muted);font-size:11.5px">Truck ${weekOf(o.invDate)}</span></td>
         <td>${o.paid?'<b style="color:#177245">PAID</b>':'<b style="color:#B45309">BALANCE</b>'}</td>
         <td>${esc(o.co.city||'')}</td>
         <td>${esc(o.recv||'')}</td>
@@ -1130,16 +1132,24 @@ function statCards(rows){
   const card=(l,v,c)=>`<div class="card" style="padding:12px 14px"><div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${l}</div><div style="font-size:20px;font-weight:700;${c?'color:'+c:''}">${v}</div></div>`;
   return card('Cargo', rows.length) + card('Freight', money(freight)) + card('Products', money(prod)) + card('Collected · Balance', money(recd)+' · <span style="color:#B45309">'+money(bal)+'</span>');
 }
+let cgFrom='', cgTo='';   /* cargo page date range — reaches across months */
 function renderOrders(){
   const ym = thisMonth();
   const q=($('#qOrders').value||'').toLowerCase();
-  let rows = monthOrders(ym);
+  let rows;
+  if(cgFrom||cgTo){
+    rows = orders.filter(o=>(!cgFrom || String(o.invDate)>=cgFrom) && (!cgTo || String(o.invDate)<=cgTo))
+      .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
+  } else rows = monthOrders(ym);
+  const base = rows;
   $('#cOrders').textContent = rows.length;
   if(q) rows = rows.filter(o=>[o.inv,o.sh.name,o.co.name,o.co.city].join(' ').toLowerCase().includes(q));
   rows = sortRows(rows);
-  $('#cargoTitle').textContent = 'Cargo — '+monthLabel(ym);
+  $('#cargoTitle').textContent = 'Cargo — '+((cgFrom||cgTo)
+    ? (cgFrom?usDate(cgFrom):'start')+' → '+(cgTo?usDate(cgTo):'today')
+    : monthLabel(ym));
   $('#cargoSub').textContent = userName ? ('Welcome, '+userName) : 'Older months live in Previous Activity.';
-  $('#cargoStats').innerHTML = statCards(monthOrders(ym));
+  $('#cargoStats').innerHTML = statCards(base);
   $('#ordersList').innerHTML = cargoTable(rows, true);
   $$('#ordersList [data-sort]').forEach(h=>h.addEventListener('click',()=>{
     const k=h.dataset.sort;
@@ -1151,6 +1161,14 @@ function renderOrders(){
     renderOrders();
   }));
 }
+function cgRangeChanged(){
+  cgFrom=$('#cgFrom').value||''; cgTo=$('#cgTo').value||'';
+  $('#cgRangeClear').hidden = !(cgFrom||cgTo);
+  cargoPage=0; renderOrders();
+}
+$('#cgFrom').addEventListener('change',cgRangeChanged);
+$('#cgTo').addEventListener('change',cgRangeChanged);
+$('#cgRangeClear').addEventListener('click',()=>{ $('#cgFrom').value=''; $('#cgTo').value=''; cgRangeChanged(); });
 /* ---------- 9. QUOTES ---------- */
 async function loadQuotes(){
   if(!SBC) return;
@@ -1279,7 +1297,7 @@ function renderManifest(){
         <th style="width:70px">Cu ft</th><th style="width:120px">Dims</th><th style="width:90px" class="num">$</th><th style="width:34px"></th>
       </tr></thead><tbody>
       ${rows.map((r,n)=>`<tr>
-        <td>${selBox(r.o.id)}<strong>BL#${esc(r.o.inv)}</strong><div style="color:var(--muted);font-size:11px">Wk ${weekOf(r.o.invDate)} · ${esc(r.o.sh.name||'')}</div></td>
+        <td>${selBox(r.o.id)}<strong>BL#${esc(r.o.inv)}</strong><div style="color:var(--muted);font-size:11px">${esc(usDate(r.o.invDate))} · ${esc(r.o.sh.name||'')}</div></td>
         <td><input class="f" data-mf="${n}" data-k="qty" value="${esc(r.it.qty)}" style="padding:4px 6px"></td>
         <td><input class="f" data-mf="${n}" data-k="desc" value="${esc(r.it.desc)}" style="padding:4px 6px"></td>
         <td><input class="f" data-mf="${n}" data-k="cuft" value="${esc(String(tallyCu(r.it)))}" style="padding:4px 6px;text-align:center"${/commercial bin/i.test(r.it.desc||'')?' title="Bins ride at 19 cu ft on the docs; order entry still charges 20" readonly':''}></td>
@@ -1309,7 +1327,7 @@ function renderManifest(){
     rows.forEach(r=>{ (byOrder[r.o.id]=byOrder[r.o.id]||{o:r.o,items:[]}).items.push(r.it); });
     $('#mfList').innerHTML = Object.values(byOrder).map((g,i)=>`
       <div style="border:1px solid var(--rule);border-radius:7px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:76px 1.2fr 1.2fr 1.6fr;gap:8px;align-items:start">
-        <div style="font-weight:700">${selBox(g.o.id)}${i+1}<br><span style="font-size:15px">${esc(g.o.inv)}</span><div style="color:var(--muted);font-size:11px;font-weight:400">Wk ${weekOf(g.o.invDate)}</div></div>
+        <div style="font-weight:700">${selBox(g.o.id)}${i+1}<br><span style="font-size:15px">${esc(g.o.inv)}</span><div style="color:var(--muted);font-size:11px;font-weight:400">${esc(usDate(g.o.invDate))}</div></div>
         <div><b>${esc(g.o.sh.name||'')}</b><br>${esc(g.o.sh.street||'')}<br>${esc([g.o.sh.city,g.o.sh.state].filter(Boolean).join(', '))}<br><span style="color:var(--muted)">TEL# ${esc(g.o.sh.phone||'')}</span></div>
         <div><b>${esc(g.o.co.name||'')}</b><br>${esc(g.o.co.city||'')}<br>ST. LUCIA<br><span style="color:var(--muted)">TEL# ${esc(g.o.co.phone||'')}</span></div>
         <div>${g.items.map(it=>`${esc(it.qty)} ${esc(it.desc)} S.T.C PERSONAL EFFECTS &nbsp; <b>${tallyCu(it)}</b> &nbsp; ${money(itemAmount(it))}`).join('<br>')}
@@ -1544,17 +1562,21 @@ function revenuePayload(ym){
         isNaN(+o.inv)?o.inv:+o.inv, orderTotal(o), parseFloat(o.amtRecd)||0 ];
     })};
 }
-/* one truck per week: week 1 = days 1-7, week 2 = 8-14 … cargo rides its week's truck */
-function weekOf(dateIso){ const d=parseInt(String(dateIso).slice(8,10),10)||1; return Math.min(5, Math.ceil(d/7)); }
-function currentTruck(){ return 'Truck '+weekOf(todayISO()); }
-function truckFilter(rows, truck){
-  if(!truck || truck==='FULL MONTH') return rows;
-  const wk=parseInt(truck.replace(/\D/g,''),10)||1;
-  return rows.filter(x=>weekOf((x.o||x).invDate)===wk);
+/* sheet tab names come from dates now (Sheets tabs can't contain "/") */
+function tabLabel(iso){ const d=new Date(String(iso||todayISO())+'T12:00:00');
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase(); }
+function defaultTab(){
+  if(mfFrom&&mfTo) return tabLabel(mfFrom)+' - '+tabLabel(mfTo);
+  if(mfFrom) return tabLabel(mfFrom)+' ON';
+  if(mfTo) return 'THRU '+tabLabel(mfTo);
+  return tabLabel(todayISO());
 }
 function masterPayload(ym,dest,hdr,truck){
-  truck = truck || currentTruck();
-  const rows = truckFilter(mfRows(ym,dest), truck);
+  truck = truck || defaultTab();
+  /* what lands on the sheet follows the same rules as the manifest:
+     checked cargo first, then the date range, otherwise the whole month */
+  let rows = mfRows(ym,dest);
+  if(mfSel.size) rows = rows.filter(x=>mfSel.has(x.o.id));
   const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}}; const lines=[];
   rows.forEach(x=>{
     const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
@@ -1569,7 +1591,7 @@ function masterPayload(ym,dest,hdr,truck){
     header: hdr, barrels:agg.barrel, bins:agg.bin, lines };
 }
 function manifestPayload(ym,dest,truck,x){
-  truck = truck || currentTruck(); x = x || {};
+  truck = truck || defaultTab(); x = x || {};
   /* what goes on the sheet: hand-picked cargo wins, then the date range,
      otherwise the whole month. The truck choice is just the tab name. */
   let os=mfOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
@@ -1591,10 +1613,9 @@ function manifestPayload(ym,dest,truck,x){
 }
 /* master B/L header confirm flow */
 let hdrBrokerName='', hdrBrokerAddr='', hdrVessel='', hdrBkg='';
-const TRUCK_OPTS=['Truck 1','Truck 2','Truck 3','Truck 4','Truck 5','FULL MONTH'];
-function truckSelectHTML(k, picked){
-  return `<div><label class="f">Truck (bottom tab)</label>
-    <select class="f" data-mh="${k}">${TRUCK_OPTS.map(t=>`<option${t===picked?' selected':''}>${t}</option>`).join('')}</select></div>`;
+function tabNameHTML(k, val){
+  return `<div><label class="f">Sheet tab name (bottom)</label>
+    <input class="f" data-mh="${k}" value="${esc(val)}" placeholder="e.g. ${esc(tabLabel(todayISO()))}"></div>`;
 }
 function brokerFor(dest){
   const vf=/vieux/i.test(dest);
@@ -1616,7 +1637,7 @@ function mblHeaderFields(dest){
 function renderHeaderFields(holder, fields, dest){
   $(holder).innerHTML = fields.map(([k,l,v,rows,typ])=>{
     if(typ==='date') return `<div><label class="f">${l}</label><input class="f" type="date" data-mh="${k}" value="${esc(v)}"></div>`;
-    if(v==='truck') return truckSelectHTML(k, currentTruck());
+    if(v==='truck') return tabNameHTML(k, defaultTab());
     if(v==='select'){
       /* the right broker for the destination comes preselected */
       const pick=brokerFor(dest);
@@ -1627,9 +1648,9 @@ function renderHeaderFields(holder, fields, dest){
       ? `<div><label class="f">${l}</label><textarea class="f" data-mh="${k}" rows="${rows}">${esc(v)}</textarea></div>`
       : `<div><label class="f">${l}</label><input class="f" data-mh="${k}" value="${esc(v)}"></div>`;
   }).join('');
-  /* picking a date moves the truck to that week */
+  /* picking a date suggests that date as the tab name (unless a range is set) */
   const d=$(holder+' [data-mh="date"]'), t=$(holder+' [data-mh="truck"]');
-  if(d&&t) d.addEventListener('change',()=>{ if(d.value) t.value='Truck '+weekOf(d.value); });
+  if(d&&t) d.addEventListener('change',()=>{ if(d.value && !mfFrom && !mfTo) t.value=tabLabel(d.value); });
 }
 $('#mfMaster').addEventListener('click',()=>{
   $('#mfManCard').hidden=true;
