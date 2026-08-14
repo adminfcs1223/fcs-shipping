@@ -425,14 +425,6 @@ table.list tbody tr:hover{background:#fafcfd}
         <p id="mfSub">This month's cargo, by destination.</p>
         <span class="grow"></span>
         <select class="f" id="mfDest" style="max-width:220px"></select>
-        <select class="f" id="mfWeekSel" style="max-width:150px" title="Filter the list AND what generates">
-          <option value="0">All weeks</option>
-          <option value="1">Week 1 · Truck 1</option>
-          <option value="2">Week 2 · Truck 2</option>
-          <option value="3">Week 3 · Truck 3</option>
-          <option value="4">Week 4 · Truck 4</option>
-          <option value="5">Week 5 · Truck 5</option>
-        </select>
         <input type="date" class="f" id="mfFrom" style="max-width:150px" title="From date — can reach into last month">
         <input type="date" class="f" id="mfTo" style="max-width:150px" title="To date">
         <button class="btn ghost" id="mfRangeClear" hidden>× Range</button>
@@ -1238,7 +1230,6 @@ $('#btnQuotesRefresh').addEventListener('click',loadQuotes);
 let mfMode='tally';
 /* the ship line rates commercial bins at 19 cu ft on the docs (order entry still charges 20) */
 function tallyCu(it){ const q=parseFloat(it.qty)||1; return /commercial bin/i.test(it.desc||'') ? 19*q : (parseFloat(it.cuft)||0); }
-let mfWeek=0;               /* 0 = all weeks */
 let mfFrom='', mfTo='';     /* date range — may reach across the month edge */
 let mfSel=new Set();        /* hand-picked cargo (order ids) — wins over everything */
 function destMatches(o,dest){
@@ -1255,9 +1246,7 @@ function mfOrders(ym,dest){
         && (!mfTo   || String(o.invDate)<=mfTo))
       .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
   }
-  let os=monthOrders(ym,dest);
-  if(mfWeek) os=os.filter(o=>weekOf(o.invDate)===mfWeek);
-  return os;
+  return monthOrders(ym,dest);
 }
 function mfRows(ym,dest){
   const list=[];
@@ -1272,14 +1261,13 @@ function mfRows(ym,dest){
 function mfScopeLabel(){
   if(mfSel.size) return mfSel.size+' selected B/L(s)';
   if(mfFrom||mfTo) return (mfFrom?usDate(mfFrom):'start')+' → '+(mfTo?usDate(mfTo):'today');
-  if(mfWeek) return 'Week '+mfWeek+' (Truck '+mfWeek+')';
   return 'whole month';
 }
 function renderManifest(){
   const dest=$('#mfDest').value; const ym=thisMonth();
   $('#mfSub').textContent = monthLabel(ym)+' · '+(mfMode==='tally'?'tally sheet':'manifest view')+' · generates: '+mfScopeLabel();
   const rows=mfRows(ym,dest);
-  if(!rows.length){ $('#mfList').innerHTML='<div class="empty"><b>No cargo for '+esc(dest||'—')+(mfWeek?' in week '+mfWeek:'')+' yet this month.</b></div>'; return; }
+  if(!rows.length){ $('#mfList').innerHTML='<div class="empty"><b>No cargo for '+esc(dest||'—')+((mfFrom||mfTo)?' in that date range':' yet this month')+'.</b></div>'; return; }
   const seen=new Set();
   const selBox=(id)=>seen.has(id)?'':(seen.add(id),`<input type="checkbox" data-msel="${id}"${mfSel.has(id)?' checked':''} title="Only checked B/Ls generate" style="width:16px;height:16px;vertical-align:middle;margin-right:6px">`);
   if(mfMode==='tally'){
@@ -1344,11 +1332,6 @@ $('#mfDest').addEventListener('change',()=>{
   /* header card open? rebuild it so the broker follows the destination */
   if(!$('#mfHeadCard').hidden) $('#mfMaster').click();
   else if(!$('#mfManCard').hidden) $('#mfXlsx').click();
-});
-$('#mfWeekSel').addEventListener('change',()=>{
-  mfWeek = parseInt($('#mfWeekSel').value,10)||0;
-  renderManifest();
-  if(!$('#mfManCard').hidden) $('#mfXlsx').click();
 });
 function mfRangeChanged(){
   mfFrom=$('#mfFrom').value||''; mfTo=$('#mfTo').value||'';
@@ -1587,12 +1570,10 @@ function masterPayload(ym,dest,hdr,truck){
 }
 function manifestPayload(ym,dest,truck,x){
   truck = truck || currentTruck(); x = x || {};
-  const wk=parseInt(String(truck).replace(/\D/g,''),10)||null;
   /* what goes on the sheet: hand-picked cargo wins, then the date range,
-     then the week filter, then the truck's own week */
+     otherwise the whole month. The truck choice is just the tab name. */
   let os=mfOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
   if(mfSel.size) os=os.filter(o=>mfSel.has(o.id));
-  else if(!mfFrom && !mfTo && !mfWeek && truck!=='FULL MONTH' && wk) os=os.filter(o=>weekOf(o.invDate)===wk);
   return { action:'manifest', month:ym, dest, truck,
     date: x.date||'', container: x.container||'',
     from:{ name:V2.mbl.manFrom, addr:V2.mbl.manFromAddr, city:V2.mbl.manFromCity,
@@ -1635,7 +1616,7 @@ function mblHeaderFields(dest){
 function renderHeaderFields(holder, fields, dest){
   $(holder).innerHTML = fields.map(([k,l,v,rows,typ])=>{
     if(typ==='date') return `<div><label class="f">${l}</label><input class="f" type="date" data-mh="${k}" value="${esc(v)}"></div>`;
-    if(v==='truck') return truckSelectHTML(k, mfWeek ? ('Truck '+mfWeek) : currentTruck());
+    if(v==='truck') return truckSelectHTML(k, currentTruck());
     if(v==='select'){
       /* the right broker for the destination comes preselected */
       const pick=brokerFor(dest);
