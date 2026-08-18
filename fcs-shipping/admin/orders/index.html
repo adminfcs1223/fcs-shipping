@@ -404,11 +404,17 @@ table.list tbody tr:hover{background:#fafcfd}
         <input type="date" class="f" id="cgFrom" style="max-width:150px" title="From date — can reach into other months">
         <input type="date" class="f" id="cgTo" style="max-width:150px" title="To date">
         <button class="btn ghost" id="cgRangeClear" hidden>× Range</button>
+        <select class="f" id="cgSort" style="max-width:140px">
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+        </select>
+        <button class="btn ghost" id="btnHist">History</button>
         <button class="btn ghost" id="btnCsv">CSV</button>
         <button class="btn ghost" id="btnRevXlsx">Update Revenue sheet</button>
         <button class="btn" id="btnCargoCreate">Create</button>
       </div>
       <div class="grid g4" id="cargoStats" style="margin-bottom:14px"></div>
+      <div class="card" id="histBox" hidden style="margin-bottom:14px;max-height:340px;overflow:auto;padding:4px 0"></div>
       <div class="card" style="padding:6px 6px;overflow:auto"><div id="ordersList"></div></div>
     </section>
     <!-- ===================== QUOTES ===================== -->
@@ -688,9 +694,16 @@ const monthLabel = ym => {
 const MONTH_NAMES = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
 /* ---------- 3. order model ---------- */
 function blankItem(kind){ return {qty:'1',desc:'',cuft:'',dims:'',price:'',amount:'',kind:kind||'freight'}; }
+/* never hand out a B/L number that's already on an order — walk forward until free */
+function nextFreeInv(){
+  const used=new Set(orders.map(o=>String(o.inv)));
+  let n=String(S.next||'');
+  while(n && used.has(n)) n=bumpInvoice(n);
+  return n;
+}
 function blankOrder(){
   return {
-    id:null, inv:S.next, invDate:todayISO(), pickup:todayISO(), time:nowTime(),
+    id:null, inv:nextFreeInv(), invDate:todayISO(), pickup:todayISO(), time:nowTime(),
     po:'', container:'', code:'', shipVia:'', cross:'', service:'',
     recv:(V2.recv[0]||'SEA FREIGHT'),
     sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
@@ -968,14 +981,31 @@ async function saveDraft(){
   formToDraft();
   if(!String(draft.inv).trim()){ toast('An invoice number is required'); return false; }
   if(!String(draft.co.city||'').trim()){ toast('Pick a destination first'); $('#fCoCity').focus(); return false; }
+  /* the number must be free in the DATABASE, not just in this tab */
+  try{
+    if(DB.live){
+      const dbOrders = await DB.load('fcs:orders', []);
+      const clash = dbOrders.find(o=>String(o.inv)===String(draft.inv) && o.id!==draft.id);
+      if(clash){
+        const free=(()=>{ const used=new Set(dbOrders.concat(orders).map(o=>String(o.inv)));
+          let n=String(draft.inv); while(used.has(n)) n=bumpInvoice(n); return n; })();
+        toast('B/L '+draft.inv+' is already used by '+((clash.sh&&clash.sh.name)||'another order')+' — try '+free);
+        $('#fInv').value=free; draft.inv=free;
+        return false;
+      }
+    }
+  }catch(e){}
+  let act='order saved';
   if(draft.id){
     orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
   } else {
+    act='order created';
     draft.id = uid();
     orders.push({...draft});
     if(String(draft.inv)===String(S.next)){ S.next = bumpInvoice(S.next); const el=$('#sNext'); if(el) el.value=S.next; }
   }
   await persist(); renderOrders();
+  logEvent(act, draft.inv, (draft.sh&&draft.sh.name)||'');
   return true;
 }
 $('#btnCreate').addEventListener('click', async ()=>{
@@ -1039,6 +1069,7 @@ $('#btnPaid').addEventListener('click', async ()=>{
       body: JSON.stringify({ eblNo: String(draft.inv), status: paid?'paid':'open' }) });
   }catch(e){}
   toast(paid ? 'Marked paid' : 'Marked not paid');
+  logEvent(paid?'marked paid':'marked unpaid', draft.inv, (draft.sh&&draft.sh.name)||'');
 });
 $('#btnPrint').addEventListener('click',()=>{ formToDraft(); $('#printroot').innerHTML=formHTML(draft); window.print(); });
 $('#btnEmailRcpt').addEventListener('click', async ()=>{
@@ -1075,7 +1106,7 @@ function monthOrders(ym, dest){
     return cl.includes(dl) || dl.includes(cl && cl.slice(0,8) || '␀');
   }).sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
 }
-let cargoSort={k:'date',dir:1}, cargoPage=0;
+let cargoSort={k:'date',dir:-1}, cargoPage=0;   /* newest first by default */
 const PAGE_SIZE=30;
 const SORT_VAL={
   date:o=>String(o.invDate||''), type:o=>o.paid?1:0, dest:o=>String(o.co.city||''),
@@ -1169,6 +1200,22 @@ function cgRangeChanged(){
 $('#cgFrom').addEventListener('change',cgRangeChanged);
 $('#cgTo').addEventListener('change',cgRangeChanged);
 $('#cgRangeClear').addEventListener('click',()=>{ $('#cgFrom').value=''; $('#cgTo').value=''; cgRangeChanged(); });
+$('#cgSort').addEventListener('change',()=>{ cargoSort={k:'date',dir:$('#cgSort').value==='new'?-1:1}; cargoPage=0; renderOrders(); });
+$('#btnHist').addEventListener('click', async ()=>{
+  const box=$('#histBox');
+  if(!box.hidden){ box.hidden=true; return; }
+  box.hidden=false; box.innerHTML='<div style="padding:14px;color:var(--muted)">Loading history…</div>';
+  const log=await DB.load('fcs:log',[]);
+  box.innerHTML = (log.length?log.slice(-100).reverse().map(e=>`
+    <div style="display:flex;gap:14px;padding:7px 14px;border-bottom:1px solid var(--rule);font-size:12.5px;align-items:baseline">
+      <span style="color:var(--muted);min-width:160px;white-space:nowrap">${esc(new Date(e.at).toLocaleString())}</span>
+      <span style="min-width:110px"><b>${esc(e.by||'')}</b></span>
+      <span style="min-width:110px">${esc(e.act||'')}</span>
+      <span style="min-width:70px"><b>${e.inv?'BL# '+esc(e.inv):''}</b></span>
+      <span style="color:var(--muted)">${esc(e.note||'')}</span>
+    </div>`).join('')
+    : '<div style="padding:14px;color:var(--muted)">Nothing logged yet — activity shows up here from now on.</div>');
+});
 /* ---------- 9. QUOTES ---------- */
 async function loadQuotes(){
   if(!SBC) return;
@@ -1909,7 +1956,7 @@ $('#ordersList').addEventListener('click',async e=>{
   if(t.dataset.dupo){
     const o=orders.find(x=>x.id===t.dataset.dupo); if(!o) return;
     draft=JSON.parse(JSON.stringify(o));
-    draft.id=null; draft.inv=S.next; draft.invDate=todayISO(); draft.pickup=todayISO(); draft.time=nowTime();
+    draft.id=null; draft.inv=nextFreeInv(); draft.invDate=todayISO(); draft.pickup=todayISO(); draft.time=nowTime();
     draft.created=false; draft.qbInvoiceNo=''; draft.qbOk=null; draft.paid=false; draft.amtRecd='';
     goTab('order'); draftToForm(); toast('Copied — new invoice number');
   }
@@ -1925,7 +1972,9 @@ $('#ordersList').addEventListener('click',async e=>{
         await SBC.from('ebl').delete().eq('ebl_no', String(o.inv));
       }catch(err){}
     }
+    GONE.push({ id:o.id, inv:String(o.inv), at:new Date().toISOString() });
     orders=orders.filter(x=>x.id!==o.id); await persist(); renderOrders(); toast('Deleted everywhere');
+    logEvent('DELETED', o.inv, o.sh&&o.sh.name||'');
   }
 });
 $('#pvList').addEventListener('click',e=>{
@@ -1983,11 +2032,54 @@ async function qbCheck(){
   }catch(e){ el.textContent='Could not check QuickBooks: '+e.message; }
 }
 $('#qbRecheck').addEventListener('click',qbCheck);
-async function persist(){
-  await DB.save('fcs:customers', customers);
-  await DB.save('fcs:orders', orders);
-  await DB.save('fcs:settings', S);
+/* ---- overwrite-proof saving ----
+   Every save re-reads the database first and merges ORDER BY ORDER, so a
+   stale tab (or the tablet) can never wipe orders it doesn't know about.
+   Deletes leave a tombstone in fcs:gone so they stay deleted everywhere. */
+let GONE = [];
+async function logEvent(act, inv, note){
+  try{
+    const log = await DB.load('fcs:log', []);
+    log.push({ at:new Date().toISOString(), by:(userName||'admin'), act, inv:String(inv||''), note:String(note||'') });
+    await DB.save('fcs:log', log.slice(-300));
+  }catch(e){}
 }
+async function persist(){
+  try{
+    if(DB.live){
+      const remoteGone = await DB.load('fcs:gone', []);
+      const gmap={}; remoteGone.concat(GONE).forEach(g=>{ if(g&&g.id) gmap[g.id]=g; });
+      GONE = Object.values(gmap).slice(-500);
+      const gone = new Set(GONE.map(g=>g.id));
+      const remote = await DB.load('fcs:orders', []);
+      const byId = {};
+      remote.forEach(o=>{ if(o && o.id && !gone.has(o.id)) byId[o.id]=o; });
+      orders.forEach(o=>{ if(o && o.id && !gone.has(o.id)) byId[o.id]=o; });
+      orders = Object.values(byId);
+    }
+  }catch(e){}
+  const ok1 = await DB.save('fcs:customers', customers);
+  const ok2 = await DB.save('fcs:orders', orders);
+  await DB.save('fcs:gone', GONE);
+  await DB.save('fcs:settings', S);
+  saveWarn(ok1 && ok2);
+}
+/* big red banner the moment a save does NOT reach the database */
+function saveWarn(ok){
+  let w=$('#saveWarn');
+  if(ok){ if(w) w.remove(); return; }
+  if(!w){
+    w=document.createElement('div'); w.id='saveWarn';
+    w.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#C62828;color:#fff;font-weight:800;text-align:center;padding:12px;font-size:15px;box-shadow:0 4px 16px rgba(0,0,0,.35)';
+    document.body.appendChild(w);
+  }
+  w.textContent='⚠ NOT SAVED — the database did not accept the last save. You may be signed out. DO NOT close this tab: sign in from a NEW tab, then come back here and save again.';
+}
+/* warn as soon as the session dies instead of failing silently later */
+setInterval(async ()=>{
+  if(!SBC) return;
+  try{ const {data:{session}}=await SBC.auth.getSession(); if(!session) saveWarn(false); }catch(e){}
+}, 120000);
 /* ---------- 15. boot + auth gate ---------- */
 function boot(){
   const SF={sName:'name',sAddr:'addr',sTel:'tel',sFax:'fax',sTitle:'title',sNext:'next',sRows:'rows',sRate:'rate'};
@@ -2019,7 +2111,9 @@ async function startApp(){
     await DB.save('fcs:v2', V2);
   }
   customers = await DB.load('fcs:customers', null) || [];
-  orders    = (await DB.load('fcs:orders', null) || []).map(migrateOrder);
+  GONE      = await DB.load('fcs:gone', null) || [];
+  const goneIds = new Set(GONE.map(g=>g.id));
+  orders    = (await DB.load('fcs:orders', null) || []).map(migrateOrder).filter(o=>!goneIds.has(o.id));
   $('#storeState').textContent = DB.live ? 'Saved to your FCS database.' : 'Session only — Supabase not connected.';
   boot();
   await persist();
