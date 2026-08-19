@@ -984,7 +984,7 @@ async function saveDraft(){
   /* the number must be free in the DATABASE, not just in this tab */
   try{
     if(DB.live){
-      const dbOrders = await DB.load('fcs:orders', []);
+      const dbOrders = await DB.load(ORDERS_KEY, []);
       const clash = dbOrders.find(o=>String(o.inv)===String(draft.inv) && o.id!==draft.id);
       if(clash){
         const free=(()=>{ const used=new Set(dbOrders.concat(orders).map(o=>String(o.inv)));
@@ -2032,6 +2032,10 @@ async function qbCheck(){
   }catch(e){ el.textContent='Could not check QuickBooks: '+e.message; }
 }
 $('#qbRecheck').addEventListener('click',qbCheck);
+/* Orders now live under a NEW database key. Old pages and stale tabs keep
+   writing the old 'fcs:orders' key — which nothing reads anymore — so they
+   can never wipe live data again, no matter where they're left open. */
+const ORDERS_KEY = 'fcs:orders2';
 /* ---- overwrite-proof saving ----
    Every save re-reads the database first and merges ORDER BY ORDER, so a
    stale tab (or the tablet) can never wipe orders it doesn't know about.
@@ -2051,7 +2055,7 @@ async function persist(){
       const gmap={}; remoteGone.concat(GONE).forEach(g=>{ if(g&&g.id) gmap[g.id]=g; });
       GONE = Object.values(gmap).slice(-500);
       const gone = new Set(GONE.map(g=>g.id));
-      const remote = await DB.load('fcs:orders', []);
+      const remote = await DB.load(ORDERS_KEY, []);
       const byId = {};
       remote.forEach(o=>{ if(o && o.id && !gone.has(o.id)) byId[o.id]=o; });
       orders.forEach(o=>{ if(o && o.id && !gone.has(o.id)) byId[o.id]=o; });
@@ -2059,7 +2063,7 @@ async function persist(){
     }
   }catch(e){}
   const ok1 = await DB.save('fcs:customers', customers);
-  const ok2 = await DB.save('fcs:orders', orders);
+  const ok2 = await DB.save(ORDERS_KEY, orders);
   await DB.save('fcs:gone', GONE);
   await DB.save('fcs:settings', S);
   saveWarn(ok1 && ok2);
@@ -2113,7 +2117,14 @@ async function startApp(){
   customers = await DB.load('fcs:customers', null) || [];
   GONE      = await DB.load('fcs:gone', null) || [];
   const goneIds = new Set(GONE.map(g=>g.id));
-  orders    = (await DB.load('fcs:orders', null) || []).map(migrateOrder).filter(o=>!goneIds.has(o.id));
+  /* one-time move to the protected key; afterwards the old key is ignored forever */
+  let rawOrders = await DB.load(ORDERS_KEY, null);
+  if(rawOrders === null){
+    rawOrders = await DB.load('fcs:orders', null) || [];
+    await DB.save(ORDERS_KEY, rawOrders);
+    logEvent('storage upgraded', '', rawOrders.length+' orders moved to protected storage');
+  }
+  orders    = rawOrders.map(migrateOrder).filter(o=>!goneIds.has(o.id));
   $('#storeState').textContent = DB.live ? 'Saved to your FCS database.' : 'Session only — Supabase not connected.';
   boot();
   await persist();
