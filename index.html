@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>FCS Admin V2</title>
+<style>
+/* ============================================================
+   FCS SHIPPING — ORDER ENTRY ADMIN
+   Palette: paper #FFFFFF · ink #111318 · ocean #0B5C8A
+            rule #C9CFD6 · tint #F4F6F8 · flag #B45309
+   Chrome type: system UI (density)
+   Form type:  Times/Georgia small-caps labels + Arial data
+               (matches the printed original)
+   ============================================================ */
+:root{
+  --paper:#fff; --ink:#111318; --ocean:#0B5C8A; --ocean-dk:#083f5f;
+  --rule:#C9CFD6; --tint:#F4F6F8; --flag:#B45309; --muted:#5A646E;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --serif:"Times New Roman",Times,Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font:14px/1.45 var(--sans); color:var(--ink); background:var(--tint);
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ocean);outline-offset:2px}
+/* ---------- shell ---------- */
+.shell{display:flex;min-height:100vh}
+.rail{
+  width:210px;flex:0 0 210px;background:var(--ink);color:#fff;
+  padding:18px 0;display:flex;flex-direction:column;
+}
+.brand{padding:0 18px 16px;border-bottom:1px solid #2a2f36;margin-bottom:12px}
+.brand b{display:block;font-size:15px;letter-spacing:.02em}
+.brand span{display:block;font-size:11px;color:#8b95a0;margin-top:3px}
+.rail nav{display:flex;flex-direction:column;gap:2px;padding:0 8px}
+.rail nav button{
+  text-align:left;background:none;border:0;color:#c9d2db;padding:9px 10px;
+  border-radius:5px;cursor:pointer;font-size:13.5px;display:flex;
+  justify-content:space-between;align-items:center;gap:8px;
+}
+.rail nav button:hover{background:#20262e;color:#fff}
+.rail nav button[aria-current="true"]{background:var(--ocean);color:#fff;font-weight:600}
+.rail nav button .cnt{
+  font-size:11px;background:rgba(255,255,255,.14);padding:1px 6px;border-radius:9px;
+}
+.rail nav a.raillink{
+  text-align:left;color:#c9d2db;padding:9px 10px;border-radius:5px;font-size:13.5px;
+  text-decoration:none;display:block;margin-top:6px;border:1px solid #3a4149;
+}
+.rail nav a.raillink:hover{background:#20262e;color:#fff}
+.rail .foot{margin-top:auto;padding:12px 16px 0;border-top:1px solid #2a2f36;
+  font-size:11px;color:#7f8994;line-height:1.5}
+.rail .foot button{
+  background:none;border:1px solid #3a4149;color:#c9d2db;border-radius:4px;
+  padding:5px 8px;font-size:11.5px;cursor:pointer;margin:6px 4px 0 0;
+}
+.rail .foot button:hover{border-color:var(--ocean);color:#fff}
+.main{flex:1;min-width:0;padding:22px 26px 60px}
+.head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.head h1{margin:0;font-size:19px;letter-spacing:-.01em}
+.head p{margin:0;color:var(--muted);font-size:13px}
+.head .grow{flex:1}
+/* ---------- controls ---------- */
+.btn{
+  background:var(--ocean);color:#fff;border:1px solid var(--ocean);
+  padding:8px 14px;border-radius:5px;cursor:pointer;font-size:13.5px;font-weight:500;
+}
+.btn:hover{background:var(--ocean-dk);border-color:var(--ocean-dk)}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--rule)}
+.btn.ghost:hover{background:var(--tint);border-color:var(--muted)}
+.btn.warn{background:#fff;color:#a11b1b;border-color:#e0bcbc}
+.btn.warn:hover{background:#fdf2f2}
+.btn.sm{padding:5px 9px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.card{background:#fff;border:1px solid var(--rule);border-radius:7px;padding:18px}
+.card+.card{margin-top:16px}
+.card h2{margin:0 0 2px;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--ocean)}
+.card .hint{margin:0 0 14px;font-size:12.5px;color:var(--muted)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g4{grid-template-columns:repeat(4,1fr)}
+label.f{display:block;font-size:11.5px;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+input.f,select.f,textarea.f{
+  width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:#fff;
+}
+input.f:focus,select.f:focus{border-color:var(--ocean)}
+.req{color:#a11b1b}
+table.list{width:100%;border-collapse:collapse;font-size:13.5px}
+table.list th{
+  text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);border-bottom:1px solid var(--rule);padding:7px 8px;
+}
+table.list td{padding:8px;border-bottom:1px solid #eef1f4;vertical-align:top}
+table.list tr:last-child td{border-bottom:0}
+table.list tbody tr:hover{background:#fafcfd}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.empty{padding:34px 8px;text-align:center;color:var(--muted);font-size:13.5px}
+.empty b{display:block;color:var(--ink);font-size:14.5px;margin-bottom:4px}
+.items{width:100%;border-collapse:collapse;font-size:13px}
+.items th{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+  text-align:left;padding:0 6px 5px}
+.items td{padding:3px 3px}
+.items input{width:100%;padding:6px 7px;border:1px solid var(--rule);border-radius:4px}
+.items select{width:100%;padding:6px 4px;border:1px solid var(--rule);border-radius:4px;background:#fff;font-size:13px}
+.items .x{background:none;border:0;color:#a11b1b;cursor:pointer;font-size:16px;line-height:1;padding:4px 6px}
+.items .nci{font-size:9.5px;font-weight:700;letter-spacing:.04em;border:1px solid var(--line);background:#fff;
+  color:var(--muted);border-radius:5px;padding:3px 6px;cursor:pointer;margin-right:2px;vertical-align:middle}
+.items .nci.on{background:#B45309;border-color:#B45309;color:#fff}
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:6px;font-size:13.5px;
+  box-shadow:0 6px 22px rgba(0,0,0,.22);z-index:99;opacity:0;pointer-events:none;
+  transition:opacity .18s, transform .18s;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
+.flag{color:var(--flag);font-size:12.5px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,660px);gap:20px;align-items:start}
+.stickywrap{position:sticky;top:22px}
+.pv-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pv-bar h2{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pv-bar .grow{flex:1}
+.pv-scroll{overflow:auto;border:1px solid var(--rule);border-radius:7px;background:#e9edf1;padding:14px}
+.pv-scale{transform-origin:top left;transform:scale(.735)}
+@media(max-width:1240px){ .split{grid-template-columns:1fr} .stickywrap{position:static} }
+@media(max-width:900px){
+  .shell{flex-direction:column}
+  .rail{width:auto;flex:none;position:sticky;top:0;z-index:20;padding:10px 0}
+  .rail nav{flex-direction:row;overflow:auto;padding:0 10px}
+  .rail nav button{white-space:nowrap}
+  .rail .brand{padding:0 14px 8px;margin-bottom:6px}
+  .rail .foot{display:none}
+  .main{padding:14px}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  /* drivers on the road: no preview pane, thumb-sized targets */
+  .stickywrap{display:none}
+  input.f,select.f,textarea.f{padding:12px 12px;font-size:16px}
+  .items input,.items select{padding:11px 8px;font-size:15px}
+  .btn{padding:12px 18px;font-size:15px}
+  #actionCard{position:sticky;bottom:0;z-index:15;box-shadow:0 -6px 18px rgba(0,0,0,.08)}
+  .items{display:block;overflow-x:auto}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---------- staff login gate ---------- */
+.gate{max-width:400px;margin:9vh auto 0;padding:0 16px}
+.gate .card h2{font-size:15px}
+.gate label.f{margin-top:12px}
+.gate .btn{width:100%;margin-top:16px}
+.gate .msg{font-size:12.5px;margin-top:10px;min-height:1em}
+.gate .msg.err{color:#a11b1b}
+/* ============================================================
+   THE PRINTED FORM — replica of the FCS paper order entry
+   ============================================================ */
+.page{
+  width:8.5in;min-height:11in;background:#fff;padding:.45in .4in;
+  font-family:var(--sans);color:#000;position:relative;
+  box-shadow:0 2px 12px rgba(0,0,0,.14);
+}
+.page *{box-sizing:border-box}
+.lbl{font-family:var(--serif);font-variant:small-caps;font-size:11.5pt;letter-spacing:.02em}
+.box{border:1px solid #000}
+.fld{border:1px solid #000;min-height:20pt;padding:2pt 6pt;font-size:11pt;
+  display:flex;align-items:center;justify-content:center;text-align:center}
+.cap{font-size:8.5pt;text-align:center;margin-top:1pt;font-family:var(--sans)}
+.p-top{display:flex;gap:.2in;align-items:flex-start}
+.p-co{
+  border:2px solid #000;border-radius:9px;padding:9pt 10pt;text-align:center;
+  width:3.55in;flex:0 0 3.55in;
+}
+.p-co b{display:block;font-size:15pt;font-weight:700;letter-spacing:.01em;margin-bottom:5pt}
+.p-co div{font-size:10.5pt;line-height:1.5}
+.p-right{flex:1;min-width:0}
+.p-inv{display:flex;gap:.22in;justify-content:flex-end}
+.p-inv>div{width:1.55in}
+.p-cont{display:flex;align-items:center;justify-content:flex-end;gap:8pt;margin-top:16pt}
+.p-cont .lbl{white-space:nowrap}
+.p-cont .fld{width:2.05in}
+.p-quad{border:1px solid #000;padding:7pt;margin-top:12pt;display:grid;
+  grid-template-columns:1fr 1fr;gap:7pt 10pt}
+.p-oe{
+  border:2px solid #000;border-radius:9px;display:inline-block;
+  padding:5pt 16pt;margin:26pt 0 20pt;
+}
+.p-oe span{font-family:var(--serif);font-variant:small-caps;font-size:17pt;letter-spacing:.03em}
+.p-parties{display:flex;gap:.28in}
+.p-party{
+  flex:1;min-width:0;border:1px solid #000;border-radius:9px;padding:9pt 11pt;min-height:1.5in;
+}
+.p-party .r{display:flex;font-size:11.5pt;line-height:1.75;gap:8pt}
+.p-party .r span:first-child{flex:0 0 52%;overflow-wrap:anywhere}
+.p-party .ph{margin-top:5pt;font-size:11.5pt}
+.p-party .ph i{font-family:var(--serif);font-variant:small-caps;font-style:normal;font-weight:700;
+  font-size:11pt;margin-right:6pt}
+.p-mid{display:flex;gap:.22in;margin-top:14pt;align-items:flex-end}
+.p-mid .c1{flex:1}
+.p-mid .c2{width:2.1in}
+.p-mid .c3{width:1.25in}
+.p-mid .lbl{display:block;margin-bottom:2pt}
+.p-mid .fld{min-height:22pt}
+.p-tbl{width:100%;border-collapse:collapse;margin-top:14pt;table-layout:fixed}
+.p-tbl thead th{
+  background:#b9b9b9;border:1px solid #000;font-size:9.5pt;font-weight:700;
+  letter-spacing:.04em;padding:3pt 5pt;text-transform:uppercase;
+}
+.p-tbl thead th.c{text-align:center}
+.p-tbl thead th.r{text-align:right}
+.p-tbl tbody td{
+  border-left:1px solid #000;border-right:1px solid #000;
+  border-bottom:1px dotted #555;height:26pt;padding:2pt 5pt;font-size:11pt;vertical-align:middle;
+}
+.p-tbl tbody tr:last-child td{border-bottom:1px solid #000}
+.p-tbl td.qty{text-align:center}
+.p-tbl td.desc{text-align:center;border-left:1px solid #000;border-right:1px solid #000}
+.p-tbl td.pu,.p-tbl td.amt{text-align:right}
+.p-tbl td.tot{font-weight:700;border-bottom:1px solid #000}
+.p-track{
+  position:absolute;left:.4in;right:.4in;bottom:1in;
+  text-align:center;font-family:var(--serif);font-variant:small-caps;font-size:11.5pt;letter-spacing:.03em;
+}
+.p-sign{
+  position:absolute;left:.4in;right:.4in;bottom:.4in;
+  display:flex;gap:.4in;align-items:flex-end;
+}
+.p-sign .s{flex:1}
+.p-sign .line{border-bottom:1px solid #000;height:20pt}
+.p-sign .cap2{font-family:var(--serif);font-size:11pt;text-align:center;padding-top:2pt}
+.p-sign .d{width:2.4in}
+/* ---------- print ---------- */
+@page{size:letter portrait;margin:0}
+@media print{
+  html,body{margin:0!important;padding:0!important;background:#fff}
+  .shell,.toast,.gate{display:none!important}
+  #printroot{display:block!important}
+  /* exactly one letter page: fixed height a hair under 11in so rounding
+     never spills onto a second sheet, overflow clipped */
+  #printroot .page{
+    box-shadow:none;margin:0;width:8.5in;
+    min-height:0;height:10.94in;overflow:hidden;
+    padding:.4in .4in .35in;
+  }
+  #printroot .p-sign{bottom:.35in}
+  .page{break-inside:avoid;page-break-inside:avoid}
+}
+#printroot{display:none}
+</style>
+</head>
+<body>
+
+<!-- ===================== STAFF LOGIN GATE ===================== -->
+<div class="gate" id="gate" hidden>
+  <div class="card">
+    <h2>FCS Staff Sign-In</h2>
+    <p class="hint">Order entry holds customer records — staff login required.</p>
+    <div class="msg err" id="gateCfg" hidden>Supabase isn't connected. Check /admin/config.js.</div>
+    <label class="f" for="gEmail">Email</label>
+    <input class="f" type="email" id="gEmail" autocomplete="username">
+    <label class="f" for="gPass">Password</label>
+    <input class="f" type="password" id="gPass" autocomplete="current-password">
+    <button class="btn" id="gBtn">Sign in</button>
+    <p class="msg" id="gMsg"></p>
+    <p class="hint" style="margin:14px 0 0"><a href="/admin/">← Main dashboard</a></p>
+  </div>
+</div>
+
+<div class="shell" id="shell" hidden>
+  <aside class="rail">
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <img src="/assets/fcs-logo.png" alt="" style="width:38px;height:38px;object-fit:contain;border-radius:8px;background:#fff;padding:3px">
+      <div>
+        <b style="font-size:16px;letter-spacing:.06em;font-weight:800">FCS ADMIN <span style="color:#4FB3E8">V2</span></b>
+        <span>Cargo · Manifest · Revenue</span>
+      </div>
+    </div>
+    <nav>
+      <button data-tab="orders" aria-current="true">Cargo <span class="cnt" id="cOrders">0</span></button>
+      <button data-tab="customers">Quotes <span class="cnt" id="cCust">0</span></button>
+      <button data-tab="order">Create</button>
+      <button data-tab="manifest">Manifest</button>
+      <button data-tab="prev">Previous Activity</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+    <div class="foot">
+      <div id="storeState">Loading…</div>
+      <div style="margin-top:8px">Support: <a href="tel:+17184838006" style="color:#c9d2db">(718) 483-8006</a><br>
+        <a href="mailto:admin@fcsshipping.com" style="color:#c9d2db">admin@fcsshipping.com</a></div>
+      <button id="btnExport">Back up data</button>
+      <button id="btnImport">Restore</button>
+      <button id="btnSignOut">Sign out</button>
+      <input type="file" id="fileImport" accept=".json" hidden>
+    </div>
+  </aside>
+  <main class="main">
+    <!-- ===================== NEW / EDIT ORDER ===================== -->
+    <section data-panel="order">
+      <div class="head">
+        <h1 id="orderTitle">New order</h1>
+        <p id="orderSub">Fill the left side, print the right.</p>
+        <span class="grow"></span>
+        <button class="btn ghost" id="btnNewOrder">Start blank</button>
+        <button class="btn" id="btnSaveOrder">Save order</button>
+      </div>
+      <div class="split">
+        <div>
+          <div class="card">
+            <h2>Header</h2>
+            <p class="hint">Invoice # is the B/L number. It advances automatically.</p>
+            <div class="grid g4">
+              <div><label class="f">Invoice / B/L # <span class="req">*</span></label><input class="f" id="fInv"></div>
+              <div><label class="f">Date</label><input class="f" type="date" id="fInvDate"></div>
+              <div><label class="f">Pick up date</label><input class="f" type="date" id="fPickup"></div>
+              <div><label class="f">Time</label><input class="f" id="fTime" placeholder="12:39:20 PM"></div>
+              <div style="grid-column:span 2"><label class="f">Received from</label>
+                <select class="f" id="fRecv"></select></div>
+              <div style="grid-column:span 4" class="grid g4" id="hdrExtra"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Shipper — bill to</h2>
+            <div class="grid g2">
+              <div style="grid-column:span 2"><label class="f">Name</label><input class="f" id="fShName"></div>
+              <div><label class="f">Co-Shipper</label><input class="f" id="fShName2"></div>
+              <div><label class="f">Street</label><input class="f" id="fShStreet"></div>
+              <div><label class="f">City</label><input class="f" id="fShCity"></div>
+              <div><label class="f">State / ZIP</label><input class="f" id="fShState"></div>
+              <div style="grid-column:span 2"><label class="f">Phone</label><input class="f" id="fShPhone"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Consignee — deliver to</h2>
+            <div class="grid g2">
+              <div><label class="f">Name</label><input class="f" id="fCoName"></div>
+              <div><label class="f">Co-Consignee</label><input class="f" id="fCoName2"></div>
+              <div><label class="f">Destination</label><select class="f" id="fCoCity"></select></div>
+              <div><label class="f">Phone</label><input class="f" id="fCoPhone"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Line items</h2>
+            <p class="hint">Pick Barrel or Commercial Bin — dims, cubic feet, and price fill themselves from the destination. Boxes: type the dims, everything else calculates.</p>
+            <table class="items">
+              <thead><tr>
+                <th style="width:56px">Qty</th><th>Description</th><th style="width:64px">Cu ft</th>
+                <th style="width:104px">Dims L×W×H</th><th style="width:84px">Price</th>
+                <th style="width:88px">Amount</th><th style="width:30px"></th>
+              </tr></thead>
+              <tbody id="itemRows"></tbody>
+            </table>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <button class="btn ghost sm" id="btnAddItem">Add line</button>
+              <button class="btn ghost sm" id="btnAddProduct">Add product</button>
+              <label style="font-size:13px;display:flex;align-items:center;gap:6px">
+                <input type="checkbox" id="fShowTotal" checked> Print a total row
+              </label>
+              <span class="grow" style="flex:1"></span>
+              <strong style="font-variant-numeric:tabular-nums">Total <span id="orderTotal">$0.00</span></strong>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <label class="f" style="margin:0">Amount received $</label>
+              <input class="f" id="fAmtRecd" inputmode="decimal" style="max-width:120px" placeholder="0.00">
+              <label class="f" style="margin:0">Payment</label>
+              <select class="f" id="fPayMethod" style="max-width:110px">
+                <option value=""></option><option>CASH</option><option>ZELLE</option><option>COD</option><option>CHECK</option>
+              </select>
+              <span style="font-size:12.5px;color:var(--muted)">Balance shows on the Cargo page as BAL/COD.</span>
+            </div>
+          </div>
+          <!-- ===================== ACTIONS ===================== -->
+          <div class="card" id="actionCard">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <button class="btn" id="btnCreate">Create</button>
+              <button class="btn ghost" id="btnPaid" hidden>Mark Paid</button>
+              <span id="qbDot" style="width:14px;height:14px;border-radius:50%;background:#c9cfd6;display:inline-block" title=""></span>
+              <span class="grow" style="flex:1"></span>
+              <button class="btn ghost" id="btnPrint">Print</button>
+              <button class="btn ghost" id="btnEmailRcpt">Email receipt</button>
+            </div>
+            <p class="msg" id="billMsg" style="font-size:12.5px;margin:10px 0 0"></p>
+          </div>
+        </div>
+        <div class="stickywrap">
+          <div class="pv-bar">
+            <h2>Printed form</h2>
+            <span class="grow"></span>
+          </div>
+          <div class="pv-scroll">
+            <div class="pv-scale" id="previewScale"><div id="preview"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ===================== CARGO (main page) ===================== -->
+    <section data-panel="orders" hidden>
+      <div class="head">
+        <h1 id="cargoTitle">Cargo</h1>
+        <p id="cargoSub">This month.</p>
+        <span class="grow"></span>
+        <input class="f" id="qOrders" placeholder="Search invoice, name…" style="max-width:240px">
+        <input type="date" class="f" id="cgFrom" style="max-width:150px" title="From date — can reach into other months">
+        <input type="date" class="f" id="cgTo" style="max-width:150px" title="To date">
+        <button class="btn ghost" id="cgRangeClear" hidden>× Range</button>
+        <select class="f" id="cgSort" style="max-width:140px">
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+        </select>
+        <button class="btn ghost" id="btnHist">History</button>
+        <button class="btn ghost" id="btnCsv">CSV</button>
+        <button class="btn ghost" id="btnRevXlsx">Update Revenue sheet</button>
+        <button class="btn" id="btnCargoCreate">Create</button>
+      </div>
+      <div class="grid g4" id="cargoStats" style="margin-bottom:14px"></div>
+      <div class="card" id="histBox" hidden style="margin-bottom:14px;max-height:340px;overflow:auto;padding:4px 0"></div>
+      <div class="card" style="padding:6px 6px;overflow:auto"><div id="ordersList"></div></div>
+    </section>
+    <!-- ===================== QUOTES ===================== -->
+    <section data-panel="customers" hidden>
+      <div class="head">
+        <h1>Quotes</h1>
+        <p>From the website. Create turns one into cargo.</p>
+        <span class="grow"></span>
+        <button class="btn ghost" id="btnQuotesRefresh">Refresh</button>
+      </div>
+      <div class="card" style="padding:6px 6px"><div id="custList"></div></div>
+    </section>
+    <!-- ===================== MANIFEST ===================== -->
+    <section data-panel="manifest" hidden>
+      <div class="head">
+        <h1>Manifest</h1>
+        <p id="mfSub">This month's cargo, by destination.</p>
+        <span class="grow"></span>
+        <select class="f" id="mfDest" style="max-width:220px"></select>
+        <input type="date" class="f" id="mfFrom" style="max-width:150px" title="From date — can reach into last month">
+        <input type="date" class="f" id="mfTo" style="max-width:150px" title="To date">
+        <button class="btn ghost" id="mfRangeClear" hidden>× Range</button>
+        <button class="btn ghost" id="mfToggle">Manifest view</button>
+        <button class="btn ghost" id="mfXlsx">Update Manifest sheet</button>
+        <button class="btn" id="mfMaster">Update Master B/L</button>
+      </div>
+      <div class="card" id="mfHeadCard" hidden>
+        <h2>Master B/L header — confirm before it generates</h2>
+        <div class="grid g2" id="mfHeadFields"></div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn" id="mfHeadGo">Generate Master B/L</button>
+          <button class="btn ghost" id="mfHeadCancel">Cancel</button>
+        </div>
+      </div>
+      <div class="card" id="mfManCard" hidden>
+        <h2>Manifest header — confirm before it generates</h2>
+        <div class="grid g2" id="mfManFields"></div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn" id="mfManGo">Generate Manifest</button>
+          <button class="btn ghost" id="mfManCancel">Cancel</button>
+        </div>
+      </div>
+      <div class="card" style="padding:10px;overflow:auto"><div id="mfList"></div></div>
+    </section>
+    <!-- ===================== PREVIOUS ACTIVITY ===================== -->
+    <section data-panel="prev" hidden>
+      <div class="head">
+        <h1>Previous Activity</h1>
+        <p>Older months — cargo, manifests, Master B/Ls.</p>
+        <span class="grow"></span>
+        <input class="f" type="month" id="pvMonth" style="max-width:180px">
+        <select class="f" id="pvDest" style="max-width:200px"></select>
+        <button class="btn ghost" id="pvManifest">Update Manifest</button>
+        <button class="btn ghost" id="pvMaster">Update Master B/L</button>
+        <button class="btn ghost" id="pvRev">Update Revenue</button>
+      </div>
+      <div class="grid g4" id="pvStats" style="margin-bottom:14px"></div>
+      <div class="card" style="padding:6px 6px;overflow:auto"><div id="pvList"></div></div>
+    </section>
+    <!-- ===================== SETTINGS ===================== -->
+    <section data-panel="settings" hidden>
+      <div class="head">
+        <h1>Settings</h1>
+        <p>Company block on the form, and where the numbering starts.</p>
+      </div>
+      <div class="card">
+        <h2>Company block</h2>
+        <div class="grid g2">
+          <div style="grid-column:span 2"><label class="f">Company name</label><input class="f" id="sName"></div>
+          <div style="grid-column:span 2"><label class="f">Address line</label><input class="f" id="sAddr"></div>
+          <div><label class="f">Telephone line</label><input class="f" id="sTel"></div>
+          <div><label class="f">Fax line</label><input class="f" id="sFax"></div>
+          <div><label class="f">Form title</label><input class="f" id="sTitle"></div>
+          <div><label class="f">Next invoice #</label><input class="f" id="sNext"></div>
+          <div><label class="f">Blank rows on printed form</label><input class="f" type="number" min="6" max="24" id="sRows"></div>
+          <div><label class="f">Default price per unit</label><input class="f" id="sRate"></div>
+        </div>
+        <div style="margin-top:16px"><button class="btn" id="btnSaveSettings">Save settings</button></div>
+      </div>
+      <div class="card">
+        <h2>Form fields</h2>
+        <p class="hint">These stay on the printed paper. Toggle them on the Create form and rename the label the paper shows.</p>
+        <div id="sFieldRows"></div>
+      </div>
+      <div class="card">
+        <h2>Destinations &amp; pricing</h2>
+        <p class="hint">The rate per cubic foot drives every price — barrels, bins, boxes — and publishes straight to the website's quote builder. Optional flat prices win when they're cheaper for the customer.</p>
+        <div id="sDestRows"></div>
+        <button class="btn ghost sm" id="sDestAdd">+ Add destination</button>
+      </div>
+      <div class="card">
+        <h2>Products</h2>
+        <p class="hint">No cubic feet — empty barrels, pickup fees, tape. Product money is tracked separately from freight for QuickBooks.</p>
+        <div id="sProdRows"></div>
+        <button class="btn ghost sm" id="sProdAdd">+ Add product</button>
+      </div>
+      <div class="card">
+        <h2>Shipping products</h2>
+        <p class="hint">Extra cargo types besides Barrel / Bin / Box — crates, TV crates, pallets, bags. Set the standard dims and cubic feet once; price computes from the destination rate.</p>
+        <div id="sShipRows"></div>
+        <button class="btn ghost sm" id="sShipAdd">+ Add shipping product</button>
+      </div>
+      <div class="card">
+        <h2>Google Sheets</h2>
+        <p class="hint">Paste the Apps Script webhook once and the Update buttons fill your Google Sheet templates directly — new Master B/L &amp; Manifest files are copied automatically each month.</p>
+        <div class="grid g2">
+          <div style="grid-column:span 2"><label class="f">Webhook URL (from Apps Script deploy)</label><input class="f" id="sGsHook" placeholder="https://script.google.com/macros/s/…/exec"></div>
+          <div><label class="f">Monthly Revenues sheet link</label><input class="f" id="sGsRev"></div>
+          <div><label class="f">Manifest template link</label><input class="f" id="sGsMan"></div>
+          <div><label class="f">Hermen Master B/L template link</label><input class="f" id="sGsHer"></div>
+          <div><label class="f">Ella Master B/L template link</label><input class="f" id="sGsElla"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Received-from options</h2>
+        <div id="sRecvRows"></div>
+        <button class="btn ghost sm" id="sRecvAdd">+ Add option</button>
+      </div>
+      <div class="card">
+        <h2>Manifest settings</h2>
+        <p class="hint">Brokers and every header block that prints on the Master B/L and Manifest.</p>
+        <div id="sBrokerRows"></div>
+        <button class="btn ghost sm" id="sBrokerAdd">+ Add broker</button>
+        <div style="height:1px;background:var(--rule);margin:14px 0"></div>
+        <div class="grid g2" id="sMblFields"></div>
+        <div style="margin-top:14px"><button class="btn" id="btnSaveSettings2">Save all settings</button></div>
+      </div>
+      <div class="card">
+        <h2>QuickBooks</h2>
+        <p class="hint">Connect once. After that, billing an order posts the invoice to your books automatically.</p>
+        <div id="qbState" style="font-size:13.5px;margin-bottom:14px;color:var(--muted)">Checking…</div>
+        <a class="btn" id="qbConnect" href="/.netlify/functions/qbo-connect">Connect QuickBooks</a>
+        <button class="btn ghost" id="qbRecheck">Re-check</button>
+      </div>
+      <div class="card">
+        <h2>Support</h2>
+        <p class="hint" style="margin-bottom:0">Questions or problems with this tool? Call <a href="tel:+17184838006">(718) 483-8006</a> or email <a href="mailto:admin@fcsshipping.com">admin@fcsshipping.com</a>.</p>
+      </div>
+      <div class="card">
+        <h2>Data</h2>
+        <p class="hint">Records are stored in your FCS Supabase database and shared across every staff device. Back up before you clear anything.</p>
+        <button class="btn ghost" id="btnExport2">Download backup (JSON)</button>
+        <button class="btn warn" id="btnWipe">Erase all records</button>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="printroot"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="/admin/config.js"></script>
+<script>
+/* ============================================================
+   FCS ADMIN V2 — Cargo · Create · Quotes · Manifest · Previous · Settings
+   B/L number = invoice number. WMS parked (code kept at /admin/wms/).
+   Data: Supabase `settings` table (staff RLS):
+     fcs:customers · fcs:orders · fcs:settings · fcs:v2
+   ============================================================ */
+/* ---------- 1. persistence ---------- */
+const SBC = (() => {
+  const C = window.ADMIN_CONFIG || {};
+  const ok = C.SUPABASE_URL && !C.SUPABASE_URL.includes('YOUR-PROJECT')
+             && C.SUPABASE_ANON_KEY && !C.SUPABASE_ANON_KEY.includes('PASTE')
+             && window.supabase;
+  return ok ? window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY) : null;
+})();
+const DB = (() => {
+  const mem = {};
+  return {
+    live: !!SBC,
+    async load(k, fallback){
+      if(!SBC) return (k in mem) ? mem[k] : fallback;
+      try{
+        const { data, error } = await SBC.from('settings').select('value').eq('key', k).maybeSingle();
+        if(error) throw error;
+        return (data && data.value != null) ? data.value : fallback;
+      }catch(e){ return fallback; }
+    },
+    async save(k, v){
+      mem[k] = v;
+      if(!SBC) return false;
+      try{
+        const { error } = await SBC.from('settings')
+          .upsert({ key:k, value:v, updated_at:new Date().toISOString() });
+        return !error;
+      }catch(e){ return false; }
+    }
+  };
+})();
+/* ---------- 2. state + helpers ---------- */
+const DEFAULTS = {
+  name:'FCS SHIPPING LLC.',
+  addr:'9502 Ditmas Ave. Brooklyn, NY.  11236',
+  tel:'TEL: (718) 483 - 8006 / (646) 606 - 8320',
+  fax:'FAX: (718) 363 - 2399',
+  title:'Order Entry',
+  next:'12931', rows:13, rate:'65.00'
+};
+const V2DEF = {
+  fields:{
+    po:{label:'PO Number',on:false}, container:{label:'Container #',on:false},
+    code:{label:'Shipping Code',on:false}, shipVia:{label:'Ship Via',on:false},
+    cross:{label:'Cross Street',on:false}, service:{label:'Service',on:false},
+  },
+  dests:[
+    {name:'Vieux-Fort', rate:7, barrel:105, bin:190},
+    {name:'Castries',   rate:7, barrel:100, bin:190},
+  ],
+  products:[{name:'Empty Barrel',price:60},{name:'Pickup Fee',price:25}],
+  shipTypes:[
+    {name:'TV/Crate', dims:'', cuft:''},
+    {name:'Crate', dims:'', cuft:''},
+    {name:'Pallet', dims:'', cuft:''},
+    {name:'Bag', dims:'', cuft:''},
+  ],
+  sheets:{hook:'',rev:'',man:'',her:'',ella:''},
+  recv:['SEA FREIGHT','AIR FREIGHT','STANDARD'],
+  brokers:[
+    {name:"HERMLEN'S CUSTOMS BROKERAGE SERVICES INC",
+     addr:'JOHN COMPTON BLDG, TOP FL\nPORT CASTRIES\nST.LUCIA\n\n758-485-1874 / 723-3178\nEMAIL: HERMLENSCUSTOMSBROKERAGESERVICES@outlook.com'},
+    {name:'ELLA SAMUEL CUSTOMS BROKERAGE',
+     addr:'NEW DOCK ROAD\nVIEUX-FORT\nST. LUCIA\n758-454-5343\nCELL: 758-721-4017'},
+    {name:'WEST INDIES SHIPPERS/EDDIE HAZEL',
+     addr:'LA-TOC ROAD\nCASTRIES\nST. LUCIA\n758 459 0444'},
+  ],
+  mbl:{
+    carrier:'KING OCEAN SERVICES', trucking:'CABBY TRUCKING',
+    shipper:'STANDARD SHIPPERS\n9502 DITMAS AVE\nBROOKLYN,\nNEW YORK, 11236\n718-483-8006',
+    forwarder:'STANDARD SHIPPERS\n9502 DITMAS AVE\nBROOKLYN, NY 11236',
+    origin:'USA', notify:'SAME AS ABOVE', loadNote:'PLEASE APPLY NOSE LOAD RATE',
+    manFrom:'STANDARD SHIPPERS', manFromAddr:'9502 Ditmas Ave',
+    manFromCity:'Brooklyn', manFromState:'New York', manFromZip:'11236', manFromTel:'646-606-8320',
+    relTel:'785-454-5343/ 758-721-4017',
+  },
+};
+let S = {...DEFAULTS};
+let userName = '';
+let V2 = JSON.parse(JSON.stringify(V2DEF));
+let customers = [];
+let orders = [];
+let quotes = [];
+let draft = null;
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '$'+(Number(n)||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2100);
+}
+function usDate(iso){
+  if(!iso) return '';
+  const p=String(iso).split('-'); if(p.length!==3) return iso;
+  return `${+p[1]}/${+p[2]}/${p[0]}`;
+}
+function todayISO(){
+  const d=new Date(), z=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+}
+function nowTime(){
+  return new Date().toLocaleTimeString('en-US',{hour12:true,hour:'numeric',minute:'2-digit',second:'2-digit'});
+}
+function bumpInvoice(v){
+  const m=String(v||'').match(/^(\D*)(\d+)(\D*)$/);
+  if(!m) return String(v||'');
+  return m[1] + String(Number(m[2])+1).padStart(m[2].length,'0') + m[3];
+}
+const monthKey = iso => String(iso||'').slice(0,7);
+const thisMonth = () => todayISO().slice(0,7);
+const monthLabel = ym => {
+  const [y,m]=String(ym).split('-');
+  return new Date(+y, +m-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+};
+const MONTH_NAMES = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+/* ---------- 3. order model ---------- */
+function blankItem(kind){ return {qty:'1',desc:'',cuft:'',dims:'',price:'',amount:'',kind:kind||'freight'}; }
+/* never hand out a B/L number that's already on an order — walk forward until free */
+function nextFreeInv(){
+  const used=new Set(orders.map(o=>String(o.inv)));
+  let n=String(S.next||'');
+  while(n && used.has(n)) n=bumpInvoice(n);
+  return n;
+}
+function blankOrder(){
+  return {
+    id:null, inv:nextFreeInv(), invDate:todayISO(), pickup:todayISO(), time:nowTime(),
+    po:'', container:'', code:'', shipVia:'', cross:'', service:'',
+    recv:(V2.recv[0]||'SEA FREIGHT'),
+    sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
+    co:{name:'',name2:'',city:'',phone:''},
+    items:[blankItem(),blankItem()], showTotal:true, amtRecd:'',
+    created:false, qbInvoiceNo:'', qbOk:null, paid:false, _quoteId:null,
+  };
+}
+/* old orders: part→cuft, nci→product, eblNo era */
+function migrateOrder(o){
+  if(o._v2) return o;
+  (o.items||[]).forEach(it=>{
+    if(it.cuft==null) it.cuft = it.part||'';
+    if(it.kind==null) it.kind = it.nci ? 'product' : 'freight';
+    if(it.dims==null) it.dims = '';
+  });
+  if(o.recv==null) o.recv='SEA FREIGHT';
+  if(o.amtRecd==null) o.amtRecd = o.paid ? String(orderTotal(o)) : '';
+  if(o.created==null) o.created = !!(o.eblNo||o.qbInvoiceNo);
+  if(o.qbOk==null) o.qbOk = o.qbInvoiceNo ? true : null;
+  o._v2=true;
+  return o;
+}
+function itemAmount(it){
+  if(it.amount!=='' && it.amount!=null) return Number(String(it.amount).replace(/[^0-9.\-]/g,''))||0;
+  const q=parseFloat(it.qty), p=parseFloat(String(it.price).replace(/[^0-9.\-]/g,''));
+  return (isFinite(q)&&isFinite(p)) ? q*p : 0;
+}
+function orderTotal(o){ return o.items.reduce((s,it)=>s+itemAmount(it),0); }
+function freightTotal(o){ return o.items.filter(it=>it.kind!=='product').reduce((s,it)=>s+itemAmount(it),0); }
+function productTotal(o){ return o.items.filter(it=>it.kind==='product').reduce((s,it)=>s+itemAmount(it),0); }
+function orderBal(o){ return Math.max(0, orderTotal(o) - (parseFloat(o.amtRecd)||0)); }
+function destOf(name){ return V2.dests.find(d=>d.name===name) || null; }
+/* auto pricing: barrel/bin standards, boxes from dims, all off the destination rate */
+function dimsToCuft(dims){
+  const m = String(dims||'').match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
+  return m ? Math.max(1, Math.round(m[1]*m[2]*m[3]/1728)) : null;
+}
+const MIN_FREIGHT = 65;
+function priceItem(it, destName){
+  const d = destOf(destName);
+  const rate = d ? Number(d.rate)||0 : 0;
+  const desc = String(it.desc||'').toLowerCase();
+  if(it.kind==='product') { it.cuft=''; it.dims=''; return; }
+  const st = V2.shipTypes.find(x=>String(x.name).toLowerCase()===desc);
+  const q = Math.max(1, parseFloat(it.qty)||1);
+  let unit=null, price=null;
+  if(desc==='barrel'){
+    it.dims='24X24X44'; unit=15;
+    price = d && d.barrel ? Number(d.barrel) : (rate? 15*rate : null);
+  } else if(desc==='commercial bin'){
+    it.dims='48X24X44'; unit=20;
+    price = d && d.bin ? Number(d.bin) : (rate? 20*rate : null);
+  } else if(st){
+    if(st.dims && !it.dims) it.dims=st.dims;
+    unit = dimsToCuft(it.dims) ?? (parseFloat(st.cuft)||null);
+    if(unit!=null && rate) price = unit*rate;
+  } else {
+    unit = dimsToCuft(it.dims);
+    if(unit!=null && rate) price = unit*rate;
+  }
+  it._unitCuft = unit;
+  /* cubic feet scale with quantity: 2 barrels = 30 cu ft */
+  if(unit!=null) it.cuft = String(unit*q);
+  /* $65 floor on computed freight prices */
+  if(price!=null) it.price = String(Math.max(MIN_FREIGHT, Math.round(price*100)/100));
+  it.amount='';
+}
+function syncQtyCuft(it){
+  if(it.kind==='product') return;
+  const q = Math.max(1, parseFloat(it.qty)||1);
+  const unit = it._unitCuft ?? dimsToCuft(it.dims) ??
+    (String(it.desc).toLowerCase()==='barrel'?15:String(it.desc).toLowerCase()==='commercial bin'?20:null);
+  if(unit!=null){ it._unitCuft=unit; it.cuft=String(unit*q); }
+}
+function repriceAll(){
+  draft.items.forEach(it=>{ if(it.kind!=='product' && ['barrel','commercial bin','box'].includes(String(it.desc||'').toLowerCase())) priceItem(it, draft.co.city); });
+}
+/* ---------- 4. form <-> draft ---------- */
+const HDR = { fInv:'inv', fInvDate:'invDate', fPickup:'pickup', fTime:'time' };
+const SH = {fShName:'name',fShName2:'name2',fShStreet:'street',fShCity:'city',fShState:'state',fShPhone:'phone'};
+const CO = {fCoName:'name',fCoName2:'name2',fCoCity:'city',fCoPhone:'phone'};
+function fillDestSelects(){
+  const opts = V2.dests.map(d=>`<option>${esc(d.name)}</option>`).join('');
+  const co=$('#fCoCity'); if(co){ const k=co.value; co.innerHTML='<option value="">— pick destination —</option>'+opts; if(k) co.value=k; }
+  ['#mfDest','#pvDest'].forEach(s=>{ const el=$(s); if(el){ const k=el.value; el.innerHTML=opts; if(k) el.value=k; }});
+  const rv=$('#fRecv'); if(rv){ const k=rv.value; rv.innerHTML=V2.recv.map(r=>`<option>${esc(r)}</option>`).join(''); if(k) rv.value=k; }
+}
+function renderHdrExtra(){
+  const box=$('#hdrExtra'); if(!box) return;
+  box.innerHTML = Object.entries(V2.fields).filter(([k,f])=>f.on).map(([k,f])=>
+    `<div><label class="f">${esc(f.label)}</label><input class="f" data-hx="${k}" value="${esc(draft?draft[k]:'')}"></div>`).join('');
+  $$('#hdrExtra [data-hx]').forEach(inp=>inp.addEventListener('input',()=>{ draft[inp.dataset.hx]=inp.value; renderPreview(); }));
+}
+function draftToForm(){
+  for(const id in HDR) $('#'+id).value = draft[HDR[id]] ?? '';
+  for(const id in SH)  $('#'+id).value = draft.sh[SH[id]] ?? '';
+  for(const id in CO){ const el=$('#'+id); if(el) el.value = draft.co[CO[id]] ?? ''; }
+  $('#fRecv').value = draft.recv || V2.recv[0] || '';
+  $('#fAmtRecd').value = draft.amtRecd ?? '';
+  $('#fPayMethod').value = draft.payMethod || '';
+  $('#fShowTotal').checked = !!draft.showTotal;
+  renderHdrExtra();
+  renderItems();
+  $('#orderTitle').textContent = draft.id ? 'Cargo '+draft.inv : 'New cargo';
+  $('#orderSub').textContent = draft.id ? 'Editing a saved order.' : 'Fill it in, hit Create.';
+  renderActions();
+  renderPreview();
+}
+function formToDraft(){
+  for(const id in HDR) draft[HDR[id]] = $('#'+id).value;
+  for(const id in SH)  draft.sh[SH[id]] = $('#'+id).value;
+  for(const id in CO){ const el=$('#'+id); if(el) draft.co[CO[id]] = el.value; }
+  draft.recv = $('#fRecv').value;
+  draft.amtRecd = $('#fAmtRecd').value;
+  draft.payMethod = $('#fPayMethod').value;
+  draft.showTotal = $('#fShowTotal').checked;
+}
+/* ---------- 5. line items ---------- */
+const STD_OPTS = ['Barrel','Commercial Bin','Box'];
+function descCell(it,i){
+  const v = it.desc || '';
+  if(it.kind==='product'){
+    return `<select data-k="desc">
+      <option value=""></option>
+      ${V2.products.map(p=>`<option${p.name===v?' selected':''}>${esc(p.name)}</option>`).join('')}
+    </select>`;
+  }
+  const opts = STD_OPTS.concat(V2.shipTypes.map(s=>s.name).filter(Boolean));
+  const isStd = opts.includes(v);
+  if((!isStd && v!=='') || it._descOther){
+    return `<input data-k="desc" value="${esc(v)}" placeholder="Describe it…">`;
+  }
+  return `<select data-k="desc">
+    <option value=""></option>
+    ${opts.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}
+    <option value="Other"${it._descOther?' selected':''}>Other…</option>
+  </select>`;
+}
+function renderItems(){
+  const tb=$('#itemRows');
+  tb.innerHTML = draft.items.map((it,i)=>`
+    <tr data-i="${i}" ${it.kind==='product'?'style="background:#FBF7F0"':''}>
+      <td><input data-k="qty" value="${esc(it.qty)}" inputmode="decimal"></td>
+      <td>${descCell(it,i)}</td>
+      <td><input data-k="cuft" value="${esc(it.cuft)}" inputmode="decimal" ${it.kind==='product'?'disabled':''} style="text-align:center"></td>
+      <td><input data-k="dims" value="${esc(it.dims)}" placeholder="45X14X9" ${it.kind==='product'?'disabled':''}></td>
+      <td><input data-k="price" value="${esc(it.price)}" inputmode="decimal"></td>
+      <td><input data-k="amount" value="${esc(it.amount)}" inputmode="decimal" placeholder="${itemAmount(it)?itemAmount(it).toFixed(2):''}"></td>
+      <td><button class="x" data-del="${i}" title="Remove line">×</button></td>
+    </tr>`).join('');
+  $('#orderTotal').textContent = money(orderTotal(draft));
+}
+/* ---------- 6. printed form ---------- */
+function formHTML(o){
+  const rows = Math.max(6, Number(S.rows)||13);
+  const items = o.items.slice();
+  const total = orderTotal(o);
+  let body = '';
+  for(let i=0;i<rows;i++){
+    const it = items[i];
+    const amt = it ? itemAmount(it) : 0;
+    const showAmt = it && (it.amount!=='' || amt>0);
+    body += `<tr>
+      <td class="qty">${it?esc(it.qty):''}</td>
+      <td class="desc">${it?esc(it.desc)+(it.dims?' &nbsp;'+esc(it.dims):''):''}</td>
+      <td class="qty">${it?esc(it.cuft):''}</td>
+      <td class="pu">${it&&it.price!==''?money(String(it.price).replace(/[^0-9.\-]/g,'')):''}</td>
+      <td class="amt">${showAmt?money(amt):''}</td>
+    </tr>`;
+  }
+  if(o.showTotal && total>0){
+    body += `<tr>
+      <td class="qty"></td>
+      <td class="desc tot" style="text-align:right;padding-right:10pt">TOTAL</td>
+      <td class="qty tot"></td>
+      <td class="pu tot"></td><td class="amt tot">${money(total)}</td>
+    </tr>`;
+  }
+  const partyRow = (a,b) => `<div class="r"><span>${esc(a)}</span><span>${esc(b)}</span></div>`;
+  const F = V2.fields;
+  return `
+<div class="page" style="position:relative">
+  ${o.paid?'<div style="position:absolute;top:2.05in;right:.5in;transform:rotate(-14deg);border:3pt solid #C62828;color:#C62828;font-weight:800;font-size:24pt;letter-spacing:.1em;padding:1pt 12pt;border-radius:5pt;opacity:.85">PAID</div>':''}
+  <div class="p-top">
+    <div class="p-co">
+      <img src="/assets/fcs-logo.png" alt="" style="width:.55in;height:.55in;object-fit:contain;float:left;margin:-2pt 6pt 0 -2pt">
+      <b>${esc(S.name)}</b>
+      <div>${esc(S.addr)}</div>
+      <div>${esc(S.tel)}</div>
+      <div>${esc(S.fax)}</div>
+    </div>
+    <div class="p-right">
+      <div class="p-inv">
+        <div><div class="fld">${esc(o.inv)}</div><div class="cap">Invoice / B/L #</div></div>
+        <div><div class="fld">${esc(usDate(o.invDate))}</div><div class="cap">Date</div></div>
+      </div>
+      <div class="p-cont">
+        <span class="lbl">${esc(F.container.label)}</span>
+        <div class="fld">${esc(o.container)}</div>
+      </div>
+      <div class="p-quad">
+        <div><div class="fld">${esc(usDate(o.pickup))}</div><div class="cap">Pick Up Date</div></div>
+        <div><div class="fld">${esc(o.code)}</div><div class="cap">${esc(F.code.label)}</div></div>
+        <div><div class="fld">${esc(o.po)}</div><div class="cap">${esc(F.po.label)}</div></div>
+        <div><div class="fld">${esc(o.time)}</div><div class="cap">Time</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="p-oe"><span>${esc(S.title)}</span></div>
+  <div class="p-parties">
+    <div class="p-party">
+      ${partyRow(o.sh.name, o.sh.name2)}
+      ${partyRow(o.sh.street, '')}
+      ${partyRow(o.sh.city, o.sh.state)}
+      ${o.sh.phone?`<div class="ph"><i>Phone:</i>${esc(o.sh.phone)}</div>`:''}
+    </div>
+    <div class="p-party">
+      ${partyRow(o.co.name, o.co.name2)}
+      ${partyRow(o.co.city, '')}
+      ${o.co.phone?`<div class="ph"><i>Phone:</i>${esc(o.co.phone)}</div>`:''}
+    </div>
+  </div>
+  <div class="p-mid">
+    <div class="c1"><span class="lbl">${esc(F.cross.label)}</span><div class="fld">${esc(o.cross)}</div></div>
+    <div class="c2"><span class="lbl">${esc(F.service.label)}</span><div class="fld">${esc(o.service)}</div></div>
+    <div class="c3"><span class="lbl">${esc(F.shipVia.label)}</span><div class="fld">${esc(o.shipVia)}</div></div>
+  </div>
+  <table class="p-tbl">
+    <thead><tr>
+      <th class="c" style="width:.9in">Quantity</th>
+      <th class="c">Description</th>
+      <th class="c" style="width:.9in">Cu Ft</th>
+      <th class="c" style="width:1.05in">Price/Unit</th>
+      <th class="r" style="width:1.05in">Amount</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>
+  <div class="p-track">You can track your shipment at <b>www.fcsshipping.com</b><br>
+    <span style="font-size:10pt">Track using your B/L number</span></div>
+  <div class="p-sign">
+    <div class="s">${o.signature?'<img src="'+o.signature+'" alt="" style="height:.5in;max-width:2.6in;object-fit:contain;display:block;margin:0 auto -4pt">':''}<div class="line"></div><div class="cap2">Customer&rsquo;s Signature</div></div>
+    <div class="d">${o.signature?'<div style="text-align:center;font-size:10pt;margin-bottom:-2pt">'+esc(o.termsAcceptedAt?usDate(String(o.termsAcceptedAt).slice(0,10)):usDate(o.invDate))+'</div>':''}<div class="line"></div><div class="cap2">Date</div></div>
+  </div>
+</div>`;
+}
+function renderPreview(){
+  $('#preview').innerHTML = formHTML(draft);
+  const wrap=$('.pv-scroll'), page=$('#preview .page');
+  if(wrap && page){
+    const avail = wrap.clientWidth - 28;
+    const sc = Math.min(1, avail / page.offsetWidth);
+    $('#previewScale').style.transform = `scale(${sc||0.73})`;
+    $('#previewScale').style.height = (page.offsetHeight*sc)+'px';
+  }
+}
+/* ---------- 7. actions: Create / Mark Paid / dot ---------- */
+const FN = '/.netlify/functions';
+async function authHeaders(){
+  if(!SBC) return {'Content-Type':'application/json'};
+  const { data:{ session } } = await SBC.auth.getSession();
+  return session ? { Authorization:'Bearer '+session.access_token, 'Content-Type':'application/json' }
+                 : {'Content-Type':'application/json'};
+}
+function renderActions(){
+  $('#btnCreate').textContent = draft.created ? 'Save changes' : 'Create';
+  $('#btnPaid').hidden = !draft.created;
+  $('#btnPaid').textContent = draft.paid ? 'PAID ✓' : 'Mark Paid';
+  $('#btnPaid').style.background = draft.paid ? '#177245' : '';
+  $('#btnPaid').style.color = draft.paid ? '#fff' : '';
+  const dot=$('#qbDot');
+  dot.style.background = draft.qbOk===true ? '#1E9E4A' : draft.qbOk===false ? '#C22B1E' : '#c9cfd6';
+}
+async function saveDraft(){
+  formToDraft();
+  if(!String(draft.inv).trim()){ toast('An invoice number is required'); return false; }
+  if(!String(draft.co.city||'').trim()){ toast('Pick a destination first'); $('#fCoCity').focus(); return false; }
+  /* the number must be free in the DATABASE, not just in this tab */
+  try{
+    if(DB.live){
+      const dbOrders = await DB.load(ORDERS_KEY, []);
+      const clash = dbOrders.find(o=>String(o.inv)===String(draft.inv) && o.id!==draft.id);
+      if(clash){
+        const free=(()=>{ const used=new Set(dbOrders.concat(orders).map(o=>String(o.inv)));
+          let n=String(draft.inv); while(used.has(n)) n=bumpInvoice(n); return n; })();
+        toast('B/L '+draft.inv+' is already used by '+((clash.sh&&clash.sh.name)||'another order')+' — try '+free);
+        $('#fInv').value=free; draft.inv=free;
+        return false;
+      }
+    }
+  }catch(e){}
+  let act='order saved';
+  if(draft.id){
+    orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
+  } else {
+    act='order created';
+    draft.id = uid();
+    orders.push({...draft});
+    if(String(draft.inv)===String(S.next)){ S.next = bumpInvoice(S.next); const el=$('#sNext'); if(el) el.value=S.next; }
+  }
+  await persist(); renderOrders();
+  logEvent(act, draft.inv, (draft.sh&&draft.sh.name)||'');
+  return true;
+}
+$('#btnCreate').addEventListener('click', async ()=>{
+  const btn=$('#btnCreate'); const msg=$('#billMsg'); msg.className='msg'; msg.textContent='';
+  btn.disabled=true; btn.textContent='Working…';
+  try{
+    const already = draft.created;
+    if(!await saveDraft()) throw new Error('Could not save');
+    if(!already){
+      const total = orderTotal(draft);
+      if(total>0){
+        const lines = draft.items.filter(it=>itemAmount(it)>0).map(it=>({
+          desc: (it.kind==='product'?'PRODUCT: ':'') + (it.desc || 'Shipping services'),
+          qty: it.qty, price: String(it.price).replace(/[^0-9.]/g,''), amount: itemAmount(it)
+        }));
+        const res = await fetch(FN+'/order-to-ebl', {
+          method:'POST', headers: await authHeaders(),
+          body: JSON.stringify({
+            orderInv: draft.inv, useInv: true,
+            pieces: Math.max(1, Math.round(draft.items.filter(it=>it.kind!=='product').reduce((s2,it)=>s2+(parseFloat(it.qty)||0),0)) || 1),
+            cargo: draft.items.filter(it=>it.kind!=='product').map(i=>i.desc).filter(Boolean).join(', ') || 'Shipping services',
+            quantity: parseInt(draft.items[0] && draft.items[0].qty,10) || 1,
+            destination: draft.co.city || '',
+            priceCents: Math.round(total*100),
+            customerName: draft.sh.name || 'CUSTOMER',
+            customerPhone: draft.sh.phone,
+            customerExtra: { phone:draft.sh.phone, street:draft.sh.street, city:draft.sh.city, state:draft.sh.state },
+            markPaid: false, lines, txnDate: draft.invDate || null
+          })
+        });
+        const d = await res.json().catch(()=>({}));
+        if(res.ok && d.ok){
+          draft.created = true;
+          draft.qbOk = d.quickbooks && d.quickbooks.attempted ? !!d.quickbooks.ok : null;
+          draft.qbInvoiceNo = (d.quickbooks && d.quickbooks.ok) ? (d.quickbooks.docNumber||'posted') : '';
+        } else {
+          draft.created = true; draft.qbOk = false;
+        }
+      } else { draft.created = true; draft.qbOk = null; }
+      if(draft._quoteId && SBC){
+        SBC.from('quote_requests').update({status:'handled'}).eq('id',draft._quoteId).then(()=>loadQuotes());
+      }
+      orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
+      await persist();
+      toast('Cargo '+draft.inv+' created');
+    } else {
+      toast('Saved');
+    }
+    renderActions(); renderOrders();
+  }catch(e){ msg.textContent=e.message; msg.className='msg err'; }
+  btn.disabled=false; renderActions();
+});
+$('#btnPaid').addEventListener('click', async ()=>{
+  const paid = !draft.paid;
+  draft.paid = paid;
+  if(paid && !(parseFloat(draft.amtRecd)>0)){ draft.amtRecd = String(orderTotal(draft)); $('#fAmtRecd').value = draft.amtRecd; }
+  orders = orders.map(o=>o.id===draft.id ? {...draft} : o);
+  await persist(); renderActions(); renderOrders();
+  try{
+    await fetch(FN+'/ebl-status', { method:'POST', headers: await authHeaders(),
+      body: JSON.stringify({ eblNo: String(draft.inv), status: paid?'paid':'open' }) });
+  }catch(e){}
+  toast(paid ? 'Marked paid' : 'Marked not paid');
+  logEvent(paid?'marked paid':'marked unpaid', draft.inv, (draft.sh&&draft.sh.name)||'');
+});
+$('#btnPrint').addEventListener('click',()=>{ formToDraft(); $('#printroot').innerHTML=formHTML(draft); window.print(); });
+$('#btnEmailRcpt').addEventListener('click', async ()=>{
+  formToDraft();
+  if(!String(draft.inv).trim()) return toast('Fill the order first');
+  const to = prompt("Customer's e-mail address:", '');
+  if(!to) return;
+  const btn=$('#btnEmailRcpt'); btn.disabled=true; btn.textContent='Sending…';
+  try{
+    const res = await fetch(FN+'/email-receipt', {
+      method:'POST', headers: await authHeaders(),
+      body: JSON.stringify({ to: to.trim(), order:{
+        inv: draft.inv, date: usDate(draft.invDate), customer: draft.sh.name||'',
+        destination: (draft.co&&draft.co.city)||'',
+        items: draft.items.filter(it=>it.desc).map(it=>({qty:it.qty, desc:it.desc, amount: money(itemAmount(it))})),
+        total: money(orderTotal(draft)),
+        eblNo: String(draft.inv), paid: Boolean(draft.paid),
+        trackNote: 'Track your shipment with B/L '+draft.inv+' at www.fcsshipping.com',
+      }})});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.ok) throw new Error(data.error||'send failed');
+    toast('Receipt emailed to '+to.trim());
+  }catch(e){ alert('Could not send: '+e.message); }
+  btn.disabled=false; btn.textContent='Email receipt';
+});
+/* ---------- 8. CARGO list (this month) ---------- */
+function monthOrders(ym, dest){
+  /* destination match is fuzzy — old orders wrote "VIEUX-FORT ST. LUCIA" free-text */
+  const dl = String(dest||'').toLowerCase().replace(/[^a-z]/g,'');
+  return orders.filter(o=>{
+    if(monthKey(o.invDate)!==ym) return false;
+    if(!dest) return true;
+    const cl = String(o.co.city||'').toLowerCase().replace(/[^a-z]/g,'');
+    return cl.includes(dl) || dl.includes(cl && cl.slice(0,8) || '␀');
+  }).sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
+}
+let cargoSort={k:'date',dir:-1}, cargoPage=0;   /* newest first by default */
+const PAGE_SIZE=30;
+const SORT_VAL={
+  date:o=>String(o.invDate||''), type:o=>o.paid?1:0, dest:o=>String(o.co.city||''),
+  recv:o=>String(o.recv||''), inv:o=>isNaN(+o.inv)?String(o.inv):+o.inv,
+  freight:o=>orderTotal(o), amt:o=>parseFloat(o.amtRecd)||0, bal:o=>orderBal(o),
+};
+function sortRows(rows){
+  const f=SORT_VAL[cargoSort.k]||SORT_VAL.date;
+  return rows.slice().sort((a,b)=>{
+    const x=f(a), y=f(b);
+    return (x<y?-1:x>y?1:0)*cargoSort.dir;
+  });
+}
+function cargoTable(rows, actions){
+  if(!rows.length) return `<div class="empty"><b>No cargo yet.</b> Hit Create to write the first order.</div>`;
+  const arrow=(k)=>cargoSort.k===k?(cargoSort.dir===1?' ↑':' ↓'):'';
+  const th=(k,label,num)=>`<th${num?' class="num"':''} data-sort="${k}" style="cursor:pointer;user-select:none">${label}${arrow(k)}</th>`;
+  const pages=Math.ceil(rows.length/PAGE_SIZE);
+  if(cargoPage>=pages) cargoPage=Math.max(0,pages-1);
+  const view=rows.slice(cargoPage*PAGE_SIZE,(cargoPage+1)*PAGE_SIZE);
+  const pager = pages>1 ? `<div style="display:flex;gap:10px;align-items:center;justify-content:center;padding:10px">
+      <button class="btn ghost sm" data-page="prev" ${cargoPage===0?'disabled':''}>← Prev</button>
+      <span style="font-size:12.5px;color:var(--muted)">Page ${cargoPage+1} of ${pages} · ${rows.length} cargo</span>
+      <button class="btn ghost sm" data-page="next" ${cargoPage>=pages-1?'disabled':''}>Next →</button>
+    </div>` : '';
+  return `
+    <table class="list"><thead><tr>
+      ${th('date','Date')}${th('type','Type')}${th('dest','Destination')}${th('recv','Received From')}${th('inv','Invoice #')}
+      ${th('freight','Freight $',1)}${th('amt',"Amt Rec'd",1)}${th('bal','BAL/COD',1)}${actions?'<th></th>':''}
+    </tr></thead><tbody>${view.map(o=>{
+      const bal = orderBal(o);
+      return `<tr>
+        <td>${esc(usDate(o.invDate))}</td>
+        <td>${o.paid?'<b style="color:#177245">PAID</b>':'<b style="color:#B45309">BALANCE</b>'}</td>
+        <td>${esc(o.co.city||'')}</td>
+        <td>${esc(o.recv||'')}</td>
+        <td><strong>${esc(o.inv)}</strong>
+          <div style="color:var(--muted);font-size:11.5px">${esc(o.sh.name||'')}${o.co.name?' → '+esc(o.co.name):''}</div></td>
+        <td class="num">${money(orderTotal(o))}</td>
+        <td class="num">${money(parseFloat(o.amtRecd)||0)}</td>
+        <td class="num">${bal>0?'<b style="color:#B45309">'+money(bal)+'</b>':money(0)}</td>
+        ${actions?`<td class="num" style="white-space:nowrap">
+          <button class="btn ghost sm" data-openo="${o.id}">Open</button>
+          <button class="btn ghost sm" data-dupo="${o.id}">Dup</button>
+          <button class="btn warn sm" data-delo="${o.id}">Del</button>
+        </td>`:''}
+      </tr>`;}).join('')}</tbody></table>${pager}`;
+}
+function statCards(rows){
+  const freight = rows.reduce((s,o)=>s+freightTotal(o),0);
+  const prod = rows.reduce((s,o)=>s+productTotal(o),0);
+  const recd = rows.reduce((s,o)=>s+(parseFloat(o.amtRecd)||0),0);
+  const bal = rows.reduce((s,o)=>s+orderBal(o),0);
+  const card=(l,v,c)=>`<div class="card" style="padding:12px 14px"><div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${l}</div><div style="font-size:20px;font-weight:700;${c?'color:'+c:''}">${v}</div></div>`;
+  return card('Cargo', rows.length) + card('Freight', money(freight)) + card('Products', money(prod)) + card('Collected · Balance', money(recd)+' · <span style="color:#B45309">'+money(bal)+'</span>');
+}
+let cgFrom='', cgTo='';   /* cargo page date range — reaches across months */
+function renderOrders(){
+  const ym = thisMonth();
+  const q=($('#qOrders').value||'').toLowerCase();
+  let rows;
+  if(cgFrom||cgTo){
+    rows = orders.filter(o=>(!cgFrom || String(o.invDate)>=cgFrom) && (!cgTo || String(o.invDate)<=cgTo))
+      .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
+  } else rows = monthOrders(ym);
+  const base = rows;
+  $('#cOrders').textContent = rows.length;
+  if(q) rows = rows.filter(o=>[o.inv,o.sh.name,o.co.name,o.co.city].join(' ').toLowerCase().includes(q));
+  rows = sortRows(rows);
+  $('#cargoTitle').textContent = 'Cargo — '+((cgFrom||cgTo)
+    ? (cgFrom?usDate(cgFrom):'start')+' → '+(cgTo?usDate(cgTo):'today')
+    : monthLabel(ym));
+  $('#cargoSub').textContent = userName ? ('Welcome, '+userName) : 'Older months live in Previous Activity.';
+  $('#cargoStats').innerHTML = statCards(base);
+  $('#ordersList').innerHTML = cargoTable(rows, true);
+  $$('#ordersList [data-sort]').forEach(h=>h.addEventListener('click',()=>{
+    const k=h.dataset.sort;
+    if(cargoSort.k===k) cargoSort.dir*=-1; else cargoSort={k,dir:1};
+    renderOrders();
+  }));
+  $$('#ordersList [data-page]').forEach(b=>b.addEventListener('click',()=>{
+    cargoPage += b.dataset.page==='next'?1:-1;
+    renderOrders();
+  }));
+}
+function cgRangeChanged(){
+  cgFrom=$('#cgFrom').value||''; cgTo=$('#cgTo').value||'';
+  $('#cgRangeClear').hidden = !(cgFrom||cgTo);
+  cargoPage=0; renderOrders();
+}
+$('#cgFrom').addEventListener('change',cgRangeChanged);
+$('#cgTo').addEventListener('change',cgRangeChanged);
+$('#cgRangeClear').addEventListener('click',()=>{ $('#cgFrom').value=''; $('#cgTo').value=''; cgRangeChanged(); });
+$('#cgSort').addEventListener('change',()=>{ cargoSort={k:'date',dir:$('#cgSort').value==='new'?-1:1}; cargoPage=0; renderOrders(); });
+$('#btnHist').addEventListener('click', async ()=>{
+  const box=$('#histBox');
+  if(!box.hidden){ box.hidden=true; return; }
+  box.hidden=false; box.innerHTML='<div style="padding:14px;color:var(--muted)">Loading history…</div>';
+  const log=await DB.load('fcs:log',[]);
+  box.innerHTML = (log.length?log.slice(-100).reverse().map(e=>`
+    <div style="display:flex;gap:14px;padding:7px 14px;border-bottom:1px solid var(--rule);font-size:12.5px;align-items:baseline">
+      <span style="color:var(--muted);min-width:160px;white-space:nowrap">${esc(new Date(e.at).toLocaleString())}</span>
+      <span style="min-width:110px"><b>${esc(e.by||'')}</b></span>
+      <span style="min-width:110px">${esc(e.act||'')}</span>
+      <span style="min-width:70px"><b>${e.inv?'BL# '+esc(e.inv):''}</b></span>
+      <span style="color:var(--muted)">${esc(e.note||'')}</span>
+    </div>`).join('')
+    : '<div style="padding:14px;color:var(--muted)">Nothing logged yet — activity shows up here from now on.</div>');
+});
+/* ---------- 9. QUOTES ---------- */
+async function loadQuotes(){
+  if(!SBC) return;
+  try{
+    const {data} = await SBC.from('quote_requests').select('*')
+      .in('status',['new','deposit_paid']).order('created_at',{ascending:false}).limit(50);
+    quotes = data||[];
+  }catch(e){ quotes=[]; }
+  $('#cCust').textContent = quotes.length;
+  $('#custList').innerHTML = quotes.length ? `
+    <table class="list"><thead><tr><th>Name</th><th>Contact</th><th>Cargo</th><th class="num">Est.</th><th></th></tr></thead>
+    <tbody>${quotes.map(q=>`<tr>
+      <td><strong>${esc(q.name)}</strong></td>
+      <td>${esc(q.phone)}<div style="color:var(--muted);font-size:11.5px">${esc(q.email||'')}</div>${q.address?`<div style="color:var(--muted);font-size:11.5px">${esc(q.address)}</div>`:''}</td>
+      <td style="max-width:340px">${esc(q.cargo)} → ${esc(q.destination)}</td>
+      <td class="num">${money((q.total_cents||0)/100)}</td>
+      <td class="num" style="white-space:nowrap">
+        <button class="btn sm" data-mkorder="${q.id}">Create</button>
+        <button class="btn warn sm" data-delq="${q.id}">Delete</button>
+      </td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty"><b>No open quotes.</b> New website quotes land here.</div>`;
+}
+$('#custList').addEventListener('click', async e=>{
+  const mk=e.target.dataset.mkorder, dl=e.target.dataset.delq;
+  if(mk){
+    const q = quotes.find(x=>String(x.id)===String(mk)); if(!q) return;
+    draft = blankOrder();
+    draft._quoteId = q.id;
+    draft.sh = { name:String(q.name||'').toUpperCase(), name2:'', street:String(q.address||'').toUpperCase(), city:'', state:'', phone:q.phone||'' };
+    const dest = V2.dests.find(d=>String(q.destination||'').toLowerCase().includes(d.name.toLowerCase()));
+    draft.co.city = dest ? dest.name : (V2.dests[0]&&V2.dests[0].name)||'';
+    const extras = Array.isArray(q.extras)?q.extras.slice():[];
+    const ci = extras.findIndex(x=>/^Consignee:/i.test(String(x)));
+    if(ci>-1){
+      const parts = String(extras.splice(ci,1)[0]).replace(/^Consignee:\s*/i,'').split(' · ').map(s=>s.trim()).filter(Boolean);
+      draft.co.name = String(parts.shift()||'').toUpperCase();
+      if(parts.length && String(parts[parts.length-1]).replace(/\D/g,'').length>=7) draft.co.phone = parts.pop();
+    }
+    /* parse the quote summary properly: "Barrel (15 cu ft) × 2" → qty 2, NOT the 15 */
+    const items=[];
+    const t = String(q.cargo||'');
+    const qtyFor=(word)=>{
+      /* only a "× N" AFTER the closing paren counts as quantity */
+      const re=new RegExp(word+'[^,×]*\\)?\\s*[×xX]\\s*(\\d+)','i');
+      const m=t.match(re);
+      if(m) return parseInt(m[1],10)||1;
+      return new RegExp(word,'i').test(t) ? 1 : 0;
+    };
+    const nBarrel=qtyFor('Barrel'), nBin=qtyFor('Commercial Bin');
+    if(nBarrel){ const it=blankItem(); it.qty=String(nBarrel); it.desc='Barrel'; priceItem(it,draft.co.city); items.push(it); }
+    if(nBin){ const it=blankItem(); it.qty=String(nBin); it.desc='Commercial Bin'; priceItem(it,draft.co.city); items.push(it); }
+    /* boxes: one line per measured box from the "Box dims:" extra */
+    const dimsExtra=(Array.isArray(q.extras)?q.extras:[]).find(x=>/^Box dims:/i.test(String(x)));
+    if(dimsExtra){
+      String(dimsExtra).replace(/^Box dims:\s*/i,'').split(',').map(s=>s.trim()).filter(Boolean).forEach(d=>{
+        const it=blankItem(); it.qty='1'; it.desc='Box'; it.dims=d.toUpperCase();
+        priceItem(it,draft.co.city); items.push(it);
+      });
+    } else if(/box/i.test(t) && !/commercial/i.test(t.match(/[^,]*box[^,]*/i)?.[0]||'')){
+      const nBox=qtyFor('Box');
+      for(let bi=0;bi<nBox;bi++){ const it=blankItem(); it.qty='1'; it.desc='Box'; items.push(it); }
+    }
+    if(!items.length){ const it=blankItem(); it.desc=String(q.cargo||'').toUpperCase(); it.amount=((q.total_cents||0)/100).toFixed(2); items.push(it); }
+    draft.items = items.concat([blankItem()]);
+    if(q.pickup_slot) draft.service = ('PICKUP: '+q.pickup_slot).toUpperCase();
+    goTab('order'); draftToForm();
+    toast('Quote loaded — check it, then Create');
+  }
+  if(dl){
+    if(!confirm('Delete this quote?')) return;
+    await SBC.from('quote_requests').delete().eq('id',dl);
+    loadQuotes();
+  }
+});
+$('#btnQuotesRefresh').addEventListener('click',loadQuotes);
+/* ---------- 10. MANIFEST ---------- */
+let mfMode='tally';
+/* the ship line rates commercial bins at 19 cu ft on the docs (order entry still charges 20) */
+function tallyCu(it){ const q=parseFloat(it.qty)||1; return /commercial bin/i.test(it.desc||'') ? 19*q : (parseFloat(it.cuft)||0); }
+let mfFrom='', mfTo='';     /* date range — may reach across the month edge */
+let mfSel=new Set();        /* hand-picked cargo (order ids) — wins over everything */
+function destMatches(o,dest){
+  if(!dest) return true;
+  const dl=String(dest).toLowerCase().replace(/[^a-z]/g,'');
+  const cl=String(o.co.city||'').toLowerCase().replace(/[^a-z]/g,'');
+  return cl.includes(dl) || dl.includes(cl && cl.slice(0,8) || '␀');
+}
+/* the cargo the manifest works from: date range (any month) > week > whole month */
+function mfOrders(ym,dest){
+  if(mfFrom||mfTo){
+    return orders.filter(o=>destMatches(o,dest)
+        && (!mfFrom || String(o.invDate)>=mfFrom)
+        && (!mfTo   || String(o.invDate)<=mfTo))
+      .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
+  }
+  return monthOrders(ym,dest);
+}
+function mfRows(ym,dest){
+  const list=[];
+  mfOrders(ym,dest).forEach(o=>{
+    o.items.forEach((it,ix)=>{
+      if(it.kind==='product' || !it.desc) return;
+      list.push({o,ix,it});
+    });
+  });
+  return list;
+}
+function mfScopeLabel(){
+  if(mfSel.size) return mfSel.size+' selected B/L(s)';
+  if(mfFrom||mfTo) return (mfFrom?usDate(mfFrom):'start')+' → '+(mfTo?usDate(mfTo):'today');
+  return 'whole month';
+}
+function renderManifest(){
+  const dest=$('#mfDest').value; const ym=thisMonth();
+  $('#mfSub').textContent = monthLabel(ym)+' · '+(mfMode==='tally'?'tally sheet':'manifest view')+' · generates: '+mfScopeLabel();
+  const rows=mfRows(ym,dest);
+  if(!rows.length){ $('#mfList').innerHTML='<div class="empty"><b>No cargo for '+esc(dest||'—')+((mfFrom||mfTo)?' in that date range':' yet this month')+'.</b></div>'; return; }
+  const seen=new Set();
+  const selBox=(id)=>seen.has(id)?'':(seen.add(id),`<input type="checkbox" data-msel="${id}"${mfSel.has(id)?' checked':''} title="Only checked B/Ls generate" style="width:16px;height:16px;vertical-align:middle;margin-right:6px">`);
+  if(mfMode==='tally'){
+    const pk = rows.reduce((s,r)=>s+(parseFloat(r.it.qty)||0),0);
+    const cf = rows.reduce((s,r)=>s+tallyCu(r.it),0);
+    $('#mfList').innerHTML = `
+      <table class="list"><thead><tr>
+        <th style="width:130px">B/L #</th><th style="width:64px">Pkgs</th><th>Description</th>
+        <th style="width:70px">Cu ft</th><th style="width:120px">Dims</th><th style="width:90px" class="num">$</th><th style="width:34px"></th>
+      </tr></thead><tbody>
+      ${rows.map((r,n)=>`<tr>
+        <td>${selBox(r.o.id)}<strong>BL#${esc(r.o.inv)}</strong><div style="color:var(--muted);font-size:11px">${esc(usDate(r.o.invDate))} · ${esc(r.o.sh.name||'')}</div></td>
+        <td><input class="f" data-mf="${n}" data-k="qty" value="${esc(r.it.qty)}" style="padding:4px 6px"></td>
+        <td><input class="f" data-mf="${n}" data-k="desc" value="${esc(r.it.desc)}" style="padding:4px 6px"></td>
+        <td><input class="f" data-mf="${n}" data-k="cuft" value="${esc(String(tallyCu(r.it)))}" style="padding:4px 6px;text-align:center"${/commercial bin/i.test(r.it.desc||'')?' title="Bins ride at 19 cu ft on the docs; order entry still charges 20" readonly':''}></td>
+        <td><input class="f" data-mf="${n}" data-k="dims" value="${esc(r.it.dims)}" style="padding:4px 6px"></td>
+        <td class="num">${money(itemAmount(r.it))}</td>
+        <td><button class="x" data-mfdel="${n}" title="Remove from cargo too">×</button></td>
+      </tr>`).join('')}
+      <tr><td><b>TOTAL</b></td><td><b>${pk}</b></td><td></td><td><b>${Math.round(cf*10)/10}</b></td><td></td><td class="num"><b>${money(rows.reduce((s,r)=>s+itemAmount(r.it),0))}</b></td><td></td></tr>
+      </tbody></table>
+      <p style="font-size:12px;color:var(--muted);margin:8px 6px">Edits here write straight back to the cargo — the Cargo page and the revenue export follow automatically.</p>`;
+    const R=rows;
+    $$('#mfList [data-mf]').forEach(inp=>inp.addEventListener('change',async ()=>{
+      const r=R[+inp.dataset.mf]; r.it[inp.dataset.k]=inp.value;
+      orders = orders.map(o=>o.id===r.o.id ? {...r.o} : o);
+      await persist(); renderManifest(); renderOrders();
+    }));
+    $$('#mfList [data-mfdel]').forEach(b=>b.addEventListener('click',async ()=>{
+      const r=R[+b.dataset.mfdel];
+      if(!confirm('Remove this line from BL#'+r.o.inv+'? It comes off the cargo and the revenue too.')) return;
+      r.o.items.splice(r.ix,1);
+      orders = orders.map(o=>o.id===r.o.id ? {...r.o} : o);
+      await persist(); renderManifest(); renderOrders();
+    }));
+  } else {
+    /* manifest view — one block per B/L */
+    const byOrder={};
+    rows.forEach(r=>{ (byOrder[r.o.id]=byOrder[r.o.id]||{o:r.o,items:[]}).items.push(r.it); });
+    $('#mfList').innerHTML = Object.values(byOrder).map((g,i)=>`
+      <div style="border:1px solid var(--rule);border-radius:7px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:76px 1.2fr 1.2fr 1.6fr;gap:8px;align-items:start">
+        <div style="font-weight:700">${selBox(g.o.id)}${i+1}<br><span style="font-size:15px">${esc(g.o.inv)}</span><div style="color:var(--muted);font-size:11px;font-weight:400">${esc(usDate(g.o.invDate))}</div></div>
+        <div><b>${esc(g.o.sh.name||'')}</b><br>${esc(g.o.sh.street||'')}<br>${esc([g.o.sh.city,g.o.sh.state].filter(Boolean).join(', '))}<br><span style="color:var(--muted)">TEL# ${esc(g.o.sh.phone||'')}</span></div>
+        <div><b>${esc(g.o.co.name||'')}</b><br>${esc(g.o.co.city||'')}<br>ST. LUCIA<br><span style="color:var(--muted)">TEL# ${esc(g.o.co.phone||'')}</span></div>
+        <div>${g.items.map(it=>`${esc(it.qty)} ${esc(it.desc)} S.T.C PERSONAL EFFECTS &nbsp; <b>${tallyCu(it)}</b> &nbsp; ${money(itemAmount(it))}`).join('<br>')}
+          ${orderBal(g.o)>0?'<div style="color:#C22B1E;font-weight:800;margin-top:4px">HOLD</div>':''}</div>
+      </div>`).join('');
+  }
+  /* selection wiring — checked B/Ls override the week filter when generating */
+  if(mfSel.size) $('#mfList').insertAdjacentHTML('afterbegin',
+    `<div style="display:flex;align-items:center;gap:12px;background:#FDF3DF;border:1px solid #F4DFB4;color:#7A5104;border-radius:7px;padding:9px 14px;margin-bottom:10px;font-size:13px;font-weight:600">
+       Generating ONLY the ${mfSel.size} checked B/L(s). <button class="btn ghost sm" id="mfSelClear">Clear selection</button></div>`);
+  const clr=$('#mfSelClear'); if(clr) clr.addEventListener('click',()=>{ mfSel.clear(); renderManifest(); });
+  $$('#mfList [data-msel]').forEach(cb=>cb.addEventListener('change',()=>{
+    if(cb.checked) mfSel.add(cb.dataset.msel); else mfSel.delete(cb.dataset.msel);
+    renderManifest();
+  }));
+}
+$('#mfDest').addEventListener('change',()=>{
+  mfSel.clear();
+  renderManifest();
+  /* header card open? rebuild it so the broker follows the destination */
+  if(!$('#mfHeadCard').hidden) $('#mfMaster').click();
+  else if(!$('#mfManCard').hidden) $('#mfXlsx').click();
+});
+function mfRangeChanged(){
+  mfFrom=$('#mfFrom').value||''; mfTo=$('#mfTo').value||'';
+  $('#mfRangeClear').hidden = !(mfFrom||mfTo);
+  renderManifest();
+  if(!$('#mfManCard').hidden) $('#mfXlsx').click();
+}
+$('#mfFrom').addEventListener('change',mfRangeChanged);
+$('#mfTo').addEventListener('change',mfRangeChanged);
+$('#mfRangeClear').addEventListener('click',()=>{ $('#mfFrom').value=''; $('#mfTo').value=''; mfRangeChanged(); });
+$('#mfToggle').addEventListener('click',()=>{ mfMode = mfMode==='tally'?'manifest':'tally'; $('#mfToggle').textContent = mfMode==='tally'?'Manifest view':'Tally view'; renderManifest(); });
+/* ---------- 11. XLSX exports (ExcelJS) ---------- */
+function dl(buf,name){
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
+}
+const thin={style:'thin'}; const B={top:thin,left:thin,bottom:thin,right:thin};
+async function buildMasterBL(ym,dest,hdr){
+  const rows=mfRows(ym,dest);
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet((hdr.brokerName||'MASTER BL').slice(0,28));
+  const widths={A:12.4,B:10.4,C:6.7,D:2.4,E:3.3,F:5.3,G:16.7,H:8.4,I:22,J:2.7,K:8.3,L:18};
+  Object.entries(widths).forEach(([c,w])=>ws.getColumn(c).width=w);
+  const set=(cell,v,opt)=>{ const c=ws.getCell(cell); c.value=v; if(opt&&opt.b) c.font={bold:true,size:opt.sz||10}; else c.font={size:(opt&&opt.sz)||9}; };
+  set('A1',hdr.carrier,{b:1,sz:14}); set('I1','LONG FORM - INTERNATIONAL BILL OF LADING',{sz:8});
+  set('A2','(2) SHIPPER/EXPORTER (Embarcador/Remitente)',{sz:7});
+  hdr.shipper.split('\n').forEach((l,i)=>set('A'+(3+i),l,{sz:9}));
+  set('H2','(5) BOOKING NO. (No. Reservacion)',{sz:7}); set('K2','(5A) B/L NO. (No. Conocimiento)',{sz:7});
+  set('H3','BKG# '+(hdr.bkg||''),{sz:9});
+  set('H4','(6) EXPORT REFERENCES (Referencia de Exportacion)',{sz:7});
+  set('A8','(3) CONSIGNEE (Consignatario)',{sz:7});
+  hdr.consignee.split('\n').forEach((l,i)=>set('A'+(9+i),l,{sz:9}));
+  set('H8','(7) FREIGHT FORWARDER/CHB (Agente Aduanal)',{sz:7});
+  hdr.forwarder.split('\n').forEach((l,i)=>set('H'+(9+i),l,{sz:9}));
+  set('K11','FMC/CHB No.',{sz:7});
+  set('H12','(8) POINT AND COUNTRY OF ORIGIN (Punto y Pais de Origen)',{sz:7});
+  set('H15',hdr.origin,{sz:9});
+  set('A16','(4) NOTIFY PARTY (Dirigir Notificacion de Llegada a)',{sz:7});
+  set('A17',hdr.notify,{sz:9});
+  set('H16','(9) ALSO NOTIFY - ROUTING INSTRUCTIONS (Tambien Notificar a/Ruta Domestica)',{sz:7});
+  set('A21','(12) INITIAL CARRIAGE BY (Mode)',{sz:7}); set('C21','(13) PLACE OF INITIAL RECEIPT (Punto de Recibo Inicial) *',{sz:7});
+  set('H21','(9A) FINAL DESTINATION OF THE GOODS (Destino Final de la Carga)',{sz:7});
+  set('A23','(14) VESSEL (Nave)             VOY          FLAG',{sz:7}); set('D23','(15) PORT OF LOADING (Puerto de Carga)',{sz:7});
+  set('H23','(10) LOADING PIER/TERMINAL (Muelle)',{sz:7}); set('J23','(10A) ORIGINALS TO BE RELEASED AT',{sz:7});
+  set('A24',hdr.vessel||'',{sz:9});
+  set('A25','PORT OF DISCHARGE',{sz:7}); set('D25','(17) PLACE OF DELIVERY (Punto de Entrega)',{sz:7});
+  set('H25','(11) TYPE OF MOVE (Tipo de Movimiento)',{sz:7});
+  set('A26',dest.toUpperCase(),{b:1,sz:10}); set('B26','ST. LUCIA',{b:1,sz:10});
+  set('A27','PARTICULARS FURNISHED BY SHIPPER',{sz:8}); set('H27',"(SPACES IMMEDIATELY ABOVE FOR SHIPPER'S MEMORANDUM)",{sz:7});
+  set('C28','NO. OF PKGS.',{sz:7}); set('E28','HM**',{sz:7}); set('G28','DESCRIPTION OF PACKAGES AND GOODS',{sz:7});
+  set('J28','CUBIC FT',{sz:7}); set('L28','MEASUREMENT',{sz:7});
+  set('A29','(Marcas y Numeros)',{sz:7}); set('C29','(No. de Bultos)',{sz:7}); set('G29','(Contenido)',{sz:7}); set('L29','(Medidas)',{sz:7});
+  set('A30','(18)',{sz:7}); set('C30','(19)',{sz:7}); set('G30','(20)',{sz:7}); set('J30','(21)',{sz:7}); set('L30','(22)',{sz:7});
+  /* aggregate barrels + bins first, like the paper */
+  let r=31;
+  const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}};
+  const singles=[];
+  rows.forEach(x=>{
+    const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
+    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
+    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*20;}
+    else singles.push(x);
+  });
+  if(agg.barrel.n){ set('C'+r,agg.barrel.n,{sz:9}); set('I'+r,'BARREL',{sz:9}); set('K'+r,agg.barrel.cu,{sz:9}); set('L'+r,'24X24X44',{sz:9}); r++; }
+  if(agg.bin.n){ set('C'+r,agg.bin.n,{sz:9}); set('I'+r,'COMMERCIAL BINS',{sz:9}); set('K'+r,agg.bin.cu,{sz:9}); set('L'+r,'48X24X44',{sz:9}); r++; }
+  singles.forEach(x=>{
+    set('A'+r,'BL#'+x.o.inv,{sz:9}); set('C'+r,parseFloat(x.it.qty)||1,{sz:9});
+    set('I'+r,String(x.it.desc).toUpperCase(),{sz:9}); set('K'+r,parseFloat(x.it.cuft)||'',{sz:9});
+    set('L'+r,x.it.dims||'',{sz:9}); r++;
+  });
+  const noteR=r+1;
+  set('H'+noteR,hdr.loadNote,{b:1,sz:10});
+  const totR=noteR+2;
+  set('A'+totR,'TOTAL NO. PIECES',{b:1,sz:9});
+  ws.getCell('C'+totR).value={formula:`SUM(C31:C${r})`}; ws.getCell('C'+totR).font={bold:true,size:10};
+  ws.getCell('K'+totR).value={formula:`SUM(K31:K${r})`}; ws.getCell('K'+totR).font={bold:true,size:10};
+  let f=totR+2;
+  set('A'+f,'(23) DECLARED VALUE $____________________ IF SHIPPER ENTERS A VALUE, CARRIER\'S',{sz:7});
+  set('I'+f,'(24) FREIGHT PAYABLE AT',{sz:7}); set('K'+f,'MASTER B/L',{b:1,sz:10});
+  set('A'+(f+1),'         "PACKAGE" LIABILITY DOES NOT APPLY AND THE AD VALOREM RATE WILL BE CHARGED',{sz:7});
+  set('I'+(f+1),'FREIGHT PREPAID',{b:1,sz:9});
+  set('A'+(f+2),'FREIGHT CHARGES',{sz:8}); set('C'+(f+2),'RATED AS',{sz:7}); set('E'+(f+2),'PER',{sz:7});
+  set('G'+(f+2),'RATE',{sz:7}); set('H'+(f+2),'PREPAID',{sz:7}); set('I'+(f+2),'COLLECT',{sz:7}); set('J'+(f+2),'CURRENCY/RATE OF EXCHANGE',{sz:7});
+  set('A'+(f+3),'PREPAID',{sz:9});
+  set('A'+(f+5),"THE RECEIPT, CUSTODY, CARRIAGE AND DELIVERY OF THE GOODS ARE SUBJECT TO THE",{sz:7});
+  set('A'+(f+6),"TERMS APPEARING ON THE FACE AND BACK HEREOF AND TO CARRIER'S APPLICABLE TARIFF",{sz:7});
+  set('I'+(f+5),'* Applicable only when used for multimodal or through transportation',{sz:6});
+  set('I'+(f+6),'** Indicate whether any of the cargo is hazardous material under DOT,',{sz:6});
+  set('G'+(f+8),hdr.carrier,{b:1,sz:9});
+  set('A'+(f+8),'In witness whereof                       original bills of lading all the same tenor and',{sz:7});
+  set('A'+(f+9),'date one of which being accomplished, the others to stand void, have been',{sz:7});
+  set('G'+(f+10),'By: ………………………………………………………………………………………………………………………………………',{sz:8});
+  set('G'+(f+11),'BILL OF LADING NO.',{sz:8}); set('J'+(f+11),'DATE:',{sz:8});
+  ws.getCell('K'+(f+11)).value=new Date(); ws.getCell('K'+(f+11)).numFmt='m/d/yyyy';
+  const buf=await wb.xlsx.writeBuffer();
+  dl(buf, `MASTER BL - ${dest.toUpperCase()} - ${monthLabel(ym).toUpperCase()}.xlsx`);
+}
+async function buildManifestXlsx(ym,dest){
+  const os = monthOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
+  if(!os.length){ toast('Nothing to manifest'); return; }
+  const M=V2.mbl;
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('Manifest');
+  [['A',1.7],['B',6],['C',9],['D',9],['E',30],['F',10],['G',34],['H',9],['I',26],['J',5],['K',9],['M',11]].forEach(([c,w])=>ws.getColumn(c).width=w);
+  const set=(cell,v,b,sz)=>{ const c=ws.getCell(cell); c.value=v; c.font={bold:!!b,size:sz||10}; };
+  set('E3',M.carrier,1,14);
+  set('G5','MANIFEST',1,16);
+  set('B8','FROM',1); set('H8','TO:',1); set('I8',(hdrBrokerName||'').trim()||dest,0,10);
+  set('E9',M.manFrom);
+  set('B10','ADDRESS',1); set('H10','ADDRESS',1);
+  set('E11',M.manFromAddr); set('I11',hdrBrokerAddr.split('\n')[0]||'');
+  set('C13',M.manFromCity); set('E13',M.manFromState); set('F13',M.manFromZip);
+  set('I13',dest+', St. Lucia');
+  set('B15','Tel: ',1); set('E15',M.manFromTel); set('H15','Tel:',1); set('I15',M.relTel);
+  set('B18','CARRIER:',1); set('E18',hdrVessel||'');
+  set('B20','DATE SHIPPED:',1); set('E20',new Date());
+  set('B22','CONTAINER #',1); set('E22',hdrBkg||'');
+  set('B24','DESTINATION:',1); set('E24',(dest+', ST. LUCIA').toUpperCase());
+  set('B26','ETA DATE:',1);
+  const totalPk = os.reduce((s,o)=>s+o.items.filter(it=>it.kind!=='product').reduce((x,it)=>x+(parseFloat(it.qty)||0),0),0);
+  const totalCu = os.reduce((s,o)=>s+o.items.filter(it=>it.kind!=='product').reduce((x,it)=>x+(parseFloat(it.cuft)||0),0),0);
+  set('J27','TOTAL # PACKAGES',1); set('M27',totalPk,1);
+  set('J28','TOTAL VOLUME',1); set('M28',Math.round(totalCu*10)/10,1);
+  set('C32','B/L #',1); set('E32','Sender:',1); set('G32','Consignee:',1); set('I32','Contents:',1); set('K32','Vol-ft³',1);
+  let r=35; let n=1;
+  for(const o of os){
+    set('C'+(r+1),o.inv,1,11); set('D'+(r+1),'Name:'); set('E'+(r+1),o.sh.name||''); set('G'+(r+1),o.co.name||'');
+    set('C'+(r+2),n); set('D'+(r+2),'Address:'); set('E'+(r+2),o.sh.street||''); set('G'+(r+2),o.co.city||'');
+    set('E'+(r+3),[o.sh.city,o.sh.state].filter(Boolean).join(', ')); set('G'+(r+3),'St. Lucia');
+    const its=o.items.filter(it=>it.kind!=='product'&&it.desc);
+    its.forEach((it,i)=>{ set('H'+(r+i),parseFloat(it.qty)||1); set('I'+(r+i),it.desc.toUpperCase()+' S.T.C PERSONAL EFFECTS'); set('K'+(r+i),parseFloat(it.cuft)||''); });
+    set('D'+(r+6),'tel#'); set('E'+(r+6),o.sh.phone||''); set('F'+(r+6),'tel#'); set('G'+(r+6),o.co.phone||'');
+    if(orderBal(o)>0){ set('I'+(r+6),'HOLD',1,11); ws.getCell('I'+(r+6)).font={bold:true,color:{argb:'FFC00000'},size:11}; }
+    r += Math.max(8, its.length+6); n++;
+  }
+  const buf=await wb.xlsx.writeBuffer();
+  dl(buf, `Manifest - ${dest.toUpperCase()} - ${monthLabel(ym).toUpperCase()}.xlsx`);
+}
+async function buildRevenueXlsx(ym){
+  const rows=monthOrders(ym);
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet(MONTH_NAMES[+ym.split('-')[1]-1]);
+  [['A',14.7],['B',14.7],['C',12],['D',26.7],['E',12.7],['F',14.7],['G',12.7],['H',12]].forEach(([c,w])=>ws.getColumn(c).width=w);
+  ws.getCell('A1').value='      MONTHLY REVENUES'; ws.getCell('A1').font={bold:true,size:12};
+  ws.getCell('A2').value=monthLabel(ym).toUpperCase(); ws.getCell('A2').font={bold:true};
+  const H=['DATE','TYPE','DESTINATION','RECEIVED FROM','INVOICE#','FREIGHT $',"AMT REC'D",'BAL/COD'];
+  H.forEach((h,i)=>{ const c=ws.getRow(3).getCell(i+1); c.value=h; c.font={bold:true}; c.border=B; });
+  let r=4;
+  rows.forEach(o=>{
+    const row=ws.getRow(r);
+    row.getCell(1).value=o.invDate?new Date(o.invDate+'T12:00:00'):''; row.getCell(1).numFmt='m/d/yyyy';
+    row.getCell(2).value=o.paid?'PAID':'BALANCE';
+    row.getCell(3).value=o.co.city||'';
+    row.getCell(4).value=o.recv||'SEA FREIGHT';
+    row.getCell(5).value=isNaN(+o.inv)?o.inv:+o.inv;
+    row.getCell(6).value=orderTotal(o);
+    row.getCell(7).value=parseFloat(o.amtRecd)||0;
+    row.getCell(8).value={formula:`F${r}-G${r}`};
+    r++;
+  });
+  const t=ws.getRow(r+1);
+  t.getCell(5).value='TOTALS'; t.getCell(5).font={bold:true};
+  t.getCell(6).value={formula:`SUM(F4:F${r-1})`}; t.getCell(6).font={bold:true};
+  t.getCell(7).value={formula:`SUM(G4:G${r-1})`}; t.getCell(7).font={bold:true};
+  t.getCell(8).value={formula:`SUM(H4:H${r-1})`}; t.getCell(8).font={bold:true};
+  const p=ws.getRow(r+2);
+  p.getCell(5).value='PRODUCTS'; p.getCell(5).font={bold:true};
+  p.getCell(6).value=rows.reduce((s,o)=>s+productTotal(o),0); p.getCell(6).font={bold:true};
+  const buf=await wb.xlsx.writeBuffer();
+  dl(buf, `Monthly Revenue - ${monthLabel(ym)}.xlsx`);
+}
+/* ---------- Google Sheets sync (Apps Script webhook via server proxy) ---------- */
+async function gsSync(payload, fallback){
+  const hook=(V2.sheets&&V2.sheets.hook||'').trim();
+  if(!hook){
+    if(fallback && confirm('Google Sheets webhook not set up yet (Settings → Google Sheets). Download an .xlsx instead?')) fallback();
+    return;
+  }
+  toast('Updating Google Sheet…');
+  try{
+    const res=await fetch(FN+'/sheets-sync',{ method:'POST', headers:await authHeaders(),
+      body:JSON.stringify({ hook, payload }) });
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok||!d.ok) throw new Error(d.error||'sync failed');
+    toast('Sheet updated ✓');
+    if(d.url) showSheetLink(d.url);
+  }catch(e){ alert('Could not update the sheet: '+e.message); }
+}
+/* browsers block window.open after an await — hand the user a real link instead */
+function showSheetLink(url){
+  let b=$('#sheetLinkBar');
+  if(!b){
+    b=document.createElement('div'); b.id='sheetLinkBar';
+    b.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0F2E46;color:#fff;padding:12px 18px;border-radius:9px;box-shadow:0 8px 30px rgba(0,0,0,.35);z-index:9999;display:flex;gap:14px;align-items:center;font-size:14px';
+    document.body.appendChild(b);
+  }
+  b.innerHTML=`<span>Sheet updated ✓</span>
+    <a href="${url}" target="_blank" rel="noopener" style="color:#7FD1FF;font-weight:700;text-decoration:underline">Open the sheet →</a>
+    <button style="background:none;border:0;color:#9FB6C6;font-size:16px;cursor:pointer" onclick="this.parentNode.remove()">×</button>`;
+  clearTimeout(b._t); b._t=setTimeout(()=>{ b.remove(); }, 60000);
+}
+function revenuePayload(ym){
+  const [y,m]=ym.split('-');
+  return { action:'revenue', month:MONTH_NAMES[+m-1], year:+y,
+    rows: monthOrders(ym).map(o=>{
+      const d=destOf(o.co.city)||V2.dests.find(x=>String(o.co.city||'').toLowerCase().includes(String(x.name).toLowerCase()));
+      return [ usDate(o.invDate), o.paid?'PAID':'Will Pay later',
+        (d&&d.revLabel)||o.co.city||'', o.recv||'SEA FREIGHT',
+        isNaN(+o.inv)?o.inv:+o.inv, orderTotal(o), parseFloat(o.amtRecd)||0 ];
+    })};
+}
+/* sheet tab names come from dates now (Sheets tabs can't contain "/") */
+function tabLabel(iso){ const d=new Date(String(iso||todayISO())+'T12:00:00');
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase(); }
+function defaultTab(){
+  if(mfFrom&&mfTo) return tabLabel(mfFrom)+' - '+tabLabel(mfTo);
+  if(mfFrom) return tabLabel(mfFrom)+' ON';
+  if(mfTo) return 'THRU '+tabLabel(mfTo);
+  return tabLabel(todayISO());
+}
+function masterPayload(ym,dest,hdr,truck){
+  truck = truck || defaultTab();
+  /* what lands on the sheet follows the same rules as the manifest:
+     checked cargo first, then the date range, otherwise the whole month */
+  let rows = mfRows(ym,dest);
+  if(mfSel.size) rows = rows.filter(x=>mfSel.has(x.o.id));
+  const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}}; const lines=[];
+  rows.forEach(x=>{
+    const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
+    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
+    /* the ship line rates bins at 19 cu ft even though we charge 20 */
+    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*19;}
+    else lines.push([ 'BL#'+x.o.inv, q, String(x.it.desc).toUpperCase(),
+      parseFloat(x.it.cuft)||'', x.it.dims||'' ]);
+  });
+  return { action:'master', month:ym, dest, truck,
+    template: /castries/i.test(dest)?'her':'ella',
+    header: hdr, barrels:agg.barrel, bins:agg.bin, lines };
+}
+function manifestPayload(ym,dest,truck,x){
+  truck = truck || defaultTab(); x = x || {};
+  /* what goes on the sheet: hand-picked cargo wins, then the date range,
+     otherwise the whole month. The truck choice is just the tab name. */
+  let os=mfOrders(ym,dest).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
+  if(mfSel.size) os=os.filter(o=>mfSel.has(o.id));
+  return { action:'manifest', month:ym, dest, truck,
+    date: x.date||'', container: x.container||'',
+    from:{ name:V2.mbl.manFrom, addr:V2.mbl.manFromAddr, city:V2.mbl.manFromCity,
+      state:V2.mbl.manFromState, zip:V2.mbl.manFromZip, tel:V2.mbl.manFromTel },
+    to:{ name:x.brokerName||hdrBrokerName||'', addr:x.brokerAddr||hdrBrokerAddr||'', tel:V2.mbl.relTel||'' },
+    blocks: os.map(o=>({ bl:o.inv, sender:o.sh.name||'', senderAddr:o.sh.street||'',
+      senderCity:[o.sh.city,o.sh.state].filter(Boolean).join(', '), senderTel:o.sh.phone||'',
+      consignee:o.co.name||'', dest:o.co.city||'', consTel:o.co.phone||'',
+      hold: orderBal(o)>0,
+      lines:o.items.filter(it=>it.kind!=='product'&&it.desc).map(it=>{
+        const q=parseFloat(it.qty)||1;
+        const cu = /commercial bin/i.test(it.desc) ? 19*q : (parseFloat(it.cuft)||'');
+        return [ q, String(it.desc).toUpperCase()+' S.T.C PERSONAL EFFECTS', cu, itemAmount(it) ];
+      }) })) };
+}
+/* master B/L header confirm flow */
+let hdrBrokerName='', hdrBrokerAddr='', hdrVessel='', hdrBkg='';
+function tabNameHTML(k, val){
+  return `<div><label class="f">Sheet tab name (bottom)</label>
+    <input class="f" data-mh="${k}" value="${esc(val)}" placeholder="e.g. ${esc(tabLabel(todayISO()))}"></div>`;
+}
+function brokerFor(dest){
+  const vf=/vieux/i.test(dest);
+  return V2.brokers.find(b=> vf ? /ella/i.test(b.name) : /hermle?n/i.test(b.name)) || V2.brokers[0];
+}
+function mblHeaderFields(dest){
+  const M=V2.mbl;
+  return [
+    ['date','Date', todayISO(), 0, 'date'],
+    ['truck','Truck (bottom tab)', 'truck'],
+    ['brokerName','Broker / Consignee', 'select'],
+    ['carrier','Carrier', M.carrier], ['trucking','Trucking', M.trucking],
+    ['shipper','Shipper / Exporter', M.shipper, 5], ['forwarder','Freight Forwarder / CHB', M.forwarder, 3],
+    ['origin','Point & Country of Origin', M.origin], ['notify','Notify Party', M.notify],
+    ['vessel','Vessel', ''], ['bkg','Booking # (BKG)', ''],
+    ['loadNote','Note to carrier', M.loadNote],
+  ];
+}
+function renderHeaderFields(holder, fields, dest){
+  $(holder).innerHTML = fields.map(([k,l,v,rows,typ])=>{
+    if(typ==='date') return `<div><label class="f">${l}</label><input class="f" type="date" data-mh="${k}" value="${esc(v)}"></div>`;
+    if(v==='truck') return tabNameHTML(k, defaultTab());
+    if(v==='select'){
+      /* the right broker for the destination comes preselected */
+      const pick=brokerFor(dest);
+      return `<div style="grid-column:span 2"><label class="f">${l}</label>
+        <select class="f" data-mh="${k}">${V2.brokers.map(b=>`<option${b.name===pick.name?' selected':''}>${esc(b.name)}</option>`).join('')}</select></div>`;
+    }
+    return rows
+      ? `<div><label class="f">${l}</label><textarea class="f" data-mh="${k}" rows="${rows}">${esc(v)}</textarea></div>`
+      : `<div><label class="f">${l}</label><input class="f" data-mh="${k}" value="${esc(v)}"></div>`;
+  }).join('');
+  /* picking a date suggests that date as the tab name (unless a range is set) */
+  const d=$(holder+' [data-mh="date"]'), t=$(holder+' [data-mh="truck"]');
+  if(d&&t) d.addEventListener('change',()=>{ if(d.value && !mfFrom && !mfTo) t.value=tabLabel(d.value); });
+}
+$('#mfMaster').addEventListener('click',()=>{
+  $('#mfManCard').hidden=true;
+  const dest=$('#mfDest').value;
+  const card=$('#mfHeadCard'); card.hidden=false;
+  renderHeaderFields('#mfHeadFields', mblHeaderFields(dest), dest);
+  card.scrollIntoView({behavior:'smooth'});
+});
+$('#mfHeadCancel').addEventListener('click',()=>{ $('#mfHeadCard').hidden=true; });
+$('#mfHeadGo').addEventListener('click',async ()=>{
+  const dest=$('#mfDest').value; const vals={};
+  $$('#mfHeadFields [data-mh]').forEach(f=>vals[f.dataset.mh]=f.value);
+  const broker=V2.brokers.find(b=>b.name===vals.brokerName)||brokerFor(dest);
+  hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr; hdrVessel=vals.vessel; hdrBkg=vals.bkg;
+  const hdr={ ...vals, brokerName:broker.name,
+    consignee: broker.name+'\n'+broker.addr };
+  $('#mfHeadCard').hidden=true;
+  await gsSync(masterPayload(thisMonth(), dest, hdr, vals.truck), ()=>buildMasterBL(thisMonth(), dest, hdr));
+});
+/* manifest gets the same confirm-first treatment */
+function manHeaderFields(){
+  return [
+    ['date','Date shipped', todayISO(), 0, 'date'],
+    ['truck','Truck (bottom tab)', 'truck'],
+    ['brokerName','Broker / Consignee (TO)', 'select'],
+    ['container','Container #', ''],
+  ];
+}
+$('#mfXlsx').addEventListener('click',()=>{
+  $('#mfHeadCard').hidden=true;
+  const dest=$('#mfDest').value;
+  const card=$('#mfManCard'); card.hidden=false;
+  renderHeaderFields('#mfManFields', manHeaderFields(), dest);
+  card.scrollIntoView({behavior:'smooth'});
+});
+$('#mfManCancel').addEventListener('click',()=>{ $('#mfManCard').hidden=true; });
+$('#mfManGo').addEventListener('click',async ()=>{
+  const dest=$('#mfDest').value; const vals={};
+  $$('#mfManFields [data-mh]').forEach(f=>vals[f.dataset.mh]=f.value);
+  const broker=V2.brokers.find(b=>b.name===vals.brokerName)||brokerFor(dest);
+  hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
+  $('#mfManCard').hidden=true;
+  await gsSync(manifestPayload(thisMonth(), dest, vals.truck, {
+    date: vals.date?usDate(vals.date):'', container: vals.container||'',
+    brokerName: broker.name, brokerAddr: broker.addr,
+  }), ()=>buildManifestXlsx(thisMonth(), dest));
+});
+$('#btnRevXlsx').addEventListener('click',()=>gsSync(revenuePayload(thisMonth()),
+  ()=>buildRevenueXlsx(thisMonth())));
+/* ---------- 12. PREVIOUS ACTIVITY ---------- */
+function renderPrev(){
+  const ym=$('#pvMonth').value || (()=>{ const d=new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
+  $('#pvMonth').value=ym;
+  const rows=monthOrders(ym);
+  $('#pvStats').innerHTML = statCards(rows);
+  $('#pvList').innerHTML = cargoTable(sortRows(rows), true);
+  $$('#pvList [data-sort]').forEach(h=>h.addEventListener('click',()=>{
+    const k=h.dataset.sort;
+    if(cargoSort.k===k) cargoSort.dir*=-1; else cargoSort={k,dir:1};
+    renderPrev();
+  }));
+  $$('#pvList [data-page]').forEach(b=>b.addEventListener('click',()=>{
+    cargoPage += b.dataset.page==='next'?1:-1;
+    renderPrev();
+  }));
+}
+$('#pvMonth').addEventListener('change',renderPrev);
+$('#pvManifest').addEventListener('click',()=>gsSync(manifestPayload($('#pvMonth').value,$('#pvDest').value,'FULL MONTH'),
+  ()=>buildManifestXlsx($('#pvMonth').value,$('#pvDest').value)));
+$('#pvMaster').addEventListener('click',()=>{
+  /* Ella rides Vieux-Fort, Hermens rides Castries — same rule as the live master */
+  const vf=/vieux/i.test($('#pvDest').value);
+  const broker=V2.brokers.find(b=> vf ? /ella/i.test(b.name) : /hermle?n/i.test(b.name)) || V2.brokers[0];
+  hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
+  const hdr={ ...V2.mbl, brokerName:broker.name, consignee:broker.name+'\n'+broker.addr, bkg:'', vessel:'' };
+  gsSync(masterPayload($('#pvMonth').value,$('#pvDest').value,hdr,'FULL MONTH'),
+    ()=>buildMasterBL($('#pvMonth').value,$('#pvDest').value,hdr));
+});
+$('#pvRev').addEventListener('click',()=>gsSync(revenuePayload($('#pvMonth').value),
+  ()=>buildRevenueXlsx($('#pvMonth').value)));
+/* ---------- 13. SETTINGS ---------- */
+function listEditor(holder, list, cols, onChange){
+  const el=$(holder);
+  el.innerHTML = list.map((row,i)=>`<div class="grid" style="grid-template-columns:${cols.map(c=>c.w||'1fr').join(' ')} 30px;gap:8px;margin-bottom:6px">
+    ${cols.map(c=>c.ta
+      ? `<textarea class="f" data-le="${i}" data-k="${c.k}" rows="3">${esc(row[c.k]??'')}</textarea>`
+      : `<input class="f" data-le="${i}" data-k="${c.k}" value="${esc(row[c.k]??'')}" placeholder="${c.p||''}">`).join('')}
+    <button class="x" data-ledel="${i}" style="font-size:15px">×</button>
+  </div>`).join('') || '<p class="hint">Nothing yet.</p>';
+  $$(holder+' [data-le]').forEach(f=>f.addEventListener('input',()=>{ list[+f.dataset.le][f.dataset.k]=f.value; if(onChange) onChange(); }));
+  $$(holder+' [data-ledel]').forEach(b=>b.addEventListener('click',()=>{ list.splice(+b.dataset.ledel,1); listEditor(holder,list,cols,onChange); if(onChange) onChange(); }));
+}
+function renderSettingsV2(){
+  $('#sFieldRows').innerHTML = Object.entries(V2.fields).map(([k,f])=>`
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;min-width:70px">
+        <input type="checkbox" data-fon="${k}" ${f.on?'checked':''}> show</label>
+      <input class="f" data-flabel="${k}" value="${esc(f.label)}" style="max-width:260px">
+    </div>`).join('');
+  $$('#sFieldRows [data-fon]').forEach(c=>c.addEventListener('change',()=>{ V2.fields[c.dataset.fon].on=c.checked; renderHdrExtra(); }));
+  $$('#sFieldRows [data-flabel]').forEach(f=>f.addEventListener('input',()=>{ V2.fields[f.dataset.flabel].label=f.value; }));
+  listEditor('#sDestRows', V2.dests, [
+    {k:'name',p:'Destination',w:'1.2fr'},{k:'rate',p:'$/cu ft',w:'.55fr'},
+    {k:'barrel',p:'Barrel flat $',w:'.65fr'},{k:'bin',p:'Bin flat $',w:'.6fr'},
+    {k:'revLabel',p:'Revenue label (e.g. ELLA VF)',w:'1fr'}], fillDestSelects);
+  listEditor('#sProdRows', V2.products, [{k:'name',p:'Product',w:'1.6fr'},{k:'price',p:'$',w:'.5fr'}]);
+  listEditor('#sShipRows', V2.shipTypes, [
+    {k:'name',p:'Name (shows in Description)',w:'1.2fr'},{k:'dims',p:'Std dims 48X24X44',w:'.9fr'},{k:'cuft',p:'Cu ft',w:'.45fr'}]);
+  const G=V2.sheets||{};
+  [['sGsHook','hook'],['sGsRev','rev'],['sGsMan','man'],['sGsHer','her'],['sGsElla','ella']].forEach(([id,k])=>{
+    const el=$('#'+id); if(!el) return;
+    el.value=G[k]||'';
+    el.oninput=()=>{ V2.sheets=V2.sheets||{}; V2.sheets[k]=el.value.trim(); };
+  });
+  listEditor('#sRecvRows', V2.recv.map(r=>({v:r})), [{k:'v',p:'Option'}], null);
+  /* recv is array of strings — rebind */
+  $$('#sRecvRows [data-le]').forEach(f=>f.addEventListener('input',()=>{ V2.recv[+f.dataset.le]=f.value; fillDestSelects(); }));
+  $$('#sRecvRows [data-ledel]').forEach(b=>b.addEventListener('click',()=>{ V2.recv.splice(+b.dataset.ledel,1); renderSettingsV2(); fillDestSelects(); }));
+  listEditor('#sBrokerRows', V2.brokers, [{k:'name',p:'Broker name',w:'1fr'},{k:'addr',p:'Address block',ta:1,w:'1.4fr'}]);
+  const M=V2.mbl;
+  const rows=[['carrier','Carrier'],['trucking','Trucking'],['shipper','Shipper block',4],['forwarder','Forwarder block',3],
+    ['origin','Origin'],['notify','Notify party'],['loadNote','Note to carrier'],
+    ['manFrom','Manifest FROM name'],['manFromAddr','FROM address'],['manFromCity','FROM city'],
+    ['manFromState','FROM state'],['manFromZip','FROM zip'],['manFromTel','FROM tel'],['relTel','Cargo-release tel']];
+  $('#sMblFields').innerHTML = rows.map(([k,l,ta])=> ta
+    ? `<div><label class="f">${l}</label><textarea class="f" data-mbl="${k}" rows="${ta}">${esc(M[k]||'')}</textarea></div>`
+    : `<div><label class="f">${l}</label><input class="f" data-mbl="${k}" value="${esc(M[k]||'')}"></div>`).join('');
+  $$('#sMblFields [data-mbl]').forEach(f=>f.addEventListener('input',()=>{ V2.mbl[f.dataset.mbl]=f.value; }));
+}
+$('#sDestAdd').addEventListener('click',()=>{ V2.dests.push({name:'',rate:'',barrel:'',bin:'',revLabel:''}); renderSettingsV2(); });
+$('#sShipAdd').addEventListener('click',()=>{ V2.shipTypes.push({name:'',dims:'',cuft:''}); renderSettingsV2(); });
+$('#sProdAdd').addEventListener('click',()=>{ V2.products.push({name:'',price:''}); renderSettingsV2(); });
+$('#sRecvAdd').addEventListener('click',()=>{ V2.recv.push(''); renderSettingsV2(); });
+$('#sBrokerAdd').addEventListener('click',()=>{ V2.brokers.push({name:'',addr:''}); renderSettingsV2(); });
+/* publish the destination pricing to the WEBSITE (legacy 'pricing' shape) */
+async function publishPricing(){
+  const legacy = await DB.load('pricing', {});
+  const dests = V2.dests.filter(d=>d.name);
+  const cargo = [
+    {id:'barrel', label:'Barrel (15 cu ft)', cuft:15, prices:{}},
+    {id:'bin', label:'Commercial Bin (20 cu ft)', cuft:20, prices:{}},
+    {id:'box', label:'Box — Enter Measurements', custom:true, prices:{}},
+    {id:'ebl', label:'Other (B/L Number)', ebl:true, prices:{}},
+  ];
+  dests.forEach(d=>{
+    if(d.barrel) cargo[0].prices[d.name]=Number(d.barrel);
+    if(d.bin) cargo[1].prices[d.name]=Number(d.bin);
+  });
+  const pricing = { ...legacy,
+    cargo,
+    destinations: dests.map(d=>({name:d.name, rate:Number(d.rate)||0, country:'St. Lucia'}))
+      .concat([{name:'Other island', call:true}]),
+  };
+  await DB.save('pricing', pricing);
+}
+async function saveAllSettings(){
+  const SF={sName:'name',sAddr:'addr',sTel:'tel',sFax:'fax',sTitle:'title',sNext:'next',sRows:'rows',sRate:'rate'};
+  for(const id in SF){ const el=$('#'+id); if(el) S[SF[id]]=el.value; }
+  await DB.save('fcs:settings', S);
+  await DB.save('fcs:v2', V2);
+  await publishPricing();
+  fillDestSelects(); repriceAll(); renderItems(); renderPreview();
+  toast('Settings saved — website pricing updated');
+}
+$('#btnSaveSettings').addEventListener('click',saveAllSettings);
+$('#btnSaveSettings2').addEventListener('click',saveAllSettings);
+/* ---------- 14. events: items + lists + tabs ---------- */
+$$('.rail nav button').forEach(b=>b.addEventListener('click',()=>{
+  $$('.rail nav button').forEach(x=>x.setAttribute('aria-current', x===b));
+  $$('[data-panel]').forEach(p=>p.hidden = p.dataset.panel!==b.dataset.tab);
+  if(b.dataset.tab==='order') renderPreview();
+  if(b.dataset.tab==='orders') renderOrders();
+  if(b.dataset.tab==='customers') loadQuotes();
+  if(b.dataset.tab==='manifest') renderManifest();
+  if(b.dataset.tab==='prev') renderPrev();
+}));
+function goTab(t){ const b=$(`.rail nav button[data-tab="${t}"]`); if(b) b.click(); }
+Object.keys(HDR).concat(Object.keys(SH),Object.keys(CO)).forEach(id=>{
+  const el=$('#'+id); if(!el) return;
+  const evt = el.tagName==='SELECT' ? 'change' : 'input';
+  el.addEventListener(evt,()=>{
+    formToDraft();
+    if(id==='fCoCity'){ repriceAll(); renderItems(); }
+    renderPreview();
+  });
+});
+$('#fRecv').addEventListener('change',()=>{ formToDraft(); });
+$('#fAmtRecd').addEventListener('input',()=>{ formToDraft(); });
+$('#fPayMethod').addEventListener('change',()=>{ formToDraft(); });
+$('#fShowTotal').addEventListener('change',()=>{ formToDraft(); renderPreview(); });
+$('#itemRows').addEventListener('input',e=>{
+  const tr=e.target.closest('tr'); if(!tr) return;
+  const i=+tr.dataset.i, k=e.target.dataset.k;
+  if(!k) return;
+  draft.items[i][k]=e.target.value;
+  if(k==='dims' && draft.items[i].kind!=='product'){
+    /* live cuft + price WITHOUT re-rendering — the cursor stays put */
+    const cu = dimsToCuft(e.target.value);
+    if(cu!=null){
+      const d=destOf(draft.co.city); const rate=d?Number(d.rate)||0:0;
+      draft.items[i].cuft=String(cu);
+      const cuEl=tr.querySelector('[data-k="cuft"]'); if(cuEl) cuEl.value=String(cu);
+      if(rate && !['barrel','commercial bin'].includes(String(draft.items[i].desc).toLowerCase())){
+        draft.items[i].price=String(cu*rate); draft.items[i].amount='';
+        const pEl=tr.querySelector('[data-k="price"]'); if(pEl) pEl.value=String(cu*rate);
+        const aEl=tr.querySelector('[data-k="amount"]'); if(aEl){ aEl.value=''; aEl.placeholder=itemAmount(draft.items[i]).toFixed(2); }
+      }
+    }
+  }
+  if(k==='qty' || k==='price'){
+    draft.items[i].amount='';
+    if(k==='qty'){
+      /* 2 barrels → 30 cu ft, live, no re-render */
+      syncQtyCuft(draft.items[i]);
+      const cuEl=tr.querySelector('[data-k="cuft"]'); if(cuEl) cuEl.value=draft.items[i].cuft;
+    }
+    const aEl=tr.querySelector('[data-k="amount"]'); if(aEl){ aEl.value=''; aEl.placeholder=itemAmount(draft.items[i])?itemAmount(draft.items[i]).toFixed(2):''; }
+  }
+  $('#orderTotal').textContent = money(orderTotal(draft));
+  renderPreview();
+});
+$('#itemRows').addEventListener('change',e=>{
+  const tr=e.target.closest('tr'); if(!tr) return;
+  const i=+tr.dataset.i;
+  if(e.target.dataset.k==='desc'){
+    const v=e.target.value;
+    if(v==='Other'){ draft.items[i]._descOther=true; draft.items[i].desc=''; renderItems(); renderPreview();
+      const inp=$(`#itemRows tr[data-i="${i}"] [data-k="desc"]`); if(inp) inp.focus(); return; }
+    draft.items[i].desc=v; draft.items[i]._descOther=false;
+    if(draft.items[i].kind==='product'){
+      const p=V2.products.find(x=>x.name===v);
+      if(p) draft.items[i].price=String(p.price);
+    } else {
+      priceItem(draft.items[i], draft.co.city);
+    }
+    renderItems(); renderPreview();
+  }
+});
+$('#itemRows').addEventListener('click',e=>{
+  const d=e.target.dataset.del; if(d===undefined) return;
+  draft.items.splice(+d,1);
+  if(!draft.items.length) draft.items.push(blankItem());
+  renderItems(); renderPreview();
+});
+$('#btnAddItem').addEventListener('click',()=>{ draft.items.push(blankItem()); renderItems(); renderPreview(); });
+$('#btnAddProduct').addEventListener('click',()=>{ draft.items.push(blankItem('product')); renderItems(); renderPreview(); });
+$('#btnNewOrder').addEventListener('click',()=>{ draft=blankOrder(); draftToForm(); toast('Blank order ready'); });
+$('#btnSaveOrder').addEventListener('click',async()=>{ if(await saveDraft()){ draft.created?toast('Saved'):toast('Saved as draft — hit Create to bill it'); renderActions(); } });
+$('#btnCargoCreate').addEventListener('click',()=>{ draft=blankOrder(); goTab('order'); draftToForm(); });
+$('#ordersList').addEventListener('click',async e=>{
+  const t=e.target;
+  if(t.dataset.openo){
+    const o=orders.find(x=>x.id===t.dataset.openo); if(!o) return;
+    draft=JSON.parse(JSON.stringify(o)); goTab('order'); draftToForm();
+  }
+  if(t.dataset.dupo){
+    const o=orders.find(x=>x.id===t.dataset.dupo); if(!o) return;
+    draft=JSON.parse(JSON.stringify(o));
+    draft.id=null; draft.inv=nextFreeInv(); draft.invDate=todayISO(); draft.pickup=todayISO(); draft.time=nowTime();
+    draft.created=false; draft.qbInvoiceNo=''; draft.qbOk=null; draft.paid=false; draft.amtRecd='';
+    goTab('order'); draftToForm(); toast('Copied — new invoice number');
+  }
+  if(t.dataset.delo){
+    const o=orders.find(x=>x.id===t.dataset.delo); if(!o) return;
+    if(!confirm('Delete cargo '+o.inv+'? This cannot be undone.')) return;
+    if(SBC){
+      try{
+        await SBC.from('wms_items').delete().eq('ebl_no', String(o.inv));
+        const {data:shs} = await SBC.from('shipments').select('id').eq('ebl_no', String(o.inv));
+        for(const s of (shs||[])) await SBC.from('shipment_events').delete().eq('shipment_id', s.id);
+        await SBC.from('shipments').delete().eq('ebl_no', String(o.inv));
+        await SBC.from('ebl').delete().eq('ebl_no', String(o.inv));
+      }catch(err){}
+    }
+    GONE.push({ id:o.id, inv:String(o.inv), at:new Date().toISOString() });
+    orders=orders.filter(x=>x.id!==o.id); await persist(); renderOrders(); toast('Deleted everywhere');
+    logEvent('DELETED', o.inv, o.sh&&o.sh.name||'');
+  }
+});
+$('#pvList').addEventListener('click',e=>{
+  const t=e.target;
+  if(t.dataset.openo){
+    const o=orders.find(x=>x.id===t.dataset.openo); if(!o) return;
+    draft=JSON.parse(JSON.stringify(o)); goTab('order'); draftToForm();
+  }
+});
+$('#qOrders').addEventListener('input',renderOrders);
+$('#btnCsv').addEventListener('click',()=>{
+  const rows=monthOrders(thisMonth());
+  const csv=[['DATE','TYPE','DESTINATION','RECEIVED FROM','INVOICE#','FREIGHT $',"AMT REC'D",'BAL/COD','SHIPPER','CONSIGNEE'].join(',')]
+    .concat(rows.map(o=>[usDate(o.invDate),o.paid?'PAID':'BALANCE',o.co.city,o.recv,o.inv,orderTotal(o).toFixed(2),(parseFloat(o.amtRecd)||0).toFixed(2),orderBal(o).toFixed(2),
+      '"'+String(o.sh.name||'').replace(/"/g,'""')+'"','"'+String(o.co.name||'').replace(/"/g,'""')+'"'].join(','))).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='cargo-'+thisMonth()+'.csv'; a.click();
+});
+/* backup / restore / wipe */
+$('#btnExport').addEventListener('click',exportJson);
+$('#btnExport2') && $('#btnExport2').addEventListener('click',exportJson);
+function exportJson(){
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({customers,orders,settings:S,v2:V2},null,1));
+  a.download='fcs-backup-'+todayISO()+'.json'; a.click();
+}
+$('#btnImport').addEventListener('click',()=>$('#fileImport').click());
+$('#fileImport').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(d.orders) orders=d.orders.map(migrateOrder);
+    if(d.customers) customers=d.customers;
+    if(d.settings) S={...DEFAULTS,...d.settings};
+    if(d.v2) V2={...JSON.parse(JSON.stringify(V2DEF)),...d.v2};
+    await persist(); await DB.save('fcs:v2',V2);
+    renderOrders(); toast('Restored');
+  }catch(err){ alert('Could not read that backup: '+err.message); }
+});
+$('#btnWipe').addEventListener('click',async()=>{
+  if(prompt('This erases every order. Type ERASE to confirm.')!=='ERASE') return;
+  orders=[]; await persist(); renderOrders(); toast('All records erased');
+});
+/* QuickBooks settings card */
+async function qbCheck(){
+  const el=$('#qbState');
+  try{
+    const res = await fetch(FN+'/ebl-status?qbstatus=1', { headers: await authHeaders() });
+    const d = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'unavailable');
+    if(!d.configured){ el.innerHTML='<b>Not set up.</b> Add QB_CLIENT_ID, QB_CLIENT_SECRET and QB_ENV in Netlify, then redeploy.'; $('#qbConnect').style.display='none'; }
+    else if(d.connected){ el.innerHTML='<b style="color:#177245">Connected</b> — company '+esc(d.realmId||'')+' ('+esc(d.env)+').'; $('#qbConnect').textContent='Reconnect QuickBooks'; }
+    else { el.innerHTML='<b>Set up, not connected yet.</b> Click Connect and sign in.'; }
+  }catch(e){ el.textContent='Could not check QuickBooks: '+e.message; }
+}
+$('#qbRecheck').addEventListener('click',qbCheck);
+/* Orders now live under a NEW database key. Old pages and stale tabs keep
+   writing the old 'fcs:orders' key — which nothing reads anymore — so they
+   can never wipe live data again, no matter where they're left open. */
+const ORDERS_KEY = 'fcs:orders2';
+/* ---- overwrite-proof saving ----
+   Every save re-reads the database first and merges ORDER BY ORDER, so a
+   stale tab (or the tablet) can never wipe orders it doesn't know about.
+   Deletes leave a tombstone in fcs:gone so they stay deleted everywhere. */
+let GONE = [];
+async function logEvent(act, inv, note){
+  try{
+    const log = await DB.load('fcs:log', []);
+    log.push({ at:new Date().toISOString(), by:(userName||'admin'), act, inv:String(inv||''), note:String(note||'') });
+    await DB.save('fcs:log', log.slice(-300));
+  }catch(e){}
+}
+async function persist(){
+  try{
+    if(DB.live){
+      const remoteGone = await DB.load('fcs:gone', []);
+      const gmap={}; remoteGone.concat(GONE).forEach(g=>{ if(g&&g.id) gmap[g.id]=g; });
+      GONE = Object.values(gmap).slice(-500);
+      const gone = new Set(GONE.map(g=>g.id));
+      const remote = await DB.load(ORDERS_KEY, []);
+      const byId = {};
+      remote.forEach(o=>{ if(o && o.id && !gone.has(o.id)) byId[o.id]=o; });
+      orders.forEach(o=>{ if(o && o.id && !gone.has(o.id)) byId[o.id]=o; });
+      orders = Object.values(byId);
+    }
+  }catch(e){}
+  const ok1 = await DB.save('fcs:customers', customers);
+  const ok2 = await DB.save(ORDERS_KEY, orders);
+  await DB.save('fcs:gone', GONE);
+  await DB.save('fcs:settings', S);
+  saveWarn(ok1 && ok2);
+}
+/* big red banner the moment a save does NOT reach the database */
+function saveWarn(ok){
+  let w=$('#saveWarn');
+  if(ok){ if(w) w.remove(); return; }
+  if(!w){
+    w=document.createElement('div'); w.id='saveWarn';
+    w.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#C62828;color:#fff;font-weight:800;text-align:center;padding:12px;font-size:15px;box-shadow:0 4px 16px rgba(0,0,0,.35)';
+    document.body.appendChild(w);
+  }
+  w.textContent='⚠ NOT SAVED — the database did not accept the last save. You may be signed out. DO NOT close this tab: sign in from a NEW tab, then come back here and save again.';
+}
+/* warn as soon as the session dies instead of failing silently later */
+setInterval(async ()=>{
+  if(!SBC) return;
+  try{ const {data:{session}}=await SBC.auth.getSession(); if(!session) saveWarn(false); }catch(e){}
+}, 120000);
+/* ---------- 15. boot + auth gate ---------- */
+function boot(){
+  const SF={sName:'name',sAddr:'addr',sTel:'tel',sFax:'fax',sTitle:'title',sNext:'next',sRows:'rows',sRate:'rate'};
+  for(const id in SF){ const el=$('#'+id); if(el) el.value = S[SF[id]] ?? ''; }
+  fillDestSelects();
+  renderSettingsV2();
+  renderOrders();
+  draft = blankOrder(); draftToForm();
+}
+let started=false;
+async function startApp(){
+  if(started) return;
+  started=true;
+  S = {...DEFAULTS, ...(await DB.load('fcs:settings', {}))};
+  const v2 = await DB.load('fcs:v2', null);
+  if(v2){ V2 = {...JSON.parse(JSON.stringify(V2DEF)), ...v2,
+    fields:{...V2DEF.fields, ...(v2.fields||{})}, mbl:{...V2DEF.mbl, ...(v2.mbl||{})} }; }
+  else {
+    /* first run: pull destinations/prices from the legacy website pricing */
+    const legacy = await DB.load('pricing', null);
+    if(legacy && Array.isArray(legacy.destinations)){
+      const cargo = legacy.cargo||[];
+      const bar = cargo.find(c=>c.id==='barrel')||{prices:{}};
+      const bin = cargo.find(c=>c.id==='bin')||{prices:{}};
+      V2.dests = legacy.destinations.filter(d=>!d.call).map(d=>({
+        name:d.name, rate:d.rate||0,
+        barrel:(bar.prices||{})[d.name]||'', bin:(bin.prices||{})[d.name]||'' }));
+    }
+    await DB.save('fcs:v2', V2);
+  }
+  customers = await DB.load('fcs:customers', null) || [];
+  GONE      = await DB.load('fcs:gone', null) || [];
+  const goneIds = new Set(GONE.map(g=>g.id));
+  /* one-time move to the protected key; afterwards the old key is ignored forever */
+  let rawOrders = await DB.load(ORDERS_KEY, null);
+  if(rawOrders === null){
+    rawOrders = await DB.load('fcs:orders', null) || [];
+    await DB.save(ORDERS_KEY, rawOrders);
+    logEvent('storage upgraded', '', rawOrders.length+' orders moved to protected storage');
+  }
+  orders    = rawOrders.map(migrateOrder).filter(o=>!goneIds.has(o.id));
+  $('#storeState').textContent = DB.live ? 'Saved to your FCS database.' : 'Session only — Supabase not connected.';
+  boot();
+  await persist();
+  await loadQuotes();
+  qbCheck();
+  /* if the page auto-refreshed while an order was half-typed, bring it back */
+  try{
+    const pd=localStorage.getItem('fcs:pendingDraft');
+    if(pd){ localStorage.removeItem('fcs:pendingDraft');
+      const d=JSON.parse(pd);
+      if(d && ((d.sh&&d.sh.name) || (d.items&&d.items.some(it=>it.desc)))){
+        draft=d; goTab('order'); draftToForm();
+        toast('Restored your unsaved order from before the refresh');
+      }
+    }
+  }catch(e){}
+  /* stale-tab killer: a page left alone for 20 minutes reloads itself, so no
+     tab can ever again sit for days with old data (or old code) in memory.
+     Any half-typed order is stashed first and restored after the reload. */
+  let lastAct=Date.now();
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(ev=>
+    addEventListener(ev,()=>{ lastAct=Date.now(); },{passive:true}));
+  setInterval(()=>{
+    if(Date.now()-lastAct > 20*60*1000){
+      try{ formToDraft(); localStorage.setItem('fcs:pendingDraft', JSON.stringify(draft)); }catch(e){}
+      location.reload();
+    }
+  }, 60*1000);
+  /* deep links: ?quote= from admin days, ?inv= */
+  const params = new URLSearchParams(location.search);
+  const qp = params.get('quote');
+  if(qp){ goTab('customers'); const btn=$(`[data-mkorder="${qp}"]`); if(btn) btn.click(); }
+  const ip = params.get('inv');
+  if(ip){
+    const o = orders.find(x=>String(x.inv)===String(ip));
+    if(o){ draft=JSON.parse(JSON.stringify(o)); goTab('order'); draftToForm(); }
+  }
+}
+async function gateCheck(){
+  if(!SBC){ $('#gate').hidden=false; $('#gateCfg').hidden=false; return; }
+  const { data:{ session } } = await SBC.auth.getSession();
+  if(session){
+    const u = session.user || {};
+    const md = u.user_metadata || {};
+    userName = md.display_name || md.full_name || String(u.email||'').split('@')[0];
+    userName = userName ? userName.charAt(0).toUpperCase()+userName.slice(1) : '';
+    $('#gate').hidden = true;
+    $('#shell').hidden = false;
+    await startApp();
+  }else{
+    $('#shell').hidden = true;
+    $('#gate').hidden = false;
+  }
+}
+$('#gBtn').addEventListener('click', async ()=>{
+  const msg=$('#gMsg'); msg.className='msg';
+  const { error } = await SBC.auth.signInWithPassword({ email:$('#gEmail').value.trim(), password:$('#gPass').value });
+  if(error){ msg.textContent=error.message; msg.className='msg err'; return; }
+  gateCheck();
+});
+$('#gPass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#gBtn').click(); });
+$('#btnSignOut').addEventListener('click', async ()=>{ if(SBC) await SBC.auth.signOut(); location.reload(); });
+if(SBC) SBC.auth.onAuthStateChange(()=>gateCheck());
+gateCheck();
+window.addEventListener('resize',()=>{ if(draft) renderPreview(); });
+
+</script>
+</body>
+</html>
