@@ -2130,6 +2130,29 @@ async function startApp(){
   await persist();
   await loadQuotes();
   qbCheck();
+  /* if the page auto-refreshed while an order was half-typed, bring it back */
+  try{
+    const pd=localStorage.getItem('fcs:pendingDraft');
+    if(pd){ localStorage.removeItem('fcs:pendingDraft');
+      const d=JSON.parse(pd);
+      if(d && ((d.sh&&d.sh.name) || (d.items&&d.items.some(it=>it.desc)))){
+        draft=d; goTab('order'); draftToForm();
+        toast('Restored your unsaved order from before the refresh');
+      }
+    }
+  }catch(e){}
+  /* stale-tab killer: a page left alone for 20 minutes reloads itself, so no
+     tab can ever again sit for days with old data (or old code) in memory.
+     Any half-typed order is stashed first and restored after the reload. */
+  let lastAct=Date.now();
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(ev=>
+    addEventListener(ev,()=>{ lastAct=Date.now(); },{passive:true}));
+  setInterval(()=>{
+    if(Date.now()-lastAct > 20*60*1000){
+      try{ formToDraft(); localStorage.setItem('fcs:pendingDraft', JSON.stringify(draft)); }catch(e){}
+      location.reload();
+    }
+  }, 60*1000);
   /* deep links: ?quote= from admin days, ?inv= */
   const params = new URLSearchParams(location.search);
   const qp = params.get('quote');
