@@ -101,7 +101,8 @@ exports.handler = async (event) => {
         },
         body: JSON.stringify({
           from: process.env.QUOTE_EMAIL_FROM || 'FCS Website <onboarding@resend.dev>',
-          to: [process.env.QUOTE_EMAIL_TO || config.company.email],
+          to: (process.env.QUOTE_EMAIL_TO || 'derekh@fcsshipping.com,khamanih@fcsshipping.com,vtgoring@fcsshipping.com')
+            .split(',').map(s => s.trim()).filter(Boolean),
           reply_to: email,
           subject: `New quote request — ${quote.summary} — $${(quote.totalCents / 100).toFixed(2)}`,
           text: [
