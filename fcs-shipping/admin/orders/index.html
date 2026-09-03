@@ -434,6 +434,7 @@ table.list tbody tr:hover{background:#fafcfd}
         <p id="mfSub">This month's cargo, by destination.</p>
         <span class="grow"></span>
         <select class="f" id="mfDest" style="max-width:220px"></select>
+        <input class="f" id="mfSearch" placeholder="Search B/L, shipper, consignee…" style="max-width:230px">
         <input type="date" class="f" id="mfFrom" style="max-width:150px" title="From date — can reach into last month">
         <input type="date" class="f" id="mfTo" style="max-width:150px" title="To date">
         <button class="btn ghost" id="mfRangeClear" hidden>× Range</button>
@@ -449,6 +450,7 @@ table.list tbody tr:hover{background:#fafcfd}
           <button class="btn ghost" id="mfHeadCancel">Cancel</button>
         </div>
       </div>
+      <div id="mfChips" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px"></div>
       <div class="card" id="mfManCard" hidden>
         <h2>Manifest header — confirm before it generates</h2>
         <div class="grid g2" id="mfManFields"></div>
@@ -1217,6 +1219,28 @@ $('#btnHist').addEventListener('click', async ()=>{
     : '<div style="padding:14px;color:var(--muted)">Nothing logged yet — activity shows up here from now on.</div>');
 });
 /* ---------- 9. QUOTES ---------- */
+/* ---- notifications: quote requests + balance reminders ---- */
+let LAST_QUOTE_COUNT=null;
+function quoteBadge(n){
+  const btn=$('.rail nav button[data-tab="customers"]'); if(!btn) return;
+  let b=$('#quoteBadge');
+  if(!b){ b=document.createElement('span'); b.id='quoteBadge';
+    b.style.cssText='background:#C62828;color:#fff;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:800;margin-left:6px;display:inline-block;vertical-align:middle';
+    btn.appendChild(b); }
+  b.textContent=n; b.hidden=!n;
+  if(LAST_QUOTE_COUNT!==null && n>LAST_QUOTE_COUNT) toast('New quote request — '+n+' waiting');
+  else if(LAST_QUOTE_COUNT===null && n>0) toast(n+' quote request'+(n>1?'s':'')+' waiting');
+  LAST_QUOTE_COUNT=n;
+}
+function balanceReminders(){
+  const cutoff=new Date(Date.now()-14*24*3600*1000).toISOString().slice(0,10);
+  const overdue=orders.filter(o=>!o.paid && orderBal(o)>0 && String(o.invDate)<=cutoff);
+  if(overdue.length){
+    const names=overdue.slice(0,3).map(o=>'BL#'+o.inv).join(', ');
+    toast('Reminder: '+overdue.length+' order'+(overdue.length>1?'s':'')+' with balances over 14 days ('+names+(overdue.length>3?'…':'')+')');
+  }
+}
+setInterval(loadQuotes, 5*60*1000);   /* quotes re-checked every 5 minutes */
 async function loadQuotes(){
   if(!SBC) return;
   try{
@@ -1224,6 +1248,7 @@ async function loadQuotes(){
       .in('status',['new','deposit_paid']).order('created_at',{ascending:false}).limit(50);
     quotes = data||[];
   }catch(e){ quotes=[]; }
+  quoteBadge(quotes.length);
   $('#cCust').textContent = quotes.length;
   $('#custList').innerHTML = quotes.length ? `
     <table class="list"><thead><tr><th>Name</th><th>Contact</th><th>Cargo</th><th class="num">Est.</th><th></th></tr></thead>
@@ -1303,15 +1328,49 @@ function destMatches(o,dest){
   const cl=String(o.co.city||'').toLowerCase().replace(/[^a-z]/g,'');
   return cl.includes(dl) || dl.includes(cl && cl.slice(0,8) || '␀');
 }
-/* the cargo the manifest works from: date range (any month) > week > whole month */
+/* search: filters the list AND what generates; recent searches are saved */
+let mfQ='';
+let MF_HIST=[]; try{ MF_HIST=JSON.parse(localStorage.getItem('fcs:mfSearches')||'[]'); }catch(e){}
+function mfMatchesQ(o){
+  if(!mfQ) return true;
+  const q=mfQ.toLowerCase();
+  return [o.inv,(o.sh&&o.sh.name),(o.sh&&o.sh.name2),(o.co&&o.co.name),(o.co&&o.co.name2)]
+    .some(v=>String(v||'').toLowerCase().includes(q));
+}
+function mfSaveSearch(q){
+  q=String(q||'').trim(); if(!q) return;
+  MF_HIST=MF_HIST.filter(x=>x.toLowerCase()!==q.toLowerCase());
+  MF_HIST.unshift(q); MF_HIST=MF_HIST.slice(0,10);
+  localStorage.setItem('fcs:mfSearches', JSON.stringify(MF_HIST));
+  renderMfChips();
+}
+function renderMfChips(){
+  const box=$('#mfChips'); if(!box) return;
+  box.innerHTML = MF_HIST.length
+    ? '<span style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted)">RECENT SEARCHES</span>'
+      + MF_HIST.map((q,i)=>`<button class="btn ghost sm" data-mfchip="${i}">${esc(q)}</button>`).join('')
+      + '<button class="btn ghost sm" data-mfchipclear style="color:var(--muted)">✕ clear history</button>'
+    : '';
+  $$('#mfChips [data-mfchip]').forEach(b=>b.addEventListener('click',()=>{
+    mfQ=MF_HIST[+b.dataset.mfchip]; $('#mfSearch').value=mfQ; renderManifest();
+  }));
+  const c=$('#mfChips [data-mfchipclear]');
+  if(c) c.addEventListener('click',()=>{ MF_HIST=[]; localStorage.removeItem('fcs:mfSearches'); renderMfChips(); });
+}
+/* the cargo the manifest works from: search > date range (any month) > whole month */
 function mfOrders(ym,dest){
+  let os;
   if(mfFrom||mfTo){
-    return orders.filter(o=>destMatches(o,dest)
+    os = orders.filter(o=>destMatches(o,dest)
         && (!mfFrom || String(o.invDate)>=mfFrom)
         && (!mfTo   || String(o.invDate)<=mfTo))
       .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
-  }
-  return monthOrders(ym,dest);
+  } else if(mfQ){
+    /* a search reaches ALL months so old cargo is findable too */
+    os = orders.filter(o=>destMatches(o,dest))
+      .sort((a,b)=>String(a.invDate).localeCompare(String(b.invDate)) || String(a.inv).localeCompare(String(b.inv)));
+  } else os = monthOrders(ym,dest);
+  return os.filter(mfMatchesQ);
 }
 function mfRows(ym,dest){
   const list=[];
@@ -1325,6 +1384,7 @@ function mfRows(ym,dest){
 }
 function mfScopeLabel(){
   if(mfSel.size) return mfSel.size+' selected B/L(s)';
+  if(mfQ) return 'search “'+mfQ+'”'+((mfFrom||mfTo)?' in range':'');
   if(mfFrom||mfTo) return (mfFrom?usDate(mfFrom):'start')+' → '+(mfTo?usDate(mfTo):'today');
   return 'whole month';
 }
@@ -1398,6 +1458,10 @@ $('#mfDest').addEventListener('change',()=>{
   if(!$('#mfHeadCard').hidden) $('#mfMaster').click();
   else if(!$('#mfManCard').hidden) $('#mfXlsx').click();
 });
+$('#mfSearch').addEventListener('input',()=>{ mfQ=$('#mfSearch').value.trim(); renderManifest(); });
+$('#mfSearch').addEventListener('change',()=>{ mfSaveSearch($('#mfSearch').value); });
+$('#mfSearch').addEventListener('keydown',e=>{ if(e.key==='Enter') mfSaveSearch($('#mfSearch').value); });
+renderMfChips();
 function mfRangeChanged(){
   mfFrom=$('#mfFrom').value||''; mfTo=$('#mfTo').value||'';
   $('#mfRangeClear').hidden = !(mfFrom||mfTo);
@@ -1627,9 +1691,13 @@ function masterPayload(ym,dest,hdr,truck){
   const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}}; const lines=[];
   rows.forEach(x=>{
     const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
-    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
+    /* barrels & bins: still totalled for the summary cells, but ALSO listed
+       per B/L so the sheet shows exactly whose they are */
+    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;
+      lines.push([ 'BL#'+x.o.inv, q, 'BARREL', 15*q, '24X24X44' ]);}
     /* the ship line rates bins at 19 cu ft even though we charge 20 */
-    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*19;}
+    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*19;
+      lines.push([ 'BL#'+x.o.inv, q, 'COMMERCIAL BIN', 19*q, '48X24X44' ]);}
     else lines.push([ 'BL#'+x.o.inv, q, String(x.it.desc).toUpperCase(),
       parseFloat(x.it.cuft)||'', x.it.dims||'' ]);
   });
@@ -1894,12 +1962,15 @@ $('#itemRows').addEventListener('input',e=>{
   if(!k) return;
   draft.items[i][k]=e.target.value;
   if(k==='dims' && draft.items[i].kind!=='product'){
-    /* live cuft + price WITHOUT re-rendering — the cursor stays put */
+    /* live cuft + price WITHOUT re-rendering — the cursor stays put.
+       cubes scale with quantity: 3 boxes of 10 cu ft = 30 */
     const cu = dimsToCuft(e.target.value);
     if(cu!=null){
       const d=destOf(draft.co.city); const rate=d?Number(d.rate)||0:0;
-      draft.items[i].cuft=String(cu);
-      const cuEl=tr.querySelector('[data-k="cuft"]'); if(cuEl) cuEl.value=String(cu);
+      const q = Math.max(1, parseFloat(draft.items[i].qty)||1);
+      draft.items[i]._unitCuft = cu;
+      draft.items[i].cuft=String(cu*q);
+      const cuEl=tr.querySelector('[data-k="cuft"]'); if(cuEl) cuEl.value=String(cu*q);
       if(rate && !['barrel','commercial bin'].includes(String(draft.items[i].desc).toLowerCase())){
         draft.items[i].price=String(cu*rate); draft.items[i].amount='';
         const pEl=tr.querySelector('[data-k="price"]'); if(pEl) pEl.value=String(cu*rate);
@@ -2129,6 +2200,7 @@ async function startApp(){
   boot();
   await persist();
   await loadQuotes();
+  setTimeout(balanceReminders, 2500);   /* one reminder toast per page load */
   qbCheck();
   /* if the page auto-refreshed while an order was half-typed, bring it back */
   try{
