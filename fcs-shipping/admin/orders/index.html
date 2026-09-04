@@ -1878,7 +1878,7 @@ function renderSettingsV2(){
   [['sGsHook','hook'],['sGsRev','rev'],['sGsMan','man'],['sGsHer','her'],['sGsElla','ella']].forEach(([id,k])=>{
     const el=$('#'+id); if(!el) return;
     el.value=G[k]||'';
-    el.oninput=()=>{ V2.sheets=V2.sheets||{}; V2.sheets[k]=el.value.trim(); };
+    el.oninput=()=>{ V2.sheets=V2.sheets||{}; V2.sheets[k]=el.value.trim(); SHEETS_TOUCHED=true; };
   });
   listEditor('#sRecvRows', V2.recv.map(r=>({v:r})), [{k:'v',p:'Option'}], null);
   /* recv is array of strings — rebind */
@@ -1925,7 +1925,7 @@ async function saveAllSettings(){
   const SF={sName:'name',sAddr:'addr',sTel:'tel',sFax:'fax',sTitle:'title',sNext:'next',sRows:'rows',sRate:'rate'};
   for(const id in SF){ const el=$('#'+id); if(el) S[SF[id]]=el.value; }
   await DB.save('fcs:settings', S);
-  await DB.save('fcs:v2', V2);
+  await saveV2Safe();
   await publishPricing();
   fillDestSelects(); repriceAll(); renderItems(); renderPreview();
   toast('Settings saved — website pricing updated');
@@ -2082,7 +2082,7 @@ $('#fileImport').addEventListener('change',async e=>{
     if(d.customers) customers=d.customers;
     if(d.settings) S={...DEFAULTS,...d.settings};
     if(d.v2) V2={...JSON.parse(JSON.stringify(V2DEF)),...d.v2};
-    await persist(); await DB.save('fcs:v2',V2);
+    await persist(); await saveV2Safe();
     renderOrders(); toast('Restored');
   }catch(err){ alert('Could not read that backup: '+err.message); }
 });
@@ -2112,6 +2112,24 @@ const ORDERS_KEY = 'fcs:orders2';
    stale tab (or the tablet) can never wipe orders it doesn't know about.
    Deletes leave a tombstone in fcs:gone so they stay deleted everywhere. */
 let GONE = [];
+/* saving settings can never BLANK a webhook/sheet link that the database
+   still has — an empty field only wins if it was emptied on purpose here */
+let SHEETS_TOUCHED=false;
+async function saveV2Safe(){
+  try{
+    if(DB.live && !SHEETS_TOUCHED){
+      const remote=await DB.load('fcs:v2',null);
+      if(remote && remote.sheets){
+        V2.sheets=V2.sheets||{};
+        for(const k of ['hook','rev','man','her','ella']){
+          if(!String(V2.sheets[k]||'').trim() && String(remote.sheets[k]||'').trim())
+            V2.sheets[k]=remote.sheets[k];
+        }
+      }
+    }
+  }catch(e){}
+  return DB.save('fcs:v2', V2);
+}
 async function logEvent(act, inv, note){
   try{
     const log = await DB.load('fcs:log', []);
@@ -2183,7 +2201,7 @@ async function startApp(){
         name:d.name, rate:d.rate||0,
         barrel:(bar.prices||{})[d.name]||'', bin:(bin.prices||{})[d.name]||'' }));
     }
-    await DB.save('fcs:v2', V2);
+    await saveV2Safe();
   }
   customers = await DB.load('fcs:customers', null) || [];
   GONE      = await DB.load('fcs:gone', null) || [];
