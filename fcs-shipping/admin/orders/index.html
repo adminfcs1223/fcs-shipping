@@ -1344,13 +1344,52 @@ function mfSaveSearch(q){
   localStorage.setItem('fcs:mfSearches', JSON.stringify(MF_HIST));
   renderMfChips();
 }
+/* ---- saved B/L lists: check the B/Ls you want, name the group, and one
+   click brings the whole selection back to generate again ---- */
+let MF_LISTS=[];
+async function loadMfLists(){ try{ MF_LISTS=await DB.load('fcs:mfLists',[])||[]; }catch(e){ MF_LISTS=[]; } renderMfChips(); }
+async function saveSelAsList(){
+  if(!mfSel.size){ toast('Check some B/Ls first.'); return; }
+  const name=prompt('Name this B/L list:',''); if(!name||!name.trim()) return;
+  const entry={ name:name.trim(), ids:[...mfSel], at:new Date().toISOString() };
+  const i=MF_LISTS.findIndex(l=>l.name.toLowerCase()===entry.name.toLowerCase());
+  if(i>-1) MF_LISTS[i]=entry; else MF_LISTS.push(entry);
+  try{ await DB.save('fcs:mfLists', MF_LISTS); }catch(e){}
+  renderMfChips();
+  toast('List “'+entry.name+'” saved — '+entry.ids.length+' B/L(s). Click it any time to reselect.');
+  logEvent('list saved','',entry.name+' ('+entry.ids.length+' B/Ls)');
+}
+function applyMfList(i){
+  const l=MF_LISTS[i]; if(!l) return;
+  const valid=new Set(orders.map(o=>o.id));
+  mfSel=new Set(l.ids.filter(id=>valid.has(id)));
+  const gone=l.ids.length-mfSel.size;
+  renderManifest();
+  toast('“'+l.name+'”: '+mfSel.size+' B/L(s) selected'+(gone?' — '+gone+' from the list no longer exist':''));
+}
 function renderMfChips(){
   const box=$('#mfChips'); if(!box) return;
-  box.innerHTML = MF_HIST.length
-    ? '<span style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted)">RECENT SEARCHES</span>'
+  let html='';
+  if(MF_LISTS.length){
+    html+='<span style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted)">SAVED LISTS</span>'
+      + MF_LISTS.map((l,i)=>`<span style="display:inline-flex;align-items:center">
+          <button class="btn sm" data-mflist="${i}" title="Select these B/Ls">${esc(l.name)} (${l.ids.length})</button>
+          <button class="x" data-mflistdel="${i}" title="Delete this list">×</button></span>`).join('');
+  }
+  if(MF_HIST.length){
+    html+='<span style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-left:10px">RECENT SEARCHES</span>'
       + MF_HIST.map((q,i)=>`<button class="btn ghost sm" data-mfchip="${i}">${esc(q)}</button>`).join('')
-      + '<button class="btn ghost sm" data-mfchipclear style="color:var(--muted)">✕ clear history</button>'
-    : '';
+      + '<button class="btn ghost sm" data-mfchipclear style="color:var(--muted)">✕ clear</button>';
+  }
+  box.innerHTML=html;
+  $$('#mfChips [data-mflist]').forEach(b=>b.addEventListener('click',()=>applyMfList(+b.dataset.mflist)));
+  $$('#mfChips [data-mflistdel]').forEach(b=>b.addEventListener('click',async ()=>{
+    const l=MF_LISTS[+b.dataset.mflistdel];
+    if(!confirm('Delete the list “'+l.name+'”? (The orders themselves are not touched.)')) return;
+    MF_LISTS.splice(+b.dataset.mflistdel,1);
+    try{ await DB.save('fcs:mfLists', MF_LISTS); }catch(e){}
+    renderMfChips();
+  }));
   $$('#mfChips [data-mfchip]').forEach(b=>b.addEventListener('click',()=>{
     mfQ=MF_HIST[+b.dataset.mfchip]; $('#mfSearch').value=mfQ; renderManifest();
   }));
@@ -1443,9 +1482,12 @@ function renderManifest(){
   }
   /* selection wiring — checked B/Ls override the week filter when generating */
   if(mfSel.size) $('#mfList').insertAdjacentHTML('afterbegin',
-    `<div style="display:flex;align-items:center;gap:12px;background:#FDF3DF;border:1px solid #F4DFB4;color:#7A5104;border-radius:7px;padding:9px 14px;margin-bottom:10px;font-size:13px;font-weight:600">
-       Generating ONLY the ${mfSel.size} checked B/L(s). <button class="btn ghost sm" id="mfSelClear">Clear selection</button></div>`);
+    `<div style="display:flex;align-items:center;gap:12px;background:#FDF3DF;border:1px solid #F4DFB4;color:#7A5104;border-radius:7px;padding:9px 14px;margin-bottom:10px;font-size:13px;font-weight:600;flex-wrap:wrap">
+       Generating ONLY the ${mfSel.size} checked B/L(s).
+       <button class="btn sm" id="mfSelSave">Save as list</button>
+       <button class="btn ghost sm" id="mfSelClear">Clear selection</button></div>`);
   const clr=$('#mfSelClear'); if(clr) clr.addEventListener('click',()=>{ mfSel.clear(); renderManifest(); });
+  const sav=$('#mfSelSave'); if(sav) sav.addEventListener('click',saveSelAsList);
   $$('#mfList [data-msel]').forEach(cb=>cb.addEventListener('change',()=>{
     if(cb.checked) mfSel.add(cb.dataset.msel); else mfSel.delete(cb.dataset.msel);
     renderManifest();
@@ -2214,6 +2256,7 @@ async function startApp(){
   boot();
   await persist();
   await loadQuotes();
+  loadMfLists();                        /* saved B/L lists for the manifest */
   setTimeout(balanceReminders, 2500);   /* one reminder toast per page load */
   qbCheck();
   /* if the page auto-refreshed while an order was half-typed, bring it back */
