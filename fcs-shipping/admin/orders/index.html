@@ -1691,13 +1691,9 @@ function masterPayload(ym,dest,hdr,truck){
   const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}}; const lines=[];
   rows.forEach(x=>{
     const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
-    /* barrels & bins: still totalled for the summary cells, but ALSO listed
-       per B/L so the sheet shows exactly whose they are */
-    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;
-      lines.push([ 'BL#'+x.o.inv, q, 'BARREL', 15*q, '24X24X44' ]);}
+    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
     /* the ship line rates bins at 19 cu ft even though we charge 20 */
-    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*19;
-      lines.push([ 'BL#'+x.o.inv, q, 'COMMERCIAL BIN', 19*q, '48X24X44' ]);}
+    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*19;}
     else lines.push([ 'BL#'+x.o.inv, q, String(x.it.desc).toUpperCase(),
       parseFloat(x.it.cuft)||'', x.it.dims||'' ]);
   });
