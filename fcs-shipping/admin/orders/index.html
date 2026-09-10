@@ -2150,6 +2150,7 @@ const ORDERS_KEY = 'fcs:orders2';
    stale tab (or the tablet) can never wipe orders it doesn't know about.
    Deletes leave a tombstone in fcs:gone so they stay deleted everywhere. */
 let GONE = [];
+let DB_READ_OK = false;   /* set true only after a confirmed database read */
 /* saving settings can never BLANK a webhook/sheet link that the database
    still has — an empty field only wins if it was emptied on purpose here */
 let SHEETS_TOUCHED=false;
@@ -2176,24 +2177,33 @@ async function logEvent(act, inv, note){
   }catch(e){}
 }
 async function persist(){
+  /* the ONLY way orders get written: after a confirmed read + per-order merge.
+     If the database can't be read (signed out, bad network), NOTHING is
+     written and the red banner goes up — a blind write is never allowed. */
+  let mergeOk = !DB.live;
   try{
     if(DB.live){
-      const remoteGone = await DB.load('fcs:gone', []);
+      const rg = await SBC.from('settings').select('value').eq('key','fcs:gone').maybeSingle();
+      if(rg.error) throw rg.error;
+      const remoteGone = (rg.data && rg.data.value) || [];
       const gmap={}; remoteGone.concat(GONE).forEach(g=>{ if(g&&g.id) gmap[g.id]=g; });
       GONE = Object.values(gmap).slice(-500);
       const gone = new Set(GONE.map(g=>g.id));
-      const remote = await DB.load(ORDERS_KEY, []);
+      const ro = await SBC.from('settings').select('value').eq('key',ORDERS_KEY).maybeSingle();
+      if(ro.error) throw ro.error;
+      const remote = (ro.data && ro.data.value) || [];
       const byId = {};
       remote.forEach(o=>{ if(o && o.id && !gone.has(o.id)) byId[o.id]=o; });
       orders.forEach(o=>{ if(o && o.id && !gone.has(o.id)) byId[o.id]=o; });
       orders = Object.values(byId);
+      mergeOk = true;
     }
-  }catch(e){}
-  const ok1 = await DB.save('fcs:customers', customers);
-  const ok2 = await DB.save(ORDERS_KEY, orders);
-  await DB.save('fcs:gone', GONE);
-  await DB.save('fcs:settings', S);
-  saveWarn(ok1 && ok2);
+  }catch(e){ mergeOk = false; }
+  const ok1 = mergeOk ? await DB.save('fcs:customers', customers) : false;
+  const ok2 = mergeOk ? await DB.save(ORDERS_KEY, orders) : false;
+  if(mergeOk){ await DB.save('fcs:gone', GONE); await DB.save('fcs:settings', S); }
+  saveWarn(mergeOk && ok1 && ok2);
+  return mergeOk && ok1 && ok2;
 }
 /* big red banner the moment a save does NOT reach the database */
 function saveWarn(ok){
@@ -2244,13 +2254,26 @@ async function startApp(){
   customers = await DB.load('fcs:customers', null) || [];
   GONE      = await DB.load('fcs:gone', null) || [];
   const goneIds = new Set(GONE.map(g=>g.id));
-  /* one-time move to the protected key; afterwards the old key is ignored forever */
-  let rawOrders = await DB.load(ORDERS_KEY, null);
-  if(rawOrders === null){
-    rawOrders = await DB.load('fcs:orders', null) || [];
-    await DB.save(ORDERS_KEY, rawOrders);
-    logEvent('storage upgraded', '', rawOrders.length+' orders moved to protected storage');
-  }
+  /* Load orders STRICTLY: a failed read is an ERROR, never "empty".
+     The one-time migration can only run off a confirmed-missing key —
+     a page that can't read the database refuses to touch it at all. */
+  let rawOrders = [];
+  DB_READ_OK = false;
+  try{
+    if(DB.live){
+      const r2 = await SBC.from('settings').select('value').eq('key', ORDERS_KEY).maybeSingle();
+      if(r2.error) throw r2.error;
+      if(r2.data && r2.data.value != null){ rawOrders = r2.data.value; }
+      else{
+        const r1 = await SBC.from('settings').select('value').eq('key','fcs:orders').maybeSingle();
+        if(r1.error) throw r1.error;
+        rawOrders = (r1.data && r1.data.value) || [];
+        await DB.save(ORDERS_KEY, rawOrders);
+        logEvent('storage upgraded', '', rawOrders.length+' orders moved to protected storage');
+      }
+      DB_READ_OK = true;
+    }
+  }catch(e){ rawOrders = []; DB_READ_OK = false; saveWarn(false); }
   orders    = rawOrders.map(migrateOrder).filter(o=>!goneIds.has(o.id));
   $('#storeState').textContent = DB.live ? 'Saved to your FCS database.' : 'Session only — Supabase not connected.';
   boot();
@@ -2270,18 +2293,24 @@ async function startApp(){
       }
     }
   }catch(e){}
-  /* stale-tab killer: a page left alone for 20 minutes reloads itself, so no
-     tab can ever again sit for days with old data (or old code) in memory.
-     Any half-typed order is stashed first and restored after the reload. */
-  let lastAct=Date.now();
+  /* stale-tab killer: 5 quiet minutes and the page SAVES EVERYTHING to the
+     database first, then reloads itself fresh. A half-typed order is stashed
+     and restored after the reload, so nothing is ever lost to the timeout. */
+  let lastAct=Date.now(), timingOut=false;
   ['mousemove','keydown','click','touchstart','scroll'].forEach(ev=>
     addEventListener(ev,()=>{ lastAct=Date.now(); },{passive:true}));
   setInterval(()=>{
-    if(Date.now()-lastAct > 20*60*1000){
-      try{ formToDraft(); localStorage.setItem('fcs:pendingDraft', JSON.stringify(draft)); }catch(e){}
-      location.reload();
-    }
-  }, 60*1000);
+    if(timingOut || Date.now()-lastAct <= 5*60*1000) return;
+    timingOut=true;
+    try{ formToDraft(); localStorage.setItem('fcs:pendingDraft', JSON.stringify(draft)); }catch(e){}
+    /* push all order info up before the reload; give it up to 10s, then go */
+    Promise.race([ persist().catch(()=>{}), new Promise(r=>setTimeout(r,10000)) ])
+      .then(()=>location.reload());
+  }, 30*1000);
+  /* best-effort save when the tab is closed or hidden mid-session */
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='hidden'){ persist().catch(()=>{}); }
+  });
   /* deep links: ?quote= from admin days, ?inv= */
   const params = new URLSearchParams(location.search);
   const qp = params.get('quote');
