@@ -295,48 +295,61 @@ table.list tbody tr:hover{background:#fafcfd}
 .kgrp .m{font-size:11.5px;color:var(--muted);margin-top:2px}
 .kgrp .x{font-size:11px;color:var(--ocean);font-weight:700;margin-top:6px}
 /* ---------- THE RECEIPT — replica of the FCS paper receipt ---------- */
-.rc{width:8.5in;min-height:11in;background:#fff;padding:.35in .45in .3in;color:#000;position:relative;
+.rc{width:8.5in;min-height:11in;background:#fff;padding:.32in .4in .28in;color:#000;position:relative;
   font-family:"Times New Roman",Times,serif;box-shadow:0 2px 12px rgba(0,0,0,.14)}
 .rc *{box-sizing:border-box}
 .rc .hd{display:flex;justify-content:space-between;align-items:flex-start}
-.rc .co{flex:1;text-align:center;padding-left:1.4in}
-.rc .co b{display:block;font-size:19pt;font-weight:700;letter-spacing:.01em}
-.rc .co div{font-size:11pt;line-height:1.35}
-.rc .rn{width:1.4in;text-align:center}
-.rc .rn .tag{background:#222;color:#fff;font-weight:700;font-size:12pt;letter-spacing:.08em;padding:2pt 0;font-family:Arial,sans-serif}
-.rc .rn .no{color:#D12E2E;font-size:17pt;font-family:"Courier New",monospace;font-weight:700;margin-top:3pt;letter-spacing:.04em}
-.rc .date{text-align:right;font-size:12pt;margin-top:6pt}
-.rc .date span{display:inline-block;border-bottom:1px solid #000;min-width:2in;text-align:center;padding:0 6pt}
-.rc .parties{display:flex;border:1.5px solid #000;border-radius:8pt;margin-top:8pt;overflow:hidden}
-.rc .party{flex:1;min-width:0;padding:4pt 8pt 5pt;min-height:1.2in;position:relative;font-family:Arial,sans-serif;font-size:11pt}
+.rc .co{flex:1;text-align:center;padding-left:1.35in}
+.rc .co b{display:block;font-family:"Arial Black",Impact,"Arial Narrow",Arial,sans-serif;font-size:21pt;font-weight:900;letter-spacing:-.01em;line-height:1.05}
+.rc .co div{font-size:10.5pt;line-height:1.3}
+.rc .rn{width:1.35in;text-align:center}
+.rc .rn .tag{background:#222;color:#fff;font-weight:700;font-size:11.5pt;letter-spacing:.06em;padding:2pt 0;font-family:Arial,sans-serif}
+.rc .rn .no{color:#E0312F;font-size:16pt;font-family:"Courier New",monospace;font-weight:700;margin-top:2pt;letter-spacing:.06em}
+.rc .date{text-align:right;font-size:11.5pt;margin-top:4pt;padding-right:.1in}
+.rc .date span{display:inline-block;border-bottom:1px solid #000;min-width:1.9in;text-align:center;padding:0 6pt;font-family:Arial,sans-serif;font-size:10.5pt}
+.rc .parties{display:flex;border:1.5px solid #000;border-radius:7pt;margin-top:5pt;overflow:hidden}
+.rc .party{flex:1;min-width:0;padding:2pt 7pt 4pt;position:relative;font-family:Arial,sans-serif;font-size:10.5pt}
 .rc .party+.party{border-left:1.5px solid #000}
-.rc .party .lb{font-family:"Times New Roman",serif;font-style:italic;font-weight:700;font-size:11pt;letter-spacing:.04em}
-.rc .party .ln{border-bottom:1px solid #000;min-height:15pt;padding:1pt 4pt;line-height:13pt;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.rc .party .tel{margin-top:5pt;font-family:"Times New Roman",serif;font-weight:700;font-size:10.5pt}
+.rc .party .lb{font-family:"Times New Roman",serif;font-style:italic;font-weight:700;font-size:10.5pt;letter-spacing:.03em}
+.rc .party.co2 .lb{margin-top:-1pt}
+.rc .party .ln{border-bottom:1px solid #000;height:15pt;padding:1pt 3pt;line-height:13pt;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rc .party .tel{margin-top:3pt;font-family:"Times New Roman",serif;font-weight:700;font-size:10pt;height:13pt}
 .rc .party .tel span{font-family:Arial,sans-serif;font-weight:400;margin-left:6pt}
-.rc table.g{width:100%;border-collapse:collapse;margin-top:10pt;table-layout:fixed;font-family:Arial,sans-serif}
-.rc table.g th{border:1.5px solid #000;font-size:9pt;font-weight:700;text-transform:uppercase;padding:3pt 4pt;line-height:1.15;font-family:"Times New Roman",serif}
-.rc table.g td{border:1px solid #000;height:19pt;padding:1pt 5pt;font-size:10.5pt;vertical-align:middle}
+.rc table.g{width:100%;border-collapse:collapse;margin-top:6pt;table-layout:fixed;font-family:Arial,sans-serif}
+.rc table.g th{border:1.5px solid #000;font-size:8.5pt;font-weight:700;text-transform:uppercase;padding:2pt 3pt;line-height:1.15;font-family:"Times New Roman",serif;text-align:center}
+.rc table.g td{border:1px solid #000;height:16.5pt;padding:0 4pt;font-size:9.5pt;vertical-align:middle;white-space:nowrap;overflow:hidden}
 .rc table.g td.c{text-align:center}.rc table.g td.r{text-align:right}
-.rc .decl{border:1.5px solid #000;border-top:0;display:flex;font-family:Arial,sans-serif;font-size:10.5pt}
-.rc .decl>div{padding:3pt 8pt}
-.rc .decl .pm{flex:1;border-right:1.5px solid #000}
-.rc .decl .pm .row{display:flex;align-items:center;gap:6pt;margin:1pt 0;font-weight:700;font-family:"Times New Roman",serif}
-.rc .decl .pm i{display:inline-block;width:11pt;height:11pt;border:1.5px solid #000;border-radius:50%;font-style:normal;vertical-align:middle}
-.rc .decl .pm i.on{background:#000;box-shadow:inset 0 0 0 2pt #fff}
-.rc .decl .tot{width:2.5in}
-.rc .decl .tot .lb{font-family:"Times New Roman",serif;font-weight:700;font-size:11pt}
-.rc .decl .tot .v{font-size:15pt;font-weight:700;margin-top:3pt;text-align:right}
-.rc .decl .tot .bal{font-size:9.5pt;margin-top:3pt;text-align:right;color:#333}
-.rc .fine{font-size:7.8pt;line-height:1.25;margin-top:5pt;font-family:Arial,sans-serif;text-transform:uppercase}
-.rc .warn{font-weight:700;font-size:12pt;text-align:center;margin:6pt 0 4pt}
-.rc .sig{display:flex;align-items:flex-end;gap:12pt;font-size:11pt;margin-top:6pt}
-.rc .sig .x{flex:1;border-bottom:1px solid #000;height:22pt;position:relative}
-.rc .sig .x img{position:absolute;left:.3in;bottom:0;height:.45in;max-width:2.4in;object-fit:contain}
-.rc .legal{font-size:7pt;line-height:1.2;border-top:1px solid #000;border-bottom:1px solid #000;padding:3pt 0;margin-top:6pt;font-family:Arial,sans-serif;text-align:justify}
-.rc .foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6pt;font-size:10pt}
-.rc .foot .ln{display:inline-block;border-bottom:1px solid #000;min-width:1.6in;margin:0 4pt}
-.rc .stamp{position:absolute;top:2.1in;right:.6in;transform:rotate(-12deg);border:3pt solid #C62828;color:#C62828;font-weight:800;font-size:22pt;letter-spacing:.1em;padding:1pt 12pt;border-radius:5pt;opacity:.85;font-family:Arial,sans-serif;white-space:nowrap}
+.rc table.g td.dcl{text-align:center;font-family:"Times New Roman",serif;font-weight:700;font-size:11pt;letter-spacing:.08em;height:15pt}
+.rc .band{display:flex;border:1.5px solid #000;border-top:0;font-family:"Times New Roman",serif;font-size:9.5pt;font-weight:700}
+.rc .band>div{padding:3pt 6pt}
+.rc .band .ins{width:2.35in;border-right:1.5px solid #000;position:relative}
+.rc .band .ins .r{display:flex;align-items:center;gap:8pt;margin:2pt 0}
+.rc .band .pm{width:1.55in;border-right:1.5px solid #000}
+.rc .band .pm .r{display:flex;align-items:center;justify-content:space-between;margin:1.5pt 0}
+.rc .band .svc{flex:1;border-right:1.5px solid #000}
+.rc .band .svc .r{display:flex;align-items:center;justify-content:space-between;margin:1.5pt 0;font-weight:400}
+.rc .band .tot{width:1.35in}
+.rc .band .tot .v{font-family:Arial,sans-serif;font-size:13pt;text-align:right;margin-top:8pt}
+.rc .band .tot .bal{font-family:Arial,sans-serif;font-size:7.5pt;font-weight:400;text-align:right;margin-top:2pt;white-space:nowrap}
+.rc i.o{display:inline-block;width:9.5pt;height:9.5pt;border:1.5px solid #000;border-radius:50%;font-style:normal;vertical-align:middle;flex:0 0 auto}
+.rc i.o.on{background:#000;box-shadow:inset 0 0 0 2pt #fff}
+.rc .xline{display:flex;align-items:flex-end;gap:4pt;margin-top:6pt}
+.rc .xline b{font-size:12pt}
+.rc .xline span{flex:1;border-bottom:1px solid #000;height:12pt}
+.rc .fine{font-size:7.8pt;line-height:1.22;margin-top:4pt;font-family:Arial,sans-serif;text-transform:uppercase}
+.rc .warn{font-weight:700;font-size:12.5pt;text-align:center;margin:5pt 0 3pt;font-family:Arial,sans-serif}
+.rc .sig{display:flex;align-items:flex-end;gap:10pt;font-size:11pt;margin-top:3pt}
+.rc .sig .x{flex:1;border-bottom:1px solid #000;height:20pt;position:relative;max-width:3.2in}
+.rc .sig .x img{position:absolute;left:.2in;bottom:0;height:.4in;max-width:2.4in;object-fit:contain}
+.rc .sig .cor{display:flex;gap:18pt;align-items:center;font-family:Arial,sans-serif;font-size:10.5pt;margin-left:auto;padding-right:.2in}
+.rc .sig .cor span{display:flex;align-items:center;gap:5pt}
+.rc .legal{font-size:7pt;line-height:1.18;border-top:1px solid #000;border-bottom:1px solid #000;padding:3pt 0;margin-top:5pt;font-family:Arial,sans-serif;text-align:justify}
+.rc .foot{display:flex;justify-content:space-between;align-items:flex-start;margin-top:6pt;font-size:10.5pt}
+.rc .foot .ex{font-weight:700;font-size:12pt;display:flex;gap:14pt;align-items:center;margin-top:3pt}
+.rc .foot .ex span{font-weight:400;font-size:10.5pt;display:flex;align-items:center;gap:5pt}
+.rc .foot .ln{display:inline-block;border-bottom:1px solid #000;min-width:1.55in;margin:0 3pt}
+.rc .foot .rt{text-align:right;line-height:1.85}
+.rc .stamp{position:absolute;top:2.05in;right:.55in;transform:rotate(-12deg);border:3pt solid #C62828;color:#C62828;font-weight:800;font-size:22pt;letter-spacing:.1em;padding:1pt 12pt;border-radius:5pt;opacity:.85;font-family:Arial,sans-serif;white-space:nowrap}
 .rc .stamp.later{border-color:#B45309;color:#B45309;font-size:16pt}
 /* ---------- pickup sheet (prints landscape) ---------- */
 .pk{width:11in;min-height:8.5in;background:#fff;padding:.45in .5in;color:#000;font-family:Arial,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.14)}
@@ -1170,32 +1183,35 @@ function formHTML(o){
 /* ---------- 6b. THE RECEIPT (default view) — replica of the FCS paper receipt ---------- */
 function receiptHTML(o){
   const items=(o.items||[]).filter(it=>String(it.desc||'').trim() || itemAmount(it)>0);
-  const rows=Math.max(3, Math.min(8, items.length+1));   /* just the lines used (+1 blank) — the receipt always fits one page */
+  const rows=12;   /* the paper has 12 lines */
   const total=orderTotal(o), recd=parseFloat(o.amtRecd)||0, bal=Math.max(0,total-recd);
   let body='';
   for(let i=0;i<rows;i++){
-    const it=items[i];
-    const amt=it?itemAmount(it):0;
+    const it=items[i]; const amt=it?itemAmount(it):0;
     body+=`<tr>
       <td class="c">${it?esc(it.qty):''}</td>
-      <td>${it?esc((it.kind==='product'?'':'')+it.desc)+(it.dims?' &nbsp;'+esc(it.dims):''):''}</td>
+      <td>${it?esc(it.desc)+(it.dims?' &nbsp;'+esc(it.dims):''):''}</td>
+      <td></td>
       <td class="c">${it&&it.kind!=='product'?esc(it.cuft):''}</td>
+      <td></td>
       <td class="r">${it&&it.price!==''?money(String(it.price).replace(/[^0-9.\-]/g,'')):''}</td>
       <td class="r">${it&&(it.amount!==''||amt>0)?money(amt):''}</td>
     </tr>`;
   }
+  if(items.length>rows) body+=`<tr><td></td><td style="font-size:8pt">+ ${items.length-rows} more line(s) — see order entry</td><td></td><td></td><td></td><td></td><td></td></tr>`;
   const pm=String(o.payMethod||'').toUpperCase();
-  const dot=(k)=>`<i class="${pm===k?'on':''}"></i>`;
+  const dot=(k)=>`<i class="o ${pm===k?'on':''}"></i>`;
   const stamp = o.paid ? '<div class="stamp">PAID</div>' : (o.payLater ? '<div class="stamp later">WILL PAY LATER</div>' : '');
-  const addr=String(S.addr||'');
+  const air=/air/i.test(o.recv||'');
   return `
 <div class="rc">
   ${stamp}
   <div class="hd">
     <div class="co">
       <b>${esc(S.name||'FCS Shipping LLC.')}</b>
-      <div>${esc(addr)}</div>
-      <div>${esc(S.tel||'')} &nbsp;&nbsp; ${esc(S.fax||'')}</div>
+      <div>9502 Ditmas Avenue</div>
+      <div>BLG #4, Brooklyn, NY 11236</div>
+      <div>Tel. (718) 483-8006 &bull; (646) 606-8320 &nbsp;&nbsp;&nbsp;&nbsp; Fax (718) 363-2399</div>
     </div>
     <div class="rn"><div class="tag">RECEIPT</div><div class="no">${esc(o.inv)}</div></div>
   </div>
@@ -1208,7 +1224,7 @@ function receiptHTML(o){
       <div class="ln">${esc([o.sh.city,o.sh.state].filter(Boolean).join(', '))}</div>
       <div class="tel">TEL.<span>${esc(o.sh.phone||'')}</span></div>
     </div>
-    <div class="party">
+    <div class="party co2">
       <div class="lb">CONSIGNEE</div>
       <div class="ln">${esc(o.co.name||'')}</div>
       <div class="ln">${esc(o.co.city||'')}</div>
@@ -1218,39 +1234,47 @@ function receiptHTML(o){
   </div>
   <table class="g">
     <thead><tr>
-      <th style="width:.95in">Number<br>of pieces</th>
+      <th style="width:.82in">Number<br>of pieces</th>
       <th>Description of<br>packages &amp; goods</th>
-      <th style="width:.85in">Cubic</th>
-      <th style="width:.95in">Rate</th>
-      <th style="width:1.15in">US Charges</th>
+      <th style="width:.78in">Seal<br>number</th>
+      <th style="width:.7in">Cubic</th>
+      <th style="width:.78in">Gross<br>weight</th>
+      <th style="width:.72in">Rate</th>
+      <th style="width:.98in">US Charges</th>
     </tr></thead>
     <tbody>${body}
-      <tr><td class="c" style="font-weight:700">${orderPieces(o)||''}</td><td style="font-weight:700;font-family:'Times New Roman',serif;letter-spacing:.06em;text-align:center">DECLARATION</td><td></td><td class="r" style="font-weight:700">TOTAL</td><td class="r" style="font-weight:700">${total>0?money(total):''}</td></tr>
+      <tr><td colspan="7" class="dcl">DECLARATION</td></tr>
     </tbody>
   </table>
-  <div class="decl">
+  <div class="band">
+    <div class="ins">
+      <div class="r">INSURANCE $ <span style="flex:1;border-bottom:1px solid #000;height:10pt"></span></div>
+      <div class="r"><span style="display:flex;align-items:center;gap:5pt">DECLINED <i class="o"></i></span><span style="display:flex;align-items:center;gap:5pt;margin-left:10pt">ACCEPTED <i class="o"></i></span></div>
+      <div class="xline"><b>X</b><span></span></div>
+    </div>
     <div class="pm">
-      <div class="row">${dot('COD')} COD</div>
-      <div class="row">${dot('CASH')} CASH</div>
-      <div class="row">${dot('ZELLE')} ZELLE</div>
-      <div class="row">${dot('CREDIT CARD')} CREDIT CARD</div>
-      ${pm==='CHECK'?'<div class="row"><i class="on"></i> CHECK</div>':''}
+      <div class="r">COD ${dot('COD')}</div>
+      <div class="r">CASH ${dot('CASH')}</div>
+      <div class="r">ZELLE ${dot('ZELLE')}</div>
+      <div class="r">CREDIT CARD ${dot('CREDIT CARD')}</div>
     </div>
-    <div class="tot">
-      <div class="lb">TOTAL Charges</div>
-      <div class="v">${money(total)}</div>
-      <div class="bal">Received ${money(recd)}${bal>0?' &nbsp;·&nbsp; <b>Balance '+money(bal)+'</b>':''}</div>
+    <div class="svc">
+      <div class="r" style="justify-content:center;gap:10pt"><span>Personal Service</span></div>
+      <div class="r" style="justify-content:center;gap:16pt"><span style="display:flex;align-items:center;gap:5pt">YES <i class="o"></i></span><span style="display:flex;align-items:center;gap:5pt">NO <i class="o"></i></span></div>
+      <div class="r"><span>Air Freight</span><i class="o ${air?'on':''}"></i></div>
+      <div class="r"><span>W/House D/O</span><i class="o"></i></div>
     </div>
+    <div class="tot"><div>TOTAL<br>Charges</div><div class="v">${total>0?money(total):''}</div>${recd>0||bal>0?`<div class="bal">Rec'd ${money(recd)}${bal>0?' · Bal '+money(bal):''}</div>`:''}</div>
   </div>
-  <div class="fine">FCS SERVICES IS NOT RESPONSIBLE FOR ANY CARGO LEFT ON PREMISES WITHOUT SHIPPING ARRANGEMENTS BEING MADE!! SHIPPING ARRANGEMENTS FOR ALL CARGO MUST BE MADE AT TIME OF DELIVERY. I, THE UNDERSIGNED, FULLY UNDERSTAND THAT THE FOLLOWING STORAGE FEES APPLY: AFTER 14 DAYS. I ALSO DECLARE THAT THE ITEMS SHIPPING ARE HEREBY NOTED AS BEING:</div>
-  <div class="warn">Freight charges not paid for within 2 weeks will be collected at destination.</div>
-  <div class="sig"><span>Signature <b>X</b></span><div class="x">${o.signature?'<img src="'+o.signature+'" alt="">':''}</div><span style="font-size:10pt">Date ${esc(o.termsAcceptedAt?usDate(String(o.termsAcceptedAt).slice(0,10)):usDate(o.invDate))}</span></div>
-  <div class="legal">Received the above described merchandise in apparent good order and condition, except as noted to be held and transported subject to all the terms and contained in the regular form of Bill of Lading of the carrier which are incorporated herein and shall be considered a part hereof with the same force and effect as if set forth herein full. The goods are received subject to delay, carrier's inability to carry due to accumulation of goods, lack of conveyance's space or facilities of any sort, labor disturbances, strikes, lockouts, riots, war, government authority, or any condition whatever beyond the control of the carrier. Any valuation in excess of $200.00 for Ocean Freight, or per customary shipping until as provided for in the carrier's regular form of Bill of Lading, shall be declared in writing by the Shipper upon delivery to the carrier and shall be inserted herein as well as in the Bill of Lading and extra Freight paid for. Nothing in this warehouse receipt shall operate to limit or deprive the carrier of any statutory protection or exemption of limitation of liability.</div>
+  <div class="fine">FCS SERVICES IS NOT RESPONSIBLE FOR ANY CARGO LEFT ON PREMISES WITHOUT SHIPPING ARRANGEMENTS BEING MADE!! SHIPPING ARRANGEMENTS FOR ALL CARGO MUST BE MADE AT TIME OF DELIVERY. I, THE UNDERSIGNED, FULLY UNDERSTAND THAT THE FOLLOWING STORAGE FEES APPLY: AFTER 14 DAYS. I ALSO DECLARED THAT THE ITEMS SHIPPING ARE HEREBY NOTED AS BEING:</div>
+  <div class="warn">Freight charges not paid for &nbsp;within 2 weeks will be collected at destination.</div>
+  <div class="sig"><span>Signature <b>X</b></span><div class="x">${o.signature?'<img src="'+o.signature+'" alt="">':''}</div>
+    <div class="cor"><span><i class="o"></i> CORROSIVE</span><span><i class="o"></i> NON CORROSIVE</span></div></div>
+  <div class="legal">Received the above described merchandise in apparent good order and condition, except as noted to be held and transported subject to all the terms and contained in the regular form of Bill of Lading of the carrier which are incorporated herein and shall be considered a part hereof with the same force and effect as if set forth herein full. The goods are received subject to delay, carrier's inability to carry due to accumulation of goods, lack of conveyance's space or facilities of any sort, labor disturbances, strikes, lockouts, riots, war, government authority, or any condition whatever beyond the control of the carrier. Any valuation in excess of $ 200.00 for Ocean Freight, or per customary shipping until as provided for in the carrier's regular form of Bill of Lading, shall be declared in writing by the Shipper upon delivery to the carrier and shall be inserted herein as well as in the Bill of Lading and extra Freight paid for. Nothing in this warehouse receipt shall operate to limit or deprive the carrier of any statutory protection or exemption of limitation of liability.</div>
   <div class="foot">
-    <div><b style="font-size:12pt">EXAMINED</b> &nbsp; ○ YES &nbsp; ○ NO</div>
-    <div style="text-align:right;line-height:1.75">Receiving Clerk <span class="ln"></span> Date <span class="ln" style="min-width:1.1in"></span><br>Driver's Signature <span class="ln"></span> I.D. <span class="ln" style="min-width:1.1in"></span></div>
+    <div class="ex">EXAMINED <span><i class="o"></i> YES</span><span><i class="o"></i> NO</span></div>
+    <div class="rt">Receiving Clerk <span class="ln"></span> Date <span class="ln" style="min-width:1.2in"></span><br>Driver's Signature <span class="ln"></span> I.D. <span class="ln" style="min-width:1.2in"></span></div>
   </div>
-  <div style="position:absolute;left:.45in;right:.45in;bottom:.18in;text-align:center;font-size:9pt;font-family:Arial,sans-serif">Track your shipment with B/L ${esc(o.inv)} at <b>www.fcsshipping.com</b></div>
 </div>`;
 }
 /* which layout the viewer + Print use: the receipt (default) or the old order entry */
