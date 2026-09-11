@@ -7,6 +7,10 @@
 [functions]
   node_bundler = "esbuild"
 
+# Nightly backup of every FCS record (05:00 UTC = 1 AM New York). See netlify/functions/nightly-backup.js
+[functions."nightly-backup"]
+  schedule = "0 5 * * *"
+
 # Security headers
 [[headers]]
   for = "/*"
