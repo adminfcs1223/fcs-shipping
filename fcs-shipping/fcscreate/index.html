@@ -478,7 +478,8 @@ table.list tbody tr:hover{background:#fafcfd}
               <div style="grid-column:span 2"><label class="f">Name</label><input class="f" id="fCoName"></div>
               <input type="hidden" id="fCoName2">
               <div><label class="f">Destination</label><select class="f" id="fCoCity"></select></div>
-              <div><label class="f">Tel</label><input class="f" id="fCoPhone" inputmode="tel"></div>
+              <div><label class="f">Agent</label><select class="f" id="fCoAgent"></select></div>
+              <div style="grid-column:span 2"><label class="f">Tel</label><input class="f" id="fCoPhone" inputmode="tel"></div>
             </div>
           </div>
           <div class="card">
@@ -929,6 +930,7 @@ function migrateOrder(o){
   /* an order from the tablet or an old backup must never crash a page render */
   if(!o.sh || typeof o.sh!=='object') o.sh={name:'',name2:'',street:'',city:'',state:'',phone:''};
   if(!o.co || typeof o.co!=='object') o.co={name:'',name2:'',city:'',phone:''};
+  if(o.co.agent==null) o.co.agent='';
   if(!Array.isArray(o.items)) o.items=[];
   if(o._v2) return o;
   (o.items||[]).forEach(it=>{
@@ -1001,10 +1003,13 @@ function repriceAll(){
 /* ---------- 4. form <-> draft ---------- */
 const HDR = { fInv:'inv', fInvDate:'invDate', fPickup:'pickup', fTime:'time' };
 const SH = {fShName:'name',fShName2:'name2',fShStreet:'street',fShCity:'city',fShState:'state',fShPhone:'phone'};
-const CO = {fCoName:'name',fCoName2:'name2',fCoCity:'city',fCoPhone:'phone'};
+const CO = {fCoName:'name',fCoName2:'name2',fCoCity:'city',fCoAgent:'agent',fCoPhone:'phone'};
+/* short label for the agent on the receipt: HERMLEN'S / ELLA SAMUEL / WEST INDIES SHIPPERS */
+function agentShort(name){ const n=String(name||'').toUpperCase(); return n.replace(/\s*(CUSTOMS\s+BROKERAGE.*|BROKERAGE.*|\/.*)$/,'').trim(); }
 function fillDestSelects(){
   const opts = V2.dests.map(d=>`<option>${esc(d.name)}</option>`).join('');
   const co=$('#fCoCity'); if(co){ const k=co.value; co.innerHTML='<option value="">— pick destination —</option>'+opts; if(k) co.value=k; }
+  const ag=$('#fCoAgent'); if(ag){ const k=ag.value; ag.innerHTML='<option value="">— agent —</option>'+V2.brokers.map(b=>`<option value="${esc(b.name)}">${esc(agentShort(b.name))}</option>`).join(''); if(k) ag.value=k; }
   ['#mfDest','#pvDest'].forEach(s=>{ const el=$(s); if(el){ const k=el.value; el.innerHTML=opts; if(k) el.value=k; }});
   const rv=$('#fRecv'); if(rv){ const k=rv.value; rv.innerHTML=V2.recv.map(r=>`<option>${esc(r)}</option>`).join(''); if(k) rv.value=k; }
 }
@@ -1154,7 +1159,7 @@ function formHTML(o){
     </div>
     <div class="p-party">
       ${partyRow(o.co.name, o.co.name2)}
-      ${partyRow(o.co.city, '')}
+      ${partyRow(o.co.city, o.co.agent?'AGENT: '+agentShort(o.co.agent):'')}
       ${o.co.phone?`<div class="ph"><i>Phone:</i>${esc(o.co.phone)}</div>`:''}
     </div>
   </div>
@@ -1229,7 +1234,7 @@ function receiptHTML(o){
       <div class="lb">CONSIGNEE</div>
       <div class="ln">${esc(o.co.name||'')}</div>
       <div class="ln">${esc(o.co.city||'')}</div>
-      <div class="ln">${esc(o.co.name2||'')}</div>
+      <div class="ln">${o.co.agent?'AGENT: '+esc(agentShort(o.co.agent)):esc(o.co.name2||'')}</div>
       <div class="tel">TEL.<span>${esc(o.co.phone||'')}</span></div>
     </div>
   </div>
@@ -2006,7 +2011,10 @@ function tabNameHTML(k, val){
   return `<div><label class="f">Sheet tab name (bottom)</label>
     <input class="f" data-mh="${k}" value="${esc(val)}" placeholder="e.g. ${esc(tabLabel(todayISO()))}"></div>`;
 }
-function brokerFor(dest){
+function brokerFor(dest, os){
+  /* the agent the receipts name wins (most common one on the shipment); otherwise the old destination rule */
+  if(os && os.length){ const cnt={}; os.forEach(o=>{ const a=o.co&&o.co.agent; if(a) cnt[a]=(cnt[a]||0)+1; });
+    const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]; const b=top&&V2.brokers.find(x=>x.name===top); if(b) return b; }
   const vf=/vieux/i.test(dest);
   return V2.brokers.find(b=> vf ? /ella/i.test(b.name) : /hermle?n/i.test(b.name)) || V2.brokers[0];
 }
@@ -2029,7 +2037,7 @@ function renderHeaderFields(holder, fields, dest){
     if(v==='truck') return tabNameHTML(k, defaultTab());
     if(v==='select'){
       /* the right broker for the destination comes preselected */
-      const pick=brokerFor(dest);
+      const pick=brokerFor(dest, WIZ&&WIZ.sel&&WIZ.sel[dest]?orders.filter(o=>WIZ.sel[dest].has(o.id)):null);
       return `<div style="grid-column:span 2"><label class="f">${l}</label>
         <select class="f" data-mh="${k}">${V2.brokers.map(b=>`<option${b.name===pick.name?' selected':''}>${esc(b.name)}</option>`).join('')}</select></div>`;
     }
@@ -2816,7 +2824,7 @@ Object.keys(HDR).concat(Object.keys(SH),Object.keys(CO)).forEach(id=>{
   el.addEventListener(evt,()=>{
     formToDraft();
     if(id==='fInv') draft._auto=false;   /* typed by hand: the running counter is left alone */
-    if(id==='fCoCity'){ repriceAll(); renderItems(); }
+    if(id==='fCoCity'){ repriceAll(); renderItems(); if(!draft.co.agent && draft.co.city){ const b=brokerFor(draft.co.city); if(b){ draft.co.agent=b.name; $('#fCoAgent').value=b.name; } } }
     renderPreview();
   });
 });
