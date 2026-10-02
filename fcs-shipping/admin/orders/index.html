@@ -294,62 +294,73 @@ table.list tbody tr:hover{background:#fafcfd}
 .kgrp .l{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
 .kgrp .m{font-size:11.5px;color:var(--muted);margin-top:2px}
 .kgrp .x{font-size:11px;color:var(--ocean);font-weight:700;margin-top:6px}
+/* ---- new-shipment page: rapid-fire B/L box on the left, live counter on the right ---- */
+.rapidsplit{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:20px;align-items:start}
+@media(max-width:1100px){ .rapidsplit{grid-template-columns:1fr} .rapidsplit .stickywrap{position:static} }
+.rapid{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#EAF3FA;border:1px solid #BFD9EA;border-radius:10px;padding:12px 14px}
+.rapid.big{display:block;padding:16px 18px}
+.rapid.big input{width:100%;max-width:none !important;font-size:26px !important;padding:12px 14px;margin-top:8px;border:2px solid var(--ocean)}
+.rapid.big .rmsg{display:block;margin-top:8px;min-height:18px}
+.ctr{display:grid;gap:10px}
+.ctr .dest{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.ctr .dest b{color:var(--ink);font-size:13px;letter-spacing:0;text-transform:none}
+.ctr .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ctr .kgrp{cursor:default}
+.ctr .kgrp:hover{border-color:var(--rule);box-shadow:none}
+.ctr .kgrp.edit:hover{border-color:var(--ocean)}
+.ctr .kgrp.adj{border-color:#B45309;background:#FFF7ED}
+.ctr .adjn{width:100%;border:0;border-bottom:2px dashed #BFD9EA;background:transparent;font:inherit;font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1;padding:0 0 2px;color:var(--ink);outline:none;-moz-appearance:textfield}
+.ctr .adjn::-webkit-outer-spin-button,.ctr .adjn::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.ctr .adjn:focus{border-bottom-color:var(--ocean)}
+.ctr .kgrp.adj .adjn{border-bottom-color:#B45309;color:#B45309}
+.ctr .m a{color:var(--ocean);cursor:pointer;font-weight:700}
+.ctr .tot{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;padding:10px 14px}
+.bllist tr.new td{animation:blin .9s ease-out}
+@keyframes blin{from{background:#D7F0E2}to{background:transparent}}
+.bllist .dpill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#EEF0F3;color:var(--muted);white-space:nowrap}
 /* ---------- THE RECEIPT — replica of the FCS paper receipt ---------- */
-.rc{width:8.5in;min-height:11in;background:#fff;padding:.32in .4in .28in;color:#000;position:relative;
+.rc{width:8.5in;min-height:11in;background:#fff;padding:.35in .45in .3in;color:#000;position:relative;
   font-family:"Times New Roman",Times,serif;box-shadow:0 2px 12px rgba(0,0,0,.14)}
 .rc *{box-sizing:border-box}
 .rc .hd{display:flex;justify-content:space-between;align-items:flex-start}
-.rc .co{flex:1;text-align:center;padding-left:1.35in}
-.rc .co b{display:block;font-family:"Arial Black",Impact,"Arial Narrow",Arial,sans-serif;font-size:21pt;font-weight:900;letter-spacing:-.01em;line-height:1.05}
-.rc .co div{font-size:10.5pt;line-height:1.3}
-.rc .rn{width:1.35in;text-align:center}
-.rc .rn .tag{background:#222;color:#fff;font-weight:700;font-size:11.5pt;letter-spacing:.06em;padding:2pt 0;font-family:Arial,sans-serif}
-.rc .rn .no{color:#E0312F;font-size:16pt;font-family:"Courier New",monospace;font-weight:700;margin-top:2pt;letter-spacing:.06em}
-.rc .date{text-align:right;font-size:11.5pt;margin-top:4pt;padding-right:.1in}
-.rc .date span{display:inline-block;border-bottom:1px solid #000;min-width:1.9in;text-align:center;padding:0 6pt;font-family:Arial,sans-serif;font-size:10.5pt}
-.rc .parties{display:flex;border:1.5px solid #000;border-radius:7pt;margin-top:5pt;overflow:hidden}
-.rc .party{flex:1;min-width:0;padding:2pt 7pt 4pt;position:relative;font-family:Arial,sans-serif;font-size:10.5pt}
+.rc .co{flex:1;text-align:center;padding-left:1.4in}
+.rc .co b{display:block;font-size:19pt;font-weight:700;letter-spacing:.01em}
+.rc .co div{font-size:11pt;line-height:1.35}
+.rc .rn{width:1.4in;text-align:center}
+.rc .rn .tag{background:#222;color:#fff;font-weight:700;font-size:12pt;letter-spacing:.08em;padding:2pt 0;font-family:Arial,sans-serif}
+.rc .rn .no{color:#D12E2E;font-size:17pt;font-family:"Courier New",monospace;font-weight:700;margin-top:3pt;letter-spacing:.04em}
+.rc .date{text-align:right;font-size:12pt;margin-top:6pt}
+.rc .date span{display:inline-block;border-bottom:1px solid #000;min-width:2in;text-align:center;padding:0 6pt}
+.rc .parties{display:flex;border:1.5px solid #000;border-radius:8pt;margin-top:8pt;overflow:hidden}
+.rc .party{flex:1;min-width:0;padding:4pt 8pt 5pt;min-height:1.2in;position:relative;font-family:Arial,sans-serif;font-size:11pt}
 .rc .party+.party{border-left:1.5px solid #000}
-.rc .party .lb{font-family:"Times New Roman",serif;font-style:italic;font-weight:700;font-size:10.5pt;letter-spacing:.03em}
-.rc .party.co2 .lb{margin-top:-1pt}
-.rc .party .ln{border-bottom:1px solid #000;height:15pt;padding:1pt 3pt;line-height:13pt;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.rc .party .tel{margin-top:3pt;font-family:"Times New Roman",serif;font-weight:700;font-size:10pt;height:13pt}
+.rc .party .lb{font-family:"Times New Roman",serif;font-style:italic;font-weight:700;font-size:11pt;letter-spacing:.04em}
+.rc .party .ln{border-bottom:1px solid #000;min-height:15pt;padding:1pt 4pt;line-height:13pt;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rc .party .tel{margin-top:5pt;font-family:"Times New Roman",serif;font-weight:700;font-size:10.5pt}
 .rc .party .tel span{font-family:Arial,sans-serif;font-weight:400;margin-left:6pt}
-.rc table.g{width:100%;border-collapse:collapse;margin-top:6pt;table-layout:fixed;font-family:Arial,sans-serif}
-.rc table.g th{border:1.5px solid #000;font-size:8.5pt;font-weight:700;text-transform:uppercase;padding:2pt 3pt;line-height:1.15;font-family:"Times New Roman",serif;text-align:center}
-.rc table.g td{border:1px solid #000;height:16.5pt;padding:0 4pt;font-size:9.5pt;vertical-align:middle;white-space:nowrap;overflow:hidden}
+.rc table.g{width:100%;border-collapse:collapse;margin-top:10pt;table-layout:fixed;font-family:Arial,sans-serif}
+.rc table.g th{border:1.5px solid #000;font-size:9pt;font-weight:700;text-transform:uppercase;padding:3pt 4pt;line-height:1.15;font-family:"Times New Roman",serif}
+.rc table.g td{border:1px solid #000;height:19pt;padding:1pt 5pt;font-size:10.5pt;vertical-align:middle}
 .rc table.g td.c{text-align:center}.rc table.g td.r{text-align:right}
-.rc table.g td.dcl{text-align:center;font-family:"Times New Roman",serif;font-weight:700;font-size:11pt;letter-spacing:.08em;height:15pt}
-.rc .band{display:flex;border:1.5px solid #000;border-top:0;font-family:"Times New Roman",serif;font-size:9.5pt;font-weight:700}
-.rc .band>div{padding:3pt 6pt}
-.rc .band .ins{width:2.35in;border-right:1.5px solid #000;position:relative}
-.rc .band .ins .r{display:flex;align-items:center;gap:8pt;margin:2pt 0}
-.rc .band .pm{width:1.55in;border-right:1.5px solid #000}
-.rc .band .pm .r{display:flex;align-items:center;justify-content:space-between;margin:1.5pt 0}
-.rc .band .svc{flex:1;border-right:1.5px solid #000}
-.rc .band .svc .r{display:flex;align-items:center;justify-content:space-between;margin:1.5pt 0;font-weight:400}
-.rc .band .tot{width:1.35in}
-.rc .band .tot .v{font-family:Arial,sans-serif;font-size:13pt;text-align:right;margin-top:8pt}
-.rc .band .tot .bal{font-family:Arial,sans-serif;font-size:7.5pt;font-weight:400;text-align:right;margin-top:2pt;white-space:nowrap}
-.rc i.o{display:inline-block;width:9.5pt;height:9.5pt;border:1.5px solid #000;border-radius:50%;font-style:normal;vertical-align:middle;flex:0 0 auto}
-.rc i.o.on{background:#000;box-shadow:inset 0 0 0 2pt #fff}
-.rc .xline{display:flex;align-items:flex-end;gap:4pt;margin-top:6pt}
-.rc .xline b{font-size:12pt}
-.rc .xline span{flex:1;border-bottom:1px solid #000;height:12pt}
-.rc .fine{font-size:7.8pt;line-height:1.22;margin-top:4pt;font-family:Arial,sans-serif;text-transform:uppercase}
-.rc .warn{font-weight:700;font-size:12.5pt;text-align:center;margin:5pt 0 3pt;font-family:Arial,sans-serif}
-.rc .sig{display:flex;align-items:flex-end;gap:10pt;font-size:11pt;margin-top:3pt}
-.rc .sig .x{flex:1;border-bottom:1px solid #000;height:20pt;position:relative;max-width:3.2in}
-.rc .sig .x img{position:absolute;left:.2in;bottom:0;height:.4in;max-width:2.4in;object-fit:contain}
-.rc .sig .cor{display:flex;gap:18pt;align-items:center;font-family:Arial,sans-serif;font-size:10.5pt;margin-left:auto;padding-right:.2in}
-.rc .sig .cor span{display:flex;align-items:center;gap:5pt}
-.rc .legal{font-size:7pt;line-height:1.18;border-top:1px solid #000;border-bottom:1px solid #000;padding:3pt 0;margin-top:5pt;font-family:Arial,sans-serif;text-align:justify}
-.rc .foot{display:flex;justify-content:space-between;align-items:flex-start;margin-top:6pt;font-size:10.5pt}
-.rc .foot .ex{font-weight:700;font-size:12pt;display:flex;gap:14pt;align-items:center;margin-top:3pt}
-.rc .foot .ex span{font-weight:400;font-size:10.5pt;display:flex;align-items:center;gap:5pt}
-.rc .foot .ln{display:inline-block;border-bottom:1px solid #000;min-width:1.55in;margin:0 3pt}
-.rc .foot .rt{text-align:right;line-height:1.85}
-.rc .stamp{position:absolute;top:2.05in;right:.55in;transform:rotate(-12deg);border:3pt solid #C62828;color:#C62828;font-weight:800;font-size:22pt;letter-spacing:.1em;padding:1pt 12pt;border-radius:5pt;opacity:.85;font-family:Arial,sans-serif;white-space:nowrap}
+.rc .decl{border:1.5px solid #000;border-top:0;display:flex;font-family:Arial,sans-serif;font-size:10.5pt}
+.rc .decl>div{padding:3pt 8pt}
+.rc .decl .pm{flex:1;border-right:1.5px solid #000}
+.rc .decl .pm .row{display:flex;align-items:center;gap:6pt;margin:1pt 0;font-weight:700;font-family:"Times New Roman",serif}
+.rc .decl .pm i{display:inline-block;width:11pt;height:11pt;border:1.5px solid #000;border-radius:50%;font-style:normal;vertical-align:middle}
+.rc .decl .pm i.on{background:#000;box-shadow:inset 0 0 0 2pt #fff}
+.rc .decl .tot{width:2.5in}
+.rc .decl .tot .lb{font-family:"Times New Roman",serif;font-weight:700;font-size:11pt}
+.rc .decl .tot .v{font-size:15pt;font-weight:700;margin-top:3pt;text-align:right}
+.rc .decl .tot .bal{font-size:9.5pt;margin-top:3pt;text-align:right;color:#333}
+.rc .fine{font-size:7.8pt;line-height:1.25;margin-top:5pt;font-family:Arial,sans-serif;text-transform:uppercase}
+.rc .warn{font-weight:700;font-size:12pt;text-align:center;margin:6pt 0 4pt}
+.rc .sig{display:flex;align-items:flex-end;gap:12pt;font-size:11pt;margin-top:6pt}
+.rc .sig .x{flex:1;border-bottom:1px solid #000;height:22pt;position:relative}
+.rc .sig .x img{position:absolute;left:.3in;bottom:0;height:.45in;max-width:2.4in;object-fit:contain}
+.rc .legal{font-size:7pt;line-height:1.2;border-top:1px solid #000;border-bottom:1px solid #000;padding:3pt 0;margin-top:6pt;font-family:Arial,sans-serif;text-align:justify}
+.rc .foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6pt;font-size:10pt}
+.rc .foot .ln{display:inline-block;border-bottom:1px solid #000;min-width:1.6in;margin:0 4pt}
+.rc .stamp{position:absolute;top:2.1in;right:.6in;transform:rotate(-12deg);border:3pt solid #C62828;color:#C62828;font-weight:800;font-size:22pt;letter-spacing:.1em;padding:1pt 12pt;border-radius:5pt;opacity:.85;font-family:Arial,sans-serif;white-space:nowrap}
 .rc .stamp.later{border-color:#B45309;color:#B45309;font-size:16pt}
 /* ---------- pickup sheet (prints landscape) ---------- */
 .pk{width:11in;min-height:8.5in;background:#fff;padding:.45in .5in;color:#000;font-family:Arial,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.14)}
@@ -452,8 +463,7 @@ table.list tbody tr:hover{background:#fafcfd}
             <h2>Header</h2>
             <p class="hint">Invoice # is the B/L number. It advances automatically.</p>
             <div class="grid g4">
-              <div><label class="f">Receipt / B/L # <span class="req">*</span></label><input class="f" id="fInv" placeholder="type one, or generate">
-                <button class="btn ghost sm" id="btnGenBL" style="margin-top:6px;width:100%">Generate B/L number</button></div>
+              <div><label class="f">Receipt / B/L # <span class="req">*</span></label><input class="f" id="fInv"></div>
               <div><label class="f">Date</label><input class="f" type="date" id="fInvDate"></div>
               <div style="grid-column:span 2"><label class="f">Received from</label>
                 <select class="f" id="fRecv"></select></div>
@@ -478,8 +488,7 @@ table.list tbody tr:hover{background:#fafcfd}
               <div style="grid-column:span 2"><label class="f">Name</label><input class="f" id="fCoName"></div>
               <input type="hidden" id="fCoName2">
               <div><label class="f">Destination</label><select class="f" id="fCoCity"></select></div>
-              <div><label class="f">Agent</label><select class="f" id="fCoAgent"></select></div>
-              <div style="grid-column:span 2"><label class="f">Tel</label><input class="f" id="fCoPhone" inputmode="tel"></div>
+              <div><label class="f">Tel</label><input class="f" id="fCoPhone" inputmode="tel"></div>
             </div>
           </div>
           <div class="card">
@@ -916,7 +925,7 @@ async function refreshNext(){
 }
 function blankOrder(){
   return {
-    id:null, inv:'', _auto:false, invDate:todayISO(), pickup:todayISO(), time:nowTime(),
+    id:null, inv:nextFreeInv(), _auto:true, invDate:todayISO(), pickup:todayISO(), time:nowTime(),
     po:'', container:'', code:'', shipVia:'', cross:'', service:'',
     recv:(V2.recv[0]||'SEA FREIGHT'),
     sh:{name:'',name2:'',street:'',city:'',state:'',phone:''},
@@ -930,7 +939,6 @@ function migrateOrder(o){
   /* an order from the tablet or an old backup must never crash a page render */
   if(!o.sh || typeof o.sh!=='object') o.sh={name:'',name2:'',street:'',city:'',state:'',phone:''};
   if(!o.co || typeof o.co!=='object') o.co={name:'',name2:'',city:'',phone:''};
-  if(o.co.agent==null) o.co.agent='';
   if(!Array.isArray(o.items)) o.items=[];
   if(o._v2) return o;
   (o.items||[]).forEach(it=>{
@@ -1003,13 +1011,10 @@ function repriceAll(){
 /* ---------- 4. form <-> draft ---------- */
 const HDR = { fInv:'inv', fInvDate:'invDate', fPickup:'pickup', fTime:'time' };
 const SH = {fShName:'name',fShName2:'name2',fShStreet:'street',fShCity:'city',fShState:'state',fShPhone:'phone'};
-const CO = {fCoName:'name',fCoName2:'name2',fCoCity:'city',fCoAgent:'agent',fCoPhone:'phone'};
-/* short label for the agent on the receipt: HERMLEN'S / ELLA SAMUEL / WEST INDIES SHIPPERS */
-function agentShort(name){ const n=String(name||'').toUpperCase(); return n.replace(/\s*(CUSTOMS\s+BROKERAGE.*|BROKERAGE.*|\/.*)$/,'').trim(); }
+const CO = {fCoName:'name',fCoName2:'name2',fCoCity:'city',fCoPhone:'phone'};
 function fillDestSelects(){
   const opts = V2.dests.map(d=>`<option>${esc(d.name)}</option>`).join('');
   const co=$('#fCoCity'); if(co){ const k=co.value; co.innerHTML='<option value="">— pick destination —</option>'+opts; if(k) co.value=k; }
-  const ag=$('#fCoAgent'); if(ag){ const k=ag.value; ag.innerHTML='<option value="">— agent —</option>'+V2.brokers.map(b=>`<option value="${esc(b.name)}">${esc(agentShort(b.name))}</option>`).join(''); if(k) ag.value=k; }
   ['#mfDest','#pvDest'].forEach(s=>{ const el=$(s); if(el){ const k=el.value; el.innerHTML=opts; if(k) el.value=k; }});
   const rv=$('#fRecv'); if(rv){ const k=rv.value; rv.innerHTML=V2.recv.map(r=>`<option>${esc(r)}</option>`).join(''); if(k) rv.value=k; }
 }
@@ -1159,7 +1164,7 @@ function formHTML(o){
     </div>
     <div class="p-party">
       ${partyRow(o.co.name, o.co.name2)}
-      ${partyRow(o.co.city, o.co.agent?'AGENT: '+agentShort(o.co.agent):'')}
+      ${partyRow(o.co.city, '')}
       ${o.co.phone?`<div class="ph"><i>Phone:</i>${esc(o.co.phone)}</div>`:''}
     </div>
   </div>
@@ -1189,35 +1194,32 @@ function formHTML(o){
 /* ---------- 6b. THE RECEIPT (default view) — replica of the FCS paper receipt ---------- */
 function receiptHTML(o){
   const items=(o.items||[]).filter(it=>String(it.desc||'').trim() || itemAmount(it)>0);
-  const rows=12;   /* the paper has 12 lines */
+  const rows=Math.max(3, Math.min(8, items.length+1));   /* just the lines used (+1 blank) — the receipt always fits one page */
   const total=orderTotal(o), recd=parseFloat(o.amtRecd)||0, bal=Math.max(0,total-recd);
   let body='';
   for(let i=0;i<rows;i++){
-    const it=items[i]; const amt=it?itemAmount(it):0;
+    const it=items[i];
+    const amt=it?itemAmount(it):0;
     body+=`<tr>
       <td class="c">${it?esc(it.qty):''}</td>
-      <td>${it?esc(it.desc)+(it.dims?' &nbsp;'+esc(it.dims):''):''}</td>
-      <td></td>
+      <td>${it?esc((it.kind==='product'?'':'')+it.desc)+(it.dims?' &nbsp;'+esc(it.dims):''):''}</td>
       <td class="c">${it&&it.kind!=='product'?esc(it.cuft):''}</td>
-      <td></td>
       <td class="r">${it&&it.price!==''?money(String(it.price).replace(/[^0-9.\-]/g,'')):''}</td>
       <td class="r">${it&&(it.amount!==''||amt>0)?money(amt):''}</td>
     </tr>`;
   }
-  if(items.length>rows) body+=`<tr><td></td><td style="font-size:8pt">+ ${items.length-rows} more line(s) — see order entry</td><td></td><td></td><td></td><td></td><td></td></tr>`;
   const pm=String(o.payMethod||'').toUpperCase();
-  const dot=(k)=>`<i class="o ${pm===k?'on':''}"></i>`;
+  const dot=(k)=>`<i class="${pm===k?'on':''}"></i>`;
   const stamp = o.paid ? '<div class="stamp">PAID</div>' : (o.payLater ? '<div class="stamp later">WILL PAY LATER</div>' : '');
-  const air=/air/i.test(o.recv||'');
+  const addr=String(S.addr||'');
   return `
 <div class="rc">
   ${stamp}
   <div class="hd">
     <div class="co">
       <b>${esc(S.name||'FCS Shipping LLC.')}</b>
-      <div>9502 Ditmas Avenue</div>
-      <div>BLG #4, Brooklyn, NY 11236</div>
-      <div>Tel. (718) 483-8006 &bull; (646) 606-8320 &nbsp;&nbsp;&nbsp;&nbsp; Fax (718) 363-2399</div>
+      <div>${esc(addr)}</div>
+      <div>${esc(S.tel||'')} &nbsp;&nbsp; ${esc(S.fax||'')}</div>
     </div>
     <div class="rn"><div class="tag">RECEIPT</div><div class="no">${esc(o.inv)}</div></div>
   </div>
@@ -1230,57 +1232,49 @@ function receiptHTML(o){
       <div class="ln">${esc([o.sh.city,o.sh.state].filter(Boolean).join(', '))}</div>
       <div class="tel">TEL.<span>${esc(o.sh.phone||'')}</span></div>
     </div>
-    <div class="party co2">
+    <div class="party">
       <div class="lb">CONSIGNEE</div>
       <div class="ln">${esc(o.co.name||'')}</div>
       <div class="ln">${esc(o.co.city||'')}</div>
-      <div class="ln">${o.co.agent?'AGENT: '+esc(agentShort(o.co.agent)):esc(o.co.name2||'')}</div>
+      <div class="ln">${esc(o.co.name2||'')}</div>
       <div class="tel">TEL.<span>${esc(o.co.phone||'')}</span></div>
     </div>
   </div>
   <table class="g">
     <thead><tr>
-      <th style="width:.82in">Number<br>of pieces</th>
+      <th style="width:.95in">Number<br>of pieces</th>
       <th>Description of<br>packages &amp; goods</th>
-      <th style="width:.78in">Seal<br>number</th>
-      <th style="width:.7in">Cubic</th>
-      <th style="width:.78in">Gross<br>weight</th>
-      <th style="width:.72in">Rate</th>
-      <th style="width:.98in">US Charges</th>
+      <th style="width:.85in">Cubic</th>
+      <th style="width:.95in">Rate</th>
+      <th style="width:1.15in">US Charges</th>
     </tr></thead>
     <tbody>${body}
-      <tr><td colspan="7" class="dcl">DECLARATION</td></tr>
+      <tr><td class="c" style="font-weight:700">${orderPieces(o)||''}</td><td style="font-weight:700;font-family:'Times New Roman',serif;letter-spacing:.06em;text-align:center">DECLARATION</td><td></td><td class="r" style="font-weight:700">TOTAL</td><td class="r" style="font-weight:700">${total>0?money(total):''}</td></tr>
     </tbody>
   </table>
-  <div class="band">
-    <div class="ins">
-      <div class="r">INSURANCE $ <span style="flex:1;border-bottom:1px solid #000;height:10pt"></span></div>
-      <div class="r"><span style="display:flex;align-items:center;gap:5pt">DECLINED <i class="o"></i></span><span style="display:flex;align-items:center;gap:5pt;margin-left:10pt">ACCEPTED <i class="o"></i></span></div>
-      <div class="xline"><b>X</b><span></span></div>
-    </div>
+  <div class="decl">
     <div class="pm">
-      <div class="r">COD ${dot('COD')}</div>
-      <div class="r">CASH ${dot('CASH')}</div>
-      <div class="r">ZELLE ${dot('ZELLE')}</div>
-      <div class="r">CREDIT CARD ${dot('CREDIT CARD')}</div>
+      <div class="row">${dot('COD')} COD</div>
+      <div class="row">${dot('CASH')} CASH</div>
+      <div class="row">${dot('ZELLE')} ZELLE</div>
+      <div class="row">${dot('CREDIT CARD')} CREDIT CARD</div>
+      ${pm==='CHECK'?'<div class="row"><i class="on"></i> CHECK</div>':''}
     </div>
-    <div class="svc">
-      <div class="r" style="justify-content:center;gap:10pt"><span>Personal Service</span></div>
-      <div class="r" style="justify-content:center;gap:16pt"><span style="display:flex;align-items:center;gap:5pt">YES <i class="o"></i></span><span style="display:flex;align-items:center;gap:5pt">NO <i class="o"></i></span></div>
-      <div class="r"><span>Air Freight</span><i class="o ${air?'on':''}"></i></div>
-      <div class="r"><span>W/House D/O</span><i class="o"></i></div>
+    <div class="tot">
+      <div class="lb">TOTAL Charges</div>
+      <div class="v">${money(total)}</div>
+      <div class="bal">Received ${money(recd)}${bal>0?' &nbsp;·&nbsp; <b>Balance '+money(bal)+'</b>':''}</div>
     </div>
-    <div class="tot"><div>TOTAL<br>Charges</div><div class="v">${total>0?money(total):''}</div>${recd>0||bal>0?`<div class="bal">Rec'd ${money(recd)}${bal>0?' · Bal '+money(bal):''}</div>`:''}</div>
   </div>
-  <div class="fine">FCS SERVICES IS NOT RESPONSIBLE FOR ANY CARGO LEFT ON PREMISES WITHOUT SHIPPING ARRANGEMENTS BEING MADE!! SHIPPING ARRANGEMENTS FOR ALL CARGO MUST BE MADE AT TIME OF DELIVERY. I, THE UNDERSIGNED, FULLY UNDERSTAND THAT THE FOLLOWING STORAGE FEES APPLY: AFTER 14 DAYS. I ALSO DECLARED THAT THE ITEMS SHIPPING ARE HEREBY NOTED AS BEING:</div>
-  <div class="warn">Freight charges not paid for &nbsp;within 2 weeks will be collected at destination.</div>
-  <div class="sig"><span>Signature <b>X</b></span><div class="x">${o.signature?'<img src="'+o.signature+'" alt="">':''}</div>
-    <div class="cor"><span><i class="o"></i> CORROSIVE</span><span><i class="o"></i> NON CORROSIVE</span></div></div>
-  <div class="legal">Received the above described merchandise in apparent good order and condition, except as noted to be held and transported subject to all the terms and contained in the regular form of Bill of Lading of the carrier which are incorporated herein and shall be considered a part hereof with the same force and effect as if set forth herein full. The goods are received subject to delay, carrier's inability to carry due to accumulation of goods, lack of conveyance's space or facilities of any sort, labor disturbances, strikes, lockouts, riots, war, government authority, or any condition whatever beyond the control of the carrier. Any valuation in excess of $ 200.00 for Ocean Freight, or per customary shipping until as provided for in the carrier's regular form of Bill of Lading, shall be declared in writing by the Shipper upon delivery to the carrier and shall be inserted herein as well as in the Bill of Lading and extra Freight paid for. Nothing in this warehouse receipt shall operate to limit or deprive the carrier of any statutory protection or exemption of limitation of liability.</div>
+  <div class="fine">FCS SERVICES IS NOT RESPONSIBLE FOR ANY CARGO LEFT ON PREMISES WITHOUT SHIPPING ARRANGEMENTS BEING MADE!! SHIPPING ARRANGEMENTS FOR ALL CARGO MUST BE MADE AT TIME OF DELIVERY. I, THE UNDERSIGNED, FULLY UNDERSTAND THAT THE FOLLOWING STORAGE FEES APPLY: AFTER 14 DAYS. I ALSO DECLARE THAT THE ITEMS SHIPPING ARE HEREBY NOTED AS BEING:</div>
+  <div class="warn">Freight charges not paid for within 2 weeks will be collected at destination.</div>
+  <div class="sig"><span>Signature <b>X</b></span><div class="x">${o.signature?'<img src="'+o.signature+'" alt="">':''}</div><span style="font-size:10pt">Date ${esc(o.termsAcceptedAt?usDate(String(o.termsAcceptedAt).slice(0,10)):usDate(o.invDate))}</span></div>
+  <div class="legal">Received the above described merchandise in apparent good order and condition, except as noted to be held and transported subject to all the terms and contained in the regular form of Bill of Lading of the carrier which are incorporated herein and shall be considered a part hereof with the same force and effect as if set forth herein full. The goods are received subject to delay, carrier's inability to carry due to accumulation of goods, lack of conveyance's space or facilities of any sort, labor disturbances, strikes, lockouts, riots, war, government authority, or any condition whatever beyond the control of the carrier. Any valuation in excess of $200.00 for Ocean Freight, or per customary shipping until as provided for in the carrier's regular form of Bill of Lading, shall be declared in writing by the Shipper upon delivery to the carrier and shall be inserted herein as well as in the Bill of Lading and extra Freight paid for. Nothing in this warehouse receipt shall operate to limit or deprive the carrier of any statutory protection or exemption of limitation of liability.</div>
   <div class="foot">
-    <div class="ex">EXAMINED <span><i class="o"></i> YES</span><span><i class="o"></i> NO</span></div>
-    <div class="rt">Receiving Clerk <span class="ln"></span> Date <span class="ln" style="min-width:1.2in"></span><br>Driver's Signature <span class="ln"></span> I.D. <span class="ln" style="min-width:1.2in"></span></div>
+    <div><b style="font-size:12pt">EXAMINED</b> &nbsp; ○ YES &nbsp; ○ NO</div>
+    <div style="text-align:right;line-height:1.75">Receiving Clerk <span class="ln"></span> Date <span class="ln" style="min-width:1.1in"></span><br>Driver's Signature <span class="ln"></span> I.D. <span class="ln" style="min-width:1.1in"></span></div>
   </div>
+  <div style="position:absolute;left:.45in;right:.45in;bottom:.18in;text-align:center;font-size:9pt;font-family:Arial,sans-serif">Track your shipment with B/L ${esc(o.inv)} at <b>www.fcsshipping.com</b></div>
 </div>`;
 }
 /* which layout the viewer + Print use: the receipt (default) or the old order entry */
@@ -1321,7 +1315,7 @@ function renderActions(){
 }
 async function saveDraft(){
   formToDraft();
-  if(!String(draft.inv).trim()){ toast('Type a B/L number or press “Generate B/L number” first'); $('#fInv').focus(); return false; }
+  if(!String(draft.inv).trim()){ toast('An invoice number is required'); return false; }
   if(!String(draft.co.city||'').trim()){ toast('Pick a destination first'); $('#fCoCity').focus(); return false; }
   /* the number must be free in the DATABASE, not just in this tab */
   try{
@@ -1358,11 +1352,6 @@ async function saveDraft(){
   const ok = await persist(); renderOrders();
   if(!ok){ toast('NOT SAVED — the database did not accept the save. Fix the connection / sign-in and press Save again.'); return false; }
   logEvent(act, draft.inv, (draft.sh&&draft.sh.name)||'');
-  if(PK_LINK && draft.id){   /* the pickup row now points at this B/L */
-    const row=(PICKUPS[PK_LINK.date]||[]).find(x=>x.id===PK_LINK.id);
-    if(row){ row.orderId=draft.id; row.inv=String(draft.inv); await savePickupsDay(PK_LINK.date, PICKUPS[PK_LINK.date]); if($('#pkList')) renderPickups(); }
-    PK_LINK=null;
-  }
   return true;
 }
 $('#btnCreate').addEventListener('click', async ()=>{
@@ -2011,10 +2000,7 @@ function tabNameHTML(k, val){
   return `<div><label class="f">Sheet tab name (bottom)</label>
     <input class="f" data-mh="${k}" value="${esc(val)}" placeholder="e.g. ${esc(tabLabel(todayISO()))}"></div>`;
 }
-function brokerFor(dest, os){
-  /* the agent the receipts name wins (most common one on the shipment); otherwise the old destination rule */
-  if(os && os.length){ const cnt={}; os.forEach(o=>{ const a=o.co&&o.co.agent; if(a) cnt[a]=(cnt[a]||0)+1; });
-    const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]; const b=top&&V2.brokers.find(x=>x.name===top); if(b) return b; }
+function brokerFor(dest){
   const vf=/vieux/i.test(dest);
   return V2.brokers.find(b=> vf ? /ella/i.test(b.name) : /hermle?n/i.test(b.name)) || V2.brokers[0];
 }
@@ -2037,7 +2023,7 @@ function renderHeaderFields(holder, fields, dest){
     if(v==='truck') return tabNameHTML(k, defaultTab());
     if(v==='select'){
       /* the right broker for the destination comes preselected */
-      const pick=brokerFor(dest, WIZ&&WIZ.sel&&WIZ.sel[dest]?orders.filter(o=>WIZ.sel[dest].has(o.id)):null);
+      const pick=brokerFor(dest);
       return `<div style="grid-column:span 2"><label class="f">${l}</label>
         <select class="f" data-mh="${k}">${V2.brokers.map(b=>`<option${b.name===pick.name?' selected':''}>${esc(b.name)}</option>`).join('')}</select></div>`;
     }
@@ -2151,7 +2137,7 @@ function renderPickups(){
     renderPickups(); pkAutosave();
   }));
   $('#pkList').innerHTML = rows.length ? `<table class="list"><thead><tr>
-      <th style="width:34px">Done</th><th style="width:30px">#</th><th>Name</th><th style="width:150px">Telephone #</th><th>Address / Cross street</th><th style="width:210px">Notes</th><th style="width:96px">BAL</th><th style="width:120px">Order</th><th style="width:30px"></th>
+      <th style="width:34px">Done</th><th style="width:30px">#</th><th>Name</th><th style="width:150px">Telephone #</th><th>Address / Cross street</th><th style="width:210px">Notes</th><th style="width:96px">BAL</th><th style="width:30px"></th>
     </tr></thead><tbody>${rows.map((r,i)=>`<tr${r.done?' style="opacity:.55"':''}>
       <td><input type="checkbox" data-pkdone="${i}"${r.done?' checked':''} style="width:16px;height:16px"></td><td>${i+1}</td>
       <td><input class="f" data-pk="${i}" data-k="name" value="${esc(r.name||'')}" style="text-transform:uppercase"></td>
@@ -2159,7 +2145,6 @@ function renderPickups(){
       <td><input class="f" data-pk="${i}" data-k="addr" value="${esc(r.addr||'')}" style="text-transform:uppercase"></td>
       <td><input class="f" data-pk="${i}" data-k="note" value="${esc(r.note||'')}"></td>
       <td><input class="f" data-pk="${i}" data-k="bal" value="${esc(r.bal||'')}"></td>
-      <td style="white-space:nowrap">${r.orderId?`<span class="pill ship">BL# ${esc(r.inv||'')}</span> <button class="btn ghost sm" data-pkopen="${i}">Open</button>`:`<button class="btn sm" data-pkorder="${i}">Create order</button>`}</td>
       <td><button class="x" data-pkdel="${i}" title="Remove">×</button></td></tr>`).join('')}</tbody></table>`
     : '<div class="empty"><b>No pickups for this day yet.</b> Add a row, or pull one from a website quote above.</div>';
   $$('#pkList [data-pk]').forEach(inp=>inp.addEventListener('input',()=>{
@@ -2169,24 +2154,7 @@ function renderPickups(){
   }));
   $$('#pkList [data-pkdone]').forEach(c=>c.addEventListener('change',()=>{ const r=pkRows()[+c.dataset.pkdone]; if(r){ r.done=c.checked; r.doneAt=c.checked?new Date().toISOString():''; } renderPickups(); pkAutosave(); renderOrders(); }));
   $$('#pkList [data-pkdel]').forEach(b=>b.addEventListener('click',()=>{ pkRows().splice(+b.dataset.pkdel,1); renderPickups(); pkAutosave(); renderOrders(); }));
-  $$('#pkList [data-pkorder]').forEach(b=>b.addEventListener('click',()=>pickupToOrder(pkRows()[+b.dataset.pkorder])));
-  $$('#pkList [data-pkopen]').forEach(b=>b.addEventListener('click',()=>{ const r=pkRows()[+b.dataset.pkopen]; const o=orders.find(x=>x.id===r.orderId); if(!o){ toast('That order is gone — create a new one'); r.orderId=''; r.inv=''; renderPickups(); pkAutosave(); return; } draft=JSON.parse(JSON.stringify(o)); goTab('order'); draftToForm(); }));
   updatePickBadge();
-}
-/* a pickup becomes a receipt: the Create screen opens filled from the row (or from
-   the website quote it came from, cargo and all); the row links to the B/L once saved */
-let PK_LINK=null;
-async function pickupToOrder(r){
-  if(!r) return;
-  PK_LINK={ date:pkDate, id:r.id };
-  const q=r.quoteId ? quotes.find(x=>String(x.id)===String(r.quoteId)) : null;
-  if(q){ const b=$(`#custList [data-mkorder="${CSS.escape(String(q.id))}"]`); if(b){ b.click(); return; } }
-  await refreshNext();
-  draft=blankOrder();
-  draft.sh={ name:String(r.name||'').toUpperCase(), name2:'', street:String(r.addr||'').toUpperCase(), city:'', state:'', phone:r.tel||'' };
-  if(r.note) draft.service=String(r.note).toUpperCase().slice(0,60);
-  goTab('order'); draftToForm();
-  toast('Receipt started from the pickup sheet — pick the destination, add the cargo, hit Create');
 }
 function pickupSheetHTML(date, rows){
   const n=Math.max(22, rows.length);
@@ -2218,7 +2186,7 @@ const KIND_ICON={'Commercial bins':'▣','Barrels':'⬤','Boxes':'▢','Other':'
 /* one compact line per B/L: "2 BARREL · 1 COMM BIN" */
 function cargoSummary(o){
   const m={}; (o.items||[]).forEach(it=>{ if(it.kind==='product'||!it.desc) return; const k=lineKind(it); m[k]=(m[k]||0)+(parseFloat(it.qty)||0); });
-  return KIND_ORDER.filter(k=>m[k]).map(k=>m[k]+' '+({'Commercial bins':'COMM BIN','Barrels':'BARREL','Boxes':'BOX','Other':'OTHER'})[k]+(m[k]>1&&k!=='Other'?'S':'')).join(' · ');
+  return KIND_ORDER.filter(k=>m[k]).map(k=>m[k]+' '+({'Commercial bins':'COMM BIN','Barrels':'BARREL','Boxes':'BOX','Other':'OTHER'})[k]+(m[k]>1&&k!=='Other'?(k==='Boxes'?'ES':'S'):'')).join(' · ');
 }
 function groupCargo(os){
   const g={}; KIND_ORDER.forEach(k=>g[k]={n:0,cu:0,amt:0,bls:{}});
@@ -2235,7 +2203,7 @@ function renderShipments(){
   wiz.hidden=true; list.hidden=false;
   const shs=SHIPMENTS.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)) || String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
   if(!SHIP_OK) list.innerHTML='<div class="card"><div class="empty"><b>Shipments could not be read from the database.</b> Reload the page before creating one.</div></div>';
-  else if(!shs.length) list.innerHTML='<div class="card"><div class="empty"><b>No shipments yet.</b> Create the first one — pick the destinations, confirm the tally, and the Master B/L and Manifest come out of it.</div></div>';
+  else if(!shs.length) list.innerHTML='<div class="card"><div class="empty"><b>No shipments yet.</b> Create the first one — type the B/L numbers, confirm the tally, and the Master B/L and Manifest come out of it.</div></div>';
   else list.innerHTML = shs.map(sh=>`<div class="card" style="padding:14px 18px">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <b style="font-size:16px">${esc(shipLabel(sh))}</b>
@@ -2255,7 +2223,7 @@ function renderShipments(){
           ${docs.manifest?`<span style="font-size:11.5px;color:var(--muted)">manifest ${esc(new Date(docs.manifest.at).toLocaleDateString())}</span>`:''}
         </div>`; }).join('')}</div>`}
     </div>`).join('');
-  $$('#shList [data-shopen]').forEach(b=>b.addEventListener('click',()=>{ const sh=SHIPMENTS.find(x=>x.id===b.dataset.shopen); if(sh) openWizard(sh, sh.status==='confirmed'?3:(sh.step||2)); }));
+  $$('#shList [data-shopen]').forEach(b=>b.addEventListener('click',()=>{ const sh=SHIPMENTS.find(x=>x.id===b.dataset.shopen); if(sh) openWizard(sh, sh.status==='confirmed'?3:Math.max(2, sh.step||2)); }));
   $$('#shList [data-shdel]').forEach(b=>b.addEventListener('click',async()=>{ const sh=SHIPMENTS.find(x=>x.id===b.dataset.shdel); if(!sh) return;
     if(!confirm('Delete '+shipLabel(sh)+'? Its '+shipCount(sh)+' B/L(s) go back to active cargo. The orders themselves are not touched.')) return;
     if(await deleteShipment(sh.id)){ logEvent('shipment deleted','',shipLabel(sh)); renderShipments(); renderOrders(); } }));
@@ -2265,7 +2233,7 @@ function renderShipments(){
     if(d&&d.url) openSheet(d.url, (b.dataset.shdoc==='master'?'Master B/L':'Manifest')+' — '+b.dataset.dest+' — '+shipLabel(sh));
     else openWizard(sh, 4, b.dataset.dest); }));
 }
-$('#shNew').addEventListener('click',()=>openWizard(null,1));
+$('#shNew').addEventListener('click',()=>openWizard(null,2));
 /* one-time: everything dated before September 2026 counts as shipped */
 $('#shArchive').addEventListener('click',async()=>{
   const os=orders.filter(o=>String(o.invDate)<'2026-09-01');
@@ -2275,15 +2243,21 @@ $('#shArchive').addEventListener('click',async()=>{
   const sh={ id:'archive-pre-2026-09', date:'2026-08-31', dests:Object.keys(cargo), cargo, docs:{}, hdr:{}, status:'confirmed', archive:true, createdAt:new Date().toISOString(), confirmedAt:new Date().toISOString(), by:userName||'admin' };
   if(await saveShipment(sh)){ logEvent('archive shipped','',os.length+' B/Ls before Sept 2026 marked shipped'); toast(os.length+' B/Ls marked shipped'); renderShipments(); renderOrders(); }
 });
+/* A shipment no longer starts by picking destinations: you type B/L numbers and each one lands under the
+   destination its consignee is going to (shipDests() match on the consignee city, else the city itself). */
+function autoDest(o){ return shipDests().find(n=>destMatches(o,n)) || String((o.co&&o.co.city)||'').trim() || 'Other'; }
 function openWizard(sh, step, focusDest){
   if(!SHIP_OK && !sh){ toast('Shipments could not be read — reload the page first.'); return; }
   WIZ = sh ? { id:sh.id, date:sh.date, dests:(sh.dests||[]).slice(), status:sh.status, noShip:!!sh.noShip, createdAt:sh.createdAt, by:sh.by, docs:JSON.parse(JSON.stringify(sh.docs||{})), hdr:JSON.parse(JSON.stringify(sh.hdr||{})),
-      sel:Object.fromEntries((sh.dests||[]).map(d=>[d,new Set((sh.cargo||{})[d]||[])])), mode:sh.mode||'select', from:sh.from||'', to:sh.to||'', step:step||3, tab:focusDest||(sh.dests||[])[0], q:'', open:{} }
-    : { id:uid(), date:todayISO(), dests:[], status:'draft', noShip:false, createdAt:new Date().toISOString(), by:userName||'admin', docs:{}, hdr:{}, sel:{}, mode:'active', from:'', to:'', step:1, tab:'', q:'', open:{} };
+      sel:Object.fromEntries((sh.dests||[]).map(d=>[d,new Set((sh.cargo||{})[d]||[])])), adj:JSON.parse(JSON.stringify(sh.adj||{})),
+      added:Array.isArray(sh.added)&&sh.added.length ? sh.added.slice() : Object.values(sh.cargo||{}).reduce((a,ids)=>a.concat(ids||[]),[]),
+      mode:sh.mode||'select', from:sh.from||'', to:sh.to||'', step:Math.max(2, step||3), tab:focusDest||(sh.dests||[])[0], q:'', open:{}, msg:'' }
+    : { id:uid(), date:todayISO(), dests:[], status:'draft', noShip:false, createdAt:new Date().toISOString(), by:userName||'admin', docs:{}, hdr:{}, sel:{}, adj:{}, added:[], mode:'select', from:'', to:'', step:2, tab:'', q:'', open:{}, msg:'' };
   renderShipments();
 }
 function wizToShipment(){
   return { id:WIZ.id, date:WIZ.date, dests:WIZ.dests.slice(), cargo:Object.fromEntries(WIZ.dests.map(d=>[d,[...(WIZ.sel[d]||new Set())]])),
+    adj:WIZ.adj||{}, added:(WIZ.added||[]).slice(),
     docs:WIZ.docs||{}, hdr:WIZ.hdr||{}, status:WIZ.status||'draft', noShip:!!WIZ.noShip, mode:WIZ.mode, from:WIZ.from, to:WIZ.to, step:WIZ.step,
     createdAt:WIZ.createdAt, by:WIZ.by, confirmedAt:WIZ.confirmedAt||'', updatedAt:new Date().toISOString() };
 }
@@ -2291,30 +2265,84 @@ function wizToShipment(){
 function wizAutosave(){ if(!WIZ || !WIZ.dests.length) return; clearTimeout(WIZ_T); WIZ_T=setTimeout(async()=>{ if(WIZ) await saveShipment(wizToShipment()); }, 1000); }
 function wizAllSelected(){ const s=new Set(); WIZ.dests.forEach(d=>(WIZ.sel[d]||new Set()).forEach(id=>s.add(id))); return s; }
 /* which destination of this shipment an order belongs under */
-function wizDestFor(o){ return WIZ.dests.find(d=>destMatches(o,d)) || WIZ.tab || WIZ.dests[0]; }
+function wizDestFor(o){ return WIZ.dests.find(d=>destMatches(o,d)) || autoDest(o); }
 function wizAdd(o, dest){
   dest = dest || wizDestFor(o);
+  if(!WIZ.dests.includes(dest)) WIZ.dests.push(dest);
   WIZ.dests.forEach(d=>{ if(d!==dest && WIZ.sel[d]) WIZ.sel[d].delete(o.id); });
   (WIZ.sel[dest]=WIZ.sel[dest]||new Set()).add(o.id);
+  WIZ.added=(WIZ.added||[]).filter(id=>id!==o.id); WIZ.added.push(o.id);
+  if(!WIZ.tab) WIZ.tab=dest;
   wizAutosave(); return dest;
 }
-function wizRemove(id){ WIZ.dests.forEach(d=>{ if(WIZ.sel[d]) WIZ.sel[d].delete(id); }); wizAutosave(); }
-function stepsHTML(s){ return `<div class="steps">${['Destinations','Cargo','Tally','Documents'].map((n,i)=>`<span class="${s===i+1?'on':''}">${i+1} · ${n}</span>`).join('<span style="background:none;padding:0">›</span>')}</div>`; }
+/* a destination with no B/Ls left disappears from the shipment (its hand-set counts are kept in case it comes back) */
+function wizPrune(){ WIZ.dests=WIZ.dests.filter(d=>(WIZ.sel[d]||new Set()).size); if(WIZ.tab && !WIZ.dests.includes(WIZ.tab)) WIZ.tab=WIZ.dests[0]||''; }
+function wizRemove(id){ WIZ.dests.forEach(d=>{ if(WIZ.sel[d]) WIZ.sel[d].delete(id); }); WIZ.added=(WIZ.added||[]).filter(x=>x!==id); wizPrune(); wizAutosave(); }
+function stepsHTML(s){ return `<div class="steps">${['Cargo','Tally','Documents'].map((n,i)=>`<span class="${s===i+2?'on':''}">${i+1} · ${n}</span>`).join('<span style="background:none;padding:0">›</span>')}</div>`; }
+/* ---- hand-set counts ----
+   The counter shows what the B/Ls add up to, but staff can type their own number for Barrels and Commercial bins
+   (sh.adj[dest][kind]). Once set, that number stands: B/Ls added or removed afterwards never overwrite it.
+   Clearing the box goes back to the B/L count. The tally sheet and count sheet print the hand-set number. */
+const ADJ_KINDS=['Barrels','Commercial bins'];
+function adjRaw(sh, dest, k){ const a=sh&&sh.adj&&sh.adj[dest]; const v=a?a[k]:null; return (v==null||v===''||!isFinite(+v)) ? null : Math.max(0,+v); }
+function adjN(sh, dest, k, g){ const v=adjRaw(sh,dest,k); return v==null ? g[k].n : v; }
+function adjCu(sh, dest, k, g){ const v=adjRaw(sh,dest,k); if(v==null) return g[k].cu; const per=g[k].n ? g[k].cu/g[k].n : (k==='Commercial bins'?19:(k==='Barrels'?15:0)); return per*v; }
+function wizSetAdj(dest, k, val){
+  WIZ.adj=WIZ.adj||{}; WIZ.adj[dest]=WIZ.adj[dest]||{};
+  const s=String(val==null?'':val).trim();
+  if(s==='' || !isFinite(+s)) delete WIZ.adj[dest][k]; else WIZ.adj[dest][k]=Math.max(0, Math.round(+s*10)/10);
+  if(!Object.keys(WIZ.adj[dest]).length) delete WIZ.adj[dest];
+  wizAutosave();
+}
+/* the live counter next to the rapid-fire box: one block per destination that has cargo, shipment total on top when there are several */
+function counterHTML(){
+  const dests=WIZ.dests.filter(d=>(WIZ.sel[d]||new Set()).size);
+  if(!dests.length) return `<div class="card ctr" style="padding:16px 18px"><h2 style="margin:0 0 6px">Counter</h2><div class="empty" style="padding:18px 6px"><b>Nothing on this shipment yet.</b> Type the first B/L number on the left and the counts fill in here. Destinations come from each consignee's city.</div></div>`;
+  const per=dests.map(d=>{ const os=orders.filter(o=>(WIZ.sel[d]||new Set()).has(o.id)); const g=groupCargo(os); return {d,os,g}; });
+  const tot=k=>per.reduce((s,x)=>s+adjN(WIZ,x.d,k,x.g),0), totCu=per.reduce((s,x)=>s+KIND_ORDER.reduce((s2,k)=>s2+adjCu(WIZ,x.d,k,x.g),0),0);
+  const nBL=per.reduce((s,x)=>s+x.os.length,0), hold=per.reduce((s,x)=>s+x.os.filter(o=>orderBal(o)>0).length,0);
+  let h=`<div class="card ctr" style="padding:16px 18px"><div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0">Counter</h2><span style="flex:1"></span><span style="font-size:11.5px;color:var(--muted)">so far</span></div>`;
+  if(per.length>1) h+=`<div class="tot" style="border:1px solid var(--rule);border-radius:10px;background:#fff"><span><b>${nBL}</b> B/Ls</span>${KIND_ORDER.filter(k=>tot(k)).map(k=>`<span><b>${Math.round(tot(k)*10)/10}</b> ${k.toLowerCase()}</span>`).join('')}<span><b>${Math.round(totCu*10)/10}</b> cu ft</span></div>`;
+  per.forEach(({d,os,g})=>{
+    const pk=KIND_ORDER.reduce((s,k)=>s+adjN(WIZ,d,k,g),0), cf=KIND_ORDER.reduce((s,k)=>s+adjCu(WIZ,d,k,g),0);
+    h+=`<div class="dest" style="margin-top:${per.length>1?'6px':'2px'}">→ <b>${esc(d)}</b><span style="flex:1"></span>${os.length} B/L${os.length===1?'':'s'}</div>
+      <div class="tiles">${KIND_ORDER.map(k=>{ const isAdj=adjRaw(WIZ,d,k)!=null, n=adjN(WIZ,d,k,g), nbl=Object.keys(g[k].bls).length;
+        if(ADJ_KINDS.includes(k)) return `<div class="kgrp edit${isAdj?' adj':''}"><div class="ic">${KIND_ICON[k]}</div>
+            <input class="adjn" type="number" min="0" step="1" inputmode="numeric" data-adj="${k}" data-dest="${esc(d)}" value="${Math.round(n*10)/10}" title="Type your own count — B/Ls added later will not change it">
+            <div class="l">${k}</div>
+            <div class="m">${isAdj ? 'set by hand · B/Ls say <b>'+Math.round(g[k].n*10)/10+'</b> · <a data-adjreset="'+k+'" data-dest="'+esc(d)+'">use B/L count</a>' : nbl+' B/L'+(nbl===1?'':'s')+' · '+Math.round(g[k].cu*10)/10+' cu ft · <span style="color:var(--ocean)">tap to adjust</span>'}</div></div>`;
+        return `<div class="kgrp"><div class="ic">${KIND_ICON[k]}</div><div class="n">${Math.round(n*10)/10}</div><div class="l">${k}</div><div class="m">${nbl} B/L${nbl===1?'':'s'} · ${Math.round(g[k].cu*10)/10} cu ft</div></div>`; }).join('')}
+      </div>
+      <div class="tot" style="padding:6px 2px 0"><span><b>${Math.round(pk*10)/10}</b> pieces</span><span><b>${Math.round(cf*10)/10}</b> cu ft</span>${hold?`<span style="color:#C22B1E"><b>${os.filter(o=>orderBal(o)>0).length}</b> on HOLD</span>`:''}</div>`;
+  });
+  return h+'</div>';
+}
+function wireCounter(){
+  $$('#shWiz [data-adj]').forEach(inp=>{
+    const tile=inp.closest('.kgrp');
+    inp.addEventListener('focus',()=>inp.select());
+    inp.addEventListener('input',()=>{ wizSetAdj(inp.dataset.dest, inp.dataset.adj, inp.value); if(tile) tile.classList.toggle('adj', adjRaw(WIZ,inp.dataset.dest,inp.dataset.adj)!=null); });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
+    inp.addEventListener('change',()=>{ renderWizard(); });
+  });
+  $$('#shWiz [data-adjreset]').forEach(a=>a.addEventListener('click',()=>{ wizSetAdj(a.dataset.dest, a.dataset.adjreset, ''); renderWizard(); }));
+}
 /* the rapid-fire box: type a B/L number, Enter, it's on the shipment, box clears, type the next */
-function rapidHTML(id){ return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#EAF3FA;border:1px solid #BFD9EA;border-radius:8px;padding:10px 12px">
-    <b style="font-size:13px">Add by number</b>
-    <input class="f" id="${id}" placeholder="B/L number → Enter" inputmode="numeric" style="max-width:200px;font-size:16px;font-weight:700;letter-spacing:.04em">
-    <span id="${id}Msg" style="font-size:12.5px;color:var(--muted);flex:1;min-width:200px">Type the number, press Enter, keep going.</span></div>`; }
+function rapidHTML(id, big){ return `<div class="rapid${big?' big':''}">
+    <b style="font-size:13px">${big?'Type a B/L number and press Enter — keep going':'Add by number'}</b>
+    <input class="f" id="${id}" placeholder="B/L number → Enter" inputmode="numeric" autocomplete="off" style="max-width:200px;font-size:16px;font-weight:700;letter-spacing:.04em">
+    <span class="rmsg" id="${id}Msg" style="font-size:12.5px;color:var(--muted);flex:1;min-width:200px">${WIZ&&WIZ.msg ? WIZ.msg : 'Type the number, press Enter, keep going.'}</span></div>`; }
 function wireRapid(id, onAdded){
   const inp=$('#'+id), msg=$('#'+id+'Msg'); if(!inp) return;
   inp.addEventListener('keydown',e=>{
     if(e.key!=='Enter') return; e.preventDefault();
     const v=inp.value.trim(); if(!v) return;
     const o=orders.find(x=>String(x.inv).toUpperCase()===v.toUpperCase());
-    if(!o){ msg.innerHTML='<b style="color:#C22B1E">No cargo with B/L '+esc(v)+'</b>'; inp.select(); return; }
-    if(wizAllSelected().has(o.id)){ msg.innerHTML='<b style="color:#B45309">'+esc(o.inv)+' is already on this shipment</b>'; inp.value=''; return; }
+    if(!o){ WIZ.msg='<b style="color:#C22B1E">No cargo with B/L '+esc(v)+'</b>'; msg.innerHTML=WIZ.msg; inp.select(); return; }
+    if(wizAllSelected().has(o.id)){ WIZ.msg='<b style="color:#B45309">'+esc(o.inv)+' is already on this shipment</b>'; msg.innerHTML=WIZ.msg; inp.value=''; return; }
     const d=wizAdd(o);
-    msg.innerHTML='<b style="color:#177245">✓ '+esc(o.inv)+'</b> '+esc(o.sh.name||'')+' → '+esc(o.co.name||'')+' · '+esc(cargoSummary(o)||'no cargo lines')+' · under '+esc(d)+(shippedIds().has(o.id)?' <span class="pill ship">WAS SHIPPED</span>':'');
+    WIZ.msg='<b style="color:#177245">✓ '+esc(o.inv)+'</b> '+esc(o.sh.name||'')+' → '+esc(o.co.name||'')+' · '+esc(cargoSummary(o)||'no cargo lines')+' · under '+esc(d)+(shippedIds().has(o.id)?' <span class="pill ship">WAS SHIPPED</span>':'');
+    msg.innerHTML=WIZ.msg; WIZ.lastAdded=o.id;
     inp.value=''; if(onAdded) onAdded();
   });
   inp.focus();
@@ -2326,46 +2354,55 @@ function renderWizard(){
   let html=`<div class="card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap"><h2 style="margin:0">${esc(title)}</h2>
       ${WIZ.dests.length?`<span style="font-size:12.5px;color:var(--muted)">${totalSel} B/L${totalSel===1?'':'s'} · ${WIZ.dests.map(esc).join(', ')} · saves itself</span>`:''}
       <span style="flex:1"></span><button class="btn ghost sm" id="wzClose">Close</button></div>${stepsHTML(s)}`;
-  if(s===1){
-    html+=`<div class="grid g2" style="max-width:760px"><div><label class="f">Shipment date</label><input class="f" type="date" id="wzDate" value="${esc(WIZ.date)}"></div></div>
-      <label class="f" style="margin-top:14px">Which destinations are on this shipment?</label>
-      <div class="pickbox">${shipDests().map(n=>`<label><input type="checkbox" data-wzdest="${esc(n)}"${WIZ.dests.includes(n)?' checked':''}> ${esc(n)}</label>`).join('')}</div>
-      <div style="margin-top:18px;display:flex;gap:8px"><button class="btn" id="wzNext1">Next — choose cargo ›</button></div>`;
-  } else if(s===2){
+  if(s===2){
+    /* ONE page: rapid-fire B/L box + the list filling in on the left, the live counter on the right */
     const shipped=shippedIds(); const selAll=wizAllSelected();
-    const activeN=Object.fromEntries(WIZ.dests.map(d=>[d, orders.filter(o=>destMatches(o,d)&&!shipped.has(o.id)&&o.items.some(it=>it.kind!=='product'&&it.desc)).length]));
+    const added=(WIZ.added||[]).slice().reverse().map(id=>orders.find(o=>o.id===id)).filter(Boolean);
+    const destOf=o=>WIZ.dests.find(d=>(WIZ.sel[d]||new Set()).has(o.id))||'';
+    const activeN=orders.filter(o=>!shipped.has(o.id)&&o.items.some(it=>it.kind!=='product'&&it.desc)&&shipDests().some(d=>destMatches(o,d))&&!selAll.has(o.id)).length;
     const q=String(WIZ.q||'').trim().toLowerCase();
     const pool=orders.filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc)
         && (!q || [o.inv,o.sh&&o.sh.name,o.co&&o.co.name,o.co&&o.co.city].some(v=>String(v||'').toLowerCase().includes(q)))
         && (!WIZ.from||String(o.invDate)>=WIZ.from) && (!WIZ.to||String(o.invDate)<=WIZ.to))
       .sort((a,b)=>-byDateInv(a,b));
     const shown=pool.slice(0,300);
-    html+=`<label class="f">Which cargo goes?</label>
-      <div class="pickbox" style="margin-bottom:14px">
-        <label><input type="radio" name="wzmode" value="active"${WIZ.mode==='active'?' checked':''}> Active inventory — everything still in the warehouse (${WIZ.dests.map(d=>esc(d)+': '+activeN[d]).join(' · ')})</label>
-        <label><input type="radio" name="wzmode" value="select"${WIZ.mode==='select'?' checked':''}> Select inventory — search any B/L ever, tick or type numbers</label>
-      </div>
-      <div id="wzSelBox"${WIZ.mode==='select'?'':' hidden'}>
-        ${rapidHTML('wzRapid')}
-        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0 10px">
-          <div style="flex:1;min-width:220px"><label class="f">Search — B/L, shipper, consignee, destination</label><input class="f" id="wzQ" value="${esc(WIZ.q||'')}" placeholder="Start typing…"></div>
-          <div><label class="f">From</label><input class="f" type="date" id="wzFrom" value="${esc(WIZ.from)}"></div>
-          <div><label class="f">To</label><input class="f" type="date" id="wzTo" value="${esc(WIZ.to)}"></div>
-          <button class="btn ghost sm" id="wzAll">Tick all shown</button><button class="btn ghost sm" id="wzNone">Untick all shown</button>
+    html+=`<div class="rapidsplit">
+      <div>
+        <div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:12px">
+          <div style="width:190px"><label class="f">Shipment date</label><input class="f" type="date" id="wzDate" value="${esc(WIZ.date)}"></div>
+          <div style="font-size:12.5px;color:var(--muted);padding-bottom:9px">Each B/L lands under its consignee's destination automatically${WIZ.dests.length?' — <b>'+WIZ.dests.map(esc).join('</b>, <b>')+'</b> so far':''}.</div>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${pool.length} B/L${pool.length===1?'':'s'} match${shown.length<pool.length?' — showing the newest '+shown.length+', narrow the search for the rest':''} · ticked ones go under their own destination (or the first one on this shipment)</div>
-        ${shown.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:3px 12px;max-height:420px;overflow:auto;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:#fff">${shown.map(o=>`<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;padding:3px 0"><input type="checkbox" data-wzsel="${o.id}"${selAll.has(o.id)?' checked':''}> <b>${esc(o.inv)}</b> ${esc(usDate(o.invDate))} · ${esc(o.sh.name||'')} → ${esc(o.co.name||'')} <span style="color:var(--muted)">${esc(o.co.city||'')}</span>${shipped.has(o.id)?' <span class="pill ship">SHIPPED</span>':''}</label>`).join('')}</div>`:'<p class="hint">Nothing matches.</p>'}
+        ${rapidHTML('wzRapid', true)}
+        <div class="bllist" style="margin-top:14px">
+          ${added.length?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b style="font-size:13px">${added.length} B/L${added.length===1?'':'s'} on this shipment</b><span style="font-size:12px;color:var(--muted)">newest first</span></div>
+          <table class="list"><thead><tr><th style="width:34px">#</th><th style="width:110px">B/L #</th><th>Shipper → Consignee</th><th style="width:130px">Destination</th><th>Cargo</th><th style="width:80px" class="num">$</th><th style="width:34px"></th></tr></thead><tbody>
+            ${added.map((o,i)=>`<tr${o.id===WIZ.lastAdded?' class="new"':''}><td style="color:var(--muted)">${added.length-i}</td><td><b>${esc(o.inv)}</b><div style="color:var(--muted);font-size:11px">${esc(usDate(o.invDate))}</div></td><td>${esc(o.sh.name||'')} → ${esc(o.co.name||'')}${orderBal(o)>0?' <span class="pill bal">HOLD</span>':''}${shipped.has(o.id)?' <span class="pill ship">WAS SHIPPED</span>':''}</td><td><span class="dpill">→ ${esc(destOf(o))}</span></td><td style="font-size:12px;color:var(--muted)">${esc(cargoSummary(o)||'no cargo lines')}</td><td class="num">${money(orderTotal(o))}</td><td><button class="x" data-tyrm="${o.id}" title="Take this B/L off the shipment">×</button></td></tr>`).join('')}
+          </tbody></table>`
+          : `<div class="empty"><b>The list fills in here.</b> Type a B/L number above and press Enter.</div>`}
+        </div>
+        <details style="margin-top:16px"${(WIZ.q||WIZ.from||WIZ.to)?' open':''}><summary style="cursor:pointer;font-size:12.5px;color:var(--muted);font-weight:600">Can't find a number? Search &amp; tick, or pull everything active</summary>
+          <div style="margin:10px 0 6px"><button class="btn ghost sm" id="wzActive"${activeN?'':' disabled'}>Add everything still in the warehouse (${activeN} B/L${activeN===1?'':'s'} not on this shipment yet)</button></div>
+          <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:10px 0 10px">
+            <div style="flex:1;min-width:220px"><label class="f">Search — B/L, shipper, consignee, destination</label><input class="f" id="wzQ" value="${esc(WIZ.q||'')}" placeholder="Start typing…"></div>
+            <div><label class="f">From</label><input class="f" type="date" id="wzFrom" value="${esc(WIZ.from)}"></div>
+            <div><label class="f">To</label><input class="f" type="date" id="wzTo" value="${esc(WIZ.to)}"></div>
+            <button class="btn ghost sm" id="wzAll">Tick all shown</button><button class="btn ghost sm" id="wzNone">Untick all shown</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${pool.length} B/L${pool.length===1?'':'s'} match${shown.length<pool.length?' — showing the newest '+shown.length+', narrow the search for the rest':''}</div>
+          ${shown.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:3px 12px;max-height:360px;overflow:auto;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:#fff">${shown.map(o=>`<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;padding:3px 0"><input type="checkbox" data-wzsel="${o.id}"${selAll.has(o.id)?' checked':''}> <b>${esc(o.inv)}</b> ${esc(usDate(o.invDate))} · ${esc(o.sh.name||'')} → ${esc(o.co.name||'')} <span style="color:var(--muted)">${esc(o.co.city||'')}</span>${shipped.has(o.id)?' <span class="pill ship">SHIPPED</span>':''}</label>`).join('')}</div>`:'<p class="hint">Nothing matches.</p>'}
+        </details>
       </div>
-      <div style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="btn ghost" id="wzBack2">‹ Back</button>
-        <button class="btn ghost" id="wzCount" title="Print a blank-count sheet of the selected cargo">🖨 Print count sheet — do a physical count?</button>
-        <span style="flex:1"></span>
-        <button class="btn" id="wzNext2">Next — tally sheet ›</button>
-      </div>`;
+      <div class="stickywrap">${counterHTML()}</div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn ghost" id="wzCount" title="Print a blank-count sheet of the selected cargo">🖨 Print count sheet — do a physical count?</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="wzNext2">Next — tally sheet ›</button>
+    </div>`;
   } else if(s===3){
     if(!WIZ.tab || !WIZ.dests.includes(WIZ.tab)) WIZ.tab=WIZ.dests[0];
     const d=WIZ.tab; const os=orders.filter(o=>(WIZ.sel[d]||new Set()).has(o.id)).sort(byDateInv); const g=groupCargo(os);
-    const pk=KIND_ORDER.reduce((s2,k)=>s2+g[k].n,0), cf=KIND_ORDER.reduce((s2,k)=>s2+g[k].cu,0), amt=os.reduce((s2,o)=>s2+orderTotal(o),0);
+    const pk=KIND_ORDER.reduce((s2,k)=>s2+adjN(WIZ,d,k,g),0), cf=KIND_ORDER.reduce((s2,k)=>s2+adjCu(WIZ,d,k,g),0), amt=KIND_ORDER.reduce((s2,k)=>s2+g[k].amt,0);
     const hold=os.filter(o=>orderBal(o)>0).length;
     html+=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
         <div class="seg">${WIZ.dests.map(x=>`<button data-wztab="${esc(x)}" class="${x===d?'on':''}">${esc(x)} (${(WIZ.sel[x]||new Set()).size})</button>`).join('')}</div>
@@ -2376,14 +2413,14 @@ function renderWizard(){
         <div>
           ${rapidHTML('wzRapid3')}
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0">
-            ${KIND_ORDER.map(k=>`<div class="kgrp${WIZ.open[k]?' on':''}" data-kgrp="${k}"><div class="ic">${KIND_ICON[k]}</div><div class="n">${Math.round(g[k].n*10)/10}</div><div class="l">${k}</div><div class="m">${Object.keys(g[k].bls).length} B/L${Object.keys(g[k].bls).length===1?'':'s'} · ${Math.round(g[k].cu*10)/10} cu ft</div><div class="x">${WIZ.open[k]?'▲ hide':'▼ open'}</div></div>`).join('')}
+            ${KIND_ORDER.map(k=>{ const isAdj=adjRaw(WIZ,d,k)!=null; return `<div class="kgrp${WIZ.open[k]?' on':''}" data-kgrp="${k}"${isAdj?' style="border-color:#B45309"':''}><div class="ic">${KIND_ICON[k]}</div><div class="n"${isAdj?' style="color:#B45309"':''}>${Math.round(adjN(WIZ,d,k,g)*10)/10}</div><div class="l">${k}</div><div class="m">${isAdj?'set by hand · B/Ls say '+Math.round(g[k].n*10)/10+' · ':''}${Object.keys(g[k].bls).length} B/L${Object.keys(g[k].bls).length===1?'':'s'} · ${Math.round(adjCu(WIZ,d,k,g)*10)/10} cu ft</div><div class="x">${WIZ.open[k]?'▲ hide':'▼ open'}</div></div>`; }).join('')}
           </div>
           ${KIND_ORDER.filter(k=>WIZ.open[k]).map(k=>{ const rows=Object.values(g[k].bls).sort((a,b)=>byDateInv(a.o,b.o));
             return `<div class="card" style="padding:8px 8px;margin-bottom:12px"><h2 style="padding:4px 6px 8px">${KIND_ICON[k]} ${k} — ${Math.round(g[k].n*10)/10} pieces on ${rows.length} B/L${rows.length===1?'':'s'}</h2>
               ${rows.length?`<table class="list"><thead><tr><th style="width:110px">B/L #</th><th>Shipper → Consignee</th><th style="width:60px" class="num">Pcs</th><th style="width:170px">Lines</th><th style="width:80px" class="num">$</th><th style="width:34px"></th></tr></thead><tbody>
-              ${rows.map(r=>`<tr><td><b>${esc(r.o.inv)}</b><div style="color:var(--muted);font-size:11px">${esc(usDate(r.o.invDate))}</div></td><td>${esc(r.o.sh.name||'')} → ${esc(r.o.co.name||'')}${orderBal(r.o)>0?' <span class="pill bal">HOLD</span>':''}</td><td class="num"><b>${r.n}</b></td><td style="font-size:12px;color:var(--muted)">${r.lines.map(it=>esc(it.qty+' '+it.desc+(it.dims?' '+it.dims:''))).join('<br>')}</td><td class="num">${money(orderTotal(r.o))}</td><td><button class="x" data-tyrm="${r.o.id}" title="Take this B/L off the shipment">×</button></td></tr>`).join('')}
+              ${rows.map(r=>`<tr><td><b>${esc(r.o.inv)}</b><div style="color:var(--muted);font-size:11px">${esc(usDate(r.o.invDate))}</div></td><td>${esc(r.o.sh.name||'')} → ${esc(r.o.co.name||'')}${orderBal(r.o)>0?' <span class="pill bal">HOLD</span>':''}</td><td class="num"><b>${r.n}</b></td><td style="font-size:12px;color:var(--muted)">${r.lines.map(it=>esc(it.qty+' '+it.desc+(it.dims?' '+it.dims:''))).join('<br>')}</td><td class="num">${money(r.lines.reduce((s2,it)=>s2+itemAmount(it),0))}</td><td><button class="x" data-tyrm="${r.o.id}" title="Take this B/L off the shipment">×</button></td></tr>`).join('')}
               </tbody></table>`:'<p class="hint">None.</p>'}</div>`; }).join('')}
-          <div class="card" style="padding:10px 14px;font-size:13px;display:flex;gap:18px;flex-wrap:wrap"><span><b>${os.length}</b> B/L${os.length===1?'':'s'}</span><span><b>${pk}</b> pieces</span><span><b>${Math.round(cf*10)/10}</b> cu ft</span><span><b>${money(amt)}</b> total billed</span>${hold?`<span style="color:#C22B1E"><b>${hold}</b> on HOLD (balance due)</span>`:''}</div>
+          <div class="card" style="padding:10px 14px;font-size:13px;display:flex;gap:18px;flex-wrap:wrap"><span><b>${os.length}</b> B/L${os.length===1?'':'s'}</span><span><b>${pk}</b> pieces</span><span><b>${Math.round(cf*10)/10}</b> cu ft</span><span><b>${money(amt)}</b> freight</span>${hold?`<span style="color:#C22B1E"><b>${hold}</b> on HOLD (balance due)</span>`:''}</div>
           <details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">All ${os.length} B/Ls on ${esc(d)} (one line each)</summary>
             <table class="list" style="margin-top:6px"><tbody>${os.map(o=>`<tr><td style="width:100px"><b>${esc(o.inv)}</b></td><td>${esc(o.sh.name||'')} → ${esc(o.co.name||'')}</td><td style="font-size:12px;color:var(--muted)">${esc(cargoSummary(o))}</td><td class="num" style="width:34px"><button class="x" data-tyrm="${o.id}">×</button></td></tr>`).join('')}</tbody></table></details>
         </div>
@@ -2415,36 +2452,28 @@ function renderWizard(){
   w.innerHTML=html;
   /* ---- wiring ---- */
   $('#wzClose').addEventListener('click',async()=>{ clearTimeout(WIZ_T); if(WIZ.dests.length) await saveShipment(wizToShipment()); WIZ=null; renderShipments(); });
-  if(s===1){
-    $('#wzDate').addEventListener('change',()=>{ WIZ.date=$('#wzDate').value||todayISO(); wizAutosave(); });
-    $('#wzNext1').addEventListener('click',()=>{
-      WIZ.dests=$$('#shWiz [data-wzdest]').filter(c=>c.checked).map(c=>c.dataset.wzdest);
-      if(!WIZ.dests.length){ toast('Pick at least one destination'); return; }
-      WIZ.dests.forEach(d=>{ if(!WIZ.sel[d]) WIZ.sel[d]=new Set(); });
-      WIZ.step=2; wizAutosave(); renderWizard();
-    });
-  }
   if(s===2){
-    $$('#shWiz [name="wzmode"]').forEach(r=>r.addEventListener('change',()=>{ WIZ.mode=r.value; wizAutosave(); renderWizard(); }));
+    $('#wzDate').addEventListener('change',()=>{ WIZ.date=$('#wzDate').value||todayISO(); wizAutosave(); });
+    /* every add/remove redraws the page (list + counter), then puts the cursor back in the number box */
+    wireRapid('wzRapid', ()=>renderWizard());
+    wireCounter();
+    $$('#shWiz .bllist [data-tyrm]').forEach(b=>b.addEventListener('click',()=>{ wizRemove(b.dataset.tyrm); WIZ.lastAdded=''; renderWizard(); }));
     const rf=$('#wzFrom'), rt=$('#wzTo'), rq=$('#wzQ');
     if(rf){ rf.addEventListener('change',()=>{ WIZ.from=rf.value; renderWizard(); }); rt.addEventListener('change',()=>{ WIZ.to=rt.value; renderWizard(); });
       let qt=null; rq.addEventListener('input',()=>{ clearTimeout(qt); qt=setTimeout(()=>{ WIZ.q=rq.value; const pos=rq.selectionStart; renderWizard(); const n=$('#wzQ'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(e){} } },250); });
-      $('#wzAll').addEventListener('click',()=>{ $$('#shWiz [data-wzsel]').forEach(c=>{ const o=orders.find(x=>x.id===c.dataset.wzsel); if(o) wizAdd(o); }); renderWizard(); });
-      $('#wzNone').addEventListener('click',()=>{ $$('#shWiz [data-wzsel]').forEach(c=>wizRemove(c.dataset.wzsel)); renderWizard(); });
-      $$('#shWiz [data-wzsel]').forEach(c=>c.addEventListener('change',()=>{ const o=orders.find(x=>x.id===c.dataset.wzsel); if(!o) return; if(c.checked) wizAdd(o); else wizRemove(o.id); const hd=$('#shWiz > .card > div:first-child span'); if(hd){ const n=wizAllSelected().size; hd.textContent=n+' B/L'+(n===1?'':'s')+' · '+WIZ.dests.join(', ')+' · saves itself'; } }));
-      wireRapid('wzRapid', ()=>{ const n=wizAllSelected().size; const hd=$('#shWiz > .card > div:first-child span'); if(hd) hd.textContent=n+' B/L'+(n===1?'':'s')+' · '+WIZ.dests.join(', ')+' · saves itself'; $$('#shWiz [data-wzsel]').forEach(c=>{ c.checked=wizAllSelected().has(c.dataset.wzsel); }); });
+      $('#wzAll').addEventListener('click',()=>{ $$('#shWiz [data-wzsel]').forEach(c=>{ const o=orders.find(x=>x.id===c.dataset.wzsel); if(o) wizAdd(o); }); WIZ.lastAdded=''; renderWizard(); });
+      $('#wzNone').addEventListener('click',()=>{ $$('#shWiz [data-wzsel]').forEach(c=>wizRemove(c.dataset.wzsel)); WIZ.lastAdded=''; renderWizard(); });
+      $$('#shWiz [data-wzsel]').forEach(c=>c.addEventListener('change',()=>{ const o=orders.find(x=>x.id===c.dataset.wzsel); if(!o) return; if(c.checked){ wizAdd(o); WIZ.lastAdded=o.id; } else { wizRemove(o.id); WIZ.lastAdded=''; } renderWizard(); const n=$('#wzQ'); if(n) n.focus(); }));
+      $('#wzActive').addEventListener('click',()=>{ const n=wizTakeActive(); WIZ.lastAdded=''; WIZ.msg=n?'<b style="color:#177245">✓ '+n+' active B/L'+(n===1?'':'s')+' added</b>':'<b style="color:#B45309">Everything active is already on this shipment</b>'; renderWizard(); });
     }
-    $('#wzBack2').addEventListener('click',()=>{ WIZ.step=1; renderWizard(); });
     $('#wzCount').addEventListener('click',()=>{
-      if(WIZ.mode==='active') wizTakeActive();
-      const all=wizAllSelected(); if(!all.size){ toast('Nothing selected yet'); return; }
+      const all=wizAllSelected(); if(!all.size){ toast('Nothing on the shipment yet'); return; }
       printDoc(WIZ.dests.map(d=>countSheetHTML(WIZ, d, orders.filter(o=>(WIZ.sel[d]||new Set()).has(o.id)).sort(byDateInv))).join(''));
     });
     $('#wzNext2').addEventListener('click',()=>{
-      if(WIZ.mode==='active') wizTakeActive();
       const n=wizAllSelected().size;
-      if(!n){ toast('No cargo selected — tick some B/Ls or type numbers first'); return; }
-      WIZ.step=3; WIZ.tab=WIZ.dests[0]; wizAutosave(); renderWizard();
+      if(!n){ toast('No cargo yet — type some B/L numbers first'); return; }
+      WIZ.step=3; if(!WIZ.tab||!WIZ.dests.includes(WIZ.tab)) WIZ.tab=WIZ.dests[0]; wizAutosave(); renderWizard();
     });
   }
   if(s===3){
@@ -2507,7 +2536,10 @@ function renderWizard(){
     });
   }
 }
-function wizTakeActive(){ const shipped=shippedIds(); WIZ.dests.forEach(d=>{ WIZ.sel[d]=new Set(orders.filter(o=>destMatches(o,d)&&!shipped.has(o.id)&&o.items.some(it=>it.kind!=='product'&&it.desc)).map(o=>o.id)); }); wizAutosave(); }
+/* pull every B/L still in the warehouse (bound for one of our destinations) onto the shipment; returns how many were added */
+function wizTakeActive(){ const shipped=shippedIds(), have=wizAllSelected(); let n=0;
+  orders.slice().sort(byDateInv).forEach(o=>{ if(shipped.has(o.id)||have.has(o.id)) return; if(!o.items.some(it=>it.kind!=='product'&&it.desc)) return; if(!shipDests().some(d=>destMatches(o,d))) return; wizAdd(o); n++; });
+  return n; }
 /* ---- printable sheets ---- */
 function tallyHead(sh, dest, sub){
   return `<div style="display:flex;align-items:center;gap:12pt;border-bottom:2px solid #000;padding-bottom:6pt;margin-bottom:8pt">
@@ -2517,15 +2549,17 @@ function tallyHead(sh, dest, sub){
 }
 function tallyHTML(sh, dest, os){
   const g=groupCargo(os);
-  const pk=KIND_ORDER.reduce((s,k)=>s+g[k].n,0), cf=KIND_ORDER.reduce((s,k)=>s+g[k].cu,0), amt=os.reduce((s,o)=>s+orderTotal(o),0);
+  /* hand-set Barrel / Commercial-bin counts (sh.adj) print in place of what the B/Ls add up to */
+  const N=k=>adjN(sh,dest,k,g), CU=k=>adjCu(sh,dest,k,g);
+  const pk=KIND_ORDER.reduce((s,k)=>s+N(k),0), cf=KIND_ORDER.reduce((s,k)=>s+CU(k),0), amt=KIND_ORDER.reduce((s,k)=>s+g[k].amt,0);
   const sum=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6pt;margin-bottom:9pt">
-    ${KIND_ORDER.map(k=>`<div style="border:1.5px solid #000;border-radius:6pt;padding:5pt 6pt;text-align:center"><div style="font-size:17pt;font-weight:800;line-height:1">${Math.round(g[k].n*10)/10}</div><div style="font-size:8pt;text-transform:uppercase;letter-spacing:.05em;margin-top:2pt">${k}</div></div>`).join('')}
+    ${KIND_ORDER.map(k=>`<div style="border:1.5px solid #000;border-radius:6pt;padding:5pt 6pt;text-align:center"><div style="font-size:17pt;font-weight:800;line-height:1">${Math.round(N(k)*10)/10}</div><div style="font-size:8pt;text-transform:uppercase;letter-spacing:.05em;margin-top:2pt">${k}</div>${adjRaw(sh,dest,k)!=null?'<div style="font-size:7pt;font-weight:700;margin-top:1pt">hand count · B/Ls '+Math.round(g[k].n*10)/10+'</div>':''}</div>`).join('')}
     <div style="border:1.5px solid #000;border-radius:6pt;padding:5pt 6pt;text-align:center;background:#eee"><div style="font-size:17pt;font-weight:800;line-height:1">${os.length}</div><div style="font-size:8pt;text-transform:uppercase;letter-spacing:.05em;margin-top:2pt">B/Ls</div></div>
     <div style="border:1.5px solid #000;border-radius:6pt;padding:5pt 6pt;text-align:center;background:#eee"><div style="font-size:17pt;font-weight:800;line-height:1">${pk}</div><div style="font-size:8pt;text-transform:uppercase;letter-spacing:.05em;margin-top:2pt">Pieces · ${Math.round(cf*10)/10} cu ft</div></div></div>`;
   const rows=os.map((o,i)=>`<tr><td style="text-align:center">${i+1}</td><td><b>${esc(o.inv)}</b></td><td>${esc(usDate(o.invDate))}</td><td>${esc(o.sh.name||'')}</td><td>${esc(o.co.name||'')}</td><td style="text-align:center"><b>${orderPieces(o)}</b></td><td>${esc(cargoSummary(o))}</td><td style="text-align:center">${Math.round((o.items||[]).reduce((s,it)=>s+(it.kind==='product'?0:tallyCu(it)),0)*10)/10}</td><td style="text-align:right">${money(orderTotal(o))}</td><td style="text-align:center;font-weight:800;color:#C22B1E">${orderBal(o)>0?'HOLD':''}</td></tr>`).join('');
   return `<div class="ty">${tallyHead(sh,dest,'TALLY SHEET')}${sum}
     <table><thead><tr><th style="width:4%">#</th><th style="width:10%">B/L #</th><th style="width:9%">Date</th><th style="width:19%">Shipper</th><th style="width:17%">Consignee</th><th style="width:6%">Pcs</th><th style="width:17%">Cargo</th><th style="width:6%">Cu ft</th><th style="width:8%">$</th><th style="width:5%">Bal</th></tr></thead>
-    <tbody>${rows}<tr class="tot"><td></td><td colspan="4">TOTAL — ${os.length} B/L${os.length===1?'':'s'}</td><td style="text-align:center">${pk}</td><td>${KIND_ORDER.filter(k=>g[k].n).map(k=>Math.round(g[k].n*10)/10+' '+k.toLowerCase()).join(' · ')}</td><td style="text-align:center">${Math.round(cf*10)/10}</td><td style="text-align:right">${money(amt)}</td><td></td></tr></tbody></table>
+    <tbody>${rows}<tr class="tot"><td></td><td colspan="4">TOTAL — ${os.length} B/L${os.length===1?'':'s'}</td><td style="text-align:center">${Math.round(pk*10)/10}</td><td>${KIND_ORDER.filter(k=>N(k)).map(k=>Math.round(N(k)*10)/10+' '+k.toLowerCase()).join(' · ')}</td><td style="text-align:center">${Math.round(cf*10)/10}</td><td style="text-align:right">${money(amt)}</td><td></td></tr></tbody></table>
     <div style="margin-top:12pt;font-size:9.5pt;display:flex;gap:24pt"><span>Tallied by: ______________________</span><span>Date: ____________</span><span>Checked by: ______________________</span></div></div>`;
 }
 /* the physical-count sheet: expected pieces per type, blank boxes to write the count */
@@ -2534,7 +2568,7 @@ function countSheetHTML(sh, dest, os){
   const rows=os.map((o,i)=>{ const m={}; (o.items||[]).forEach(it=>{ if(it.kind==='product'||!it.desc) return; const k=lineKind(it); m[k]=(m[k]||0)+(parseFloat(it.qty)||0); });
     return `<tr><td style="text-align:center">${i+1}</td><td><b>${esc(o.inv)}</b></td><td>${esc(o.sh.name||'')}</td><td>${esc(o.co.name||'')}</td>${KIND_ORDER.map(k=>`<td style="text-align:center">${m[k]?m[k]:''}</td>`).join('')}<td style="height:22pt"></td><td></td></tr>`; }).join('');
   return `<div class="ty">${tallyHead(sh,dest,'PHYSICAL COUNT')}
-    <div style="font-size:10pt;margin-bottom:8pt">Expected: <b>${KIND_ORDER.filter(k=>g[k].n).map(k=>Math.round(g[k].n*10)/10+' '+k.toLowerCase()).join(' · ')||'—'}</b> on <b>${os.length}</b> B/L${os.length===1?'':'s'}. Write what you actually see, initial each line.</div>
+    <div style="font-size:10pt;margin-bottom:8pt">Expected: <b>${KIND_ORDER.filter(k=>adjN(sh,dest,k,g)).map(k=>Math.round(adjN(sh,dest,k,g)*10)/10+' '+k.toLowerCase()+(adjRaw(sh,dest,k)!=null?' (hand count; B/Ls say '+Math.round(g[k].n*10)/10+')':'')).join(' · ')||'—'}</b> on <b>${os.length}</b> B/L${os.length===1?'':'s'}. Write what you actually see, initial each line.</div>
     <table><thead><tr><th style="width:4%">#</th><th style="width:11%">B/L #</th><th style="width:20%">Shipper</th><th style="width:17%">Consignee</th><th style="width:7%">Bins</th><th style="width:7%">Barrels</th><th style="width:7%">Boxes</th><th style="width:7%">Other</th><th style="width:12%">Counted</th><th style="width:8%">Init.</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <div style="margin-top:12pt;font-size:9.5pt;display:flex;gap:24pt"><span>Counted by: ______________________</span><span>Date: ____________</span><span>Missing / extra: ________________________________</span></div></div>`;
@@ -2824,7 +2858,7 @@ Object.keys(HDR).concat(Object.keys(SH),Object.keys(CO)).forEach(id=>{
   el.addEventListener(evt,()=>{
     formToDraft();
     if(id==='fInv') draft._auto=false;   /* typed by hand: the running counter is left alone */
-    if(id==='fCoCity'){ repriceAll(); renderItems(); if(!draft.co.agent && draft.co.city){ const b=brokerFor(draft.co.city); if(b){ draft.co.agent=b.name; $('#fCoAgent').value=b.name; } } }
+    if(id==='fCoCity'){ repriceAll(); renderItems(); }
     renderPreview();
   });
 });
@@ -2907,18 +2941,9 @@ $('#itemRows').addEventListener('click',e=>{
 });
 $('#btnAddItem').addEventListener('click',()=>{ draft.items.push(blankItem()); renderItems(); renderPreview(); });
 $('#btnAddProduct').addEventListener('click',()=>{ draft.items.push(blankItem('product')); renderItems(); renderPreview(); });
-$('#btnNewOrder').addEventListener('click',async()=>{ PK_LINK=null; draft=blankOrder(); draftToForm(); toast('Blank order ready'); });
-/* the number stays blank until someone asks for one (or types their own) */
-$('#btnGenBL').addEventListener('click',async()=>{
-  if(draft.id){ toast('This receipt already has its number'); return; }
-  const btn=$('#btnGenBL'); btn.disabled=true; btn.textContent='Checking the database…';
-  await refreshNext();
-  draft.inv=nextFreeInv(); draft._auto=true; $('#fInv').value=draft.inv; renderPreview();
-  btn.disabled=false; btn.textContent='Generate B/L number';
-  toast('B/L '+draft.inv+' reserved for this receipt');
-});
+$('#btnNewOrder').addEventListener('click',async()=>{ await refreshNext(); draft=blankOrder(); draftToForm(); toast('Blank order ready'); });
 $('#btnSaveOrder').addEventListener('click',async()=>{ if(await saveDraft()){ draft.created?toast('Saved'):toast('Saved as draft — hit Create to bill it'); renderActions(); } });
-$('#btnCargoCreate').addEventListener('click',async()=>{ draft=blankOrder(); goTab('order'); draftToForm(); });
+$('#btnCargoCreate').addEventListener('click',async()=>{ await refreshNext(); draft=blankOrder(); goTab('order'); draftToForm(); });
 $('#ordersList').addEventListener('click',async e=>{
   const t=e.target;
   if(t.dataset.openo){
@@ -2929,9 +2954,9 @@ $('#ordersList').addEventListener('click',async e=>{
     const o=orders.find(x=>x.id===t.dataset.dupo); if(!o) return;
     await refreshNext();
     draft=JSON.parse(JSON.stringify(o));
-    draft.id=null; draft.inv=''; draft._auto=false; draft.invDate=todayISO(); draft.pickup=todayISO(); draft.time=nowTime();
+    draft.id=null; draft.inv=nextFreeInv(); draft._auto=true; draft.invDate=todayISO(); draft.pickup=todayISO(); draft.time=nowTime();
     draft.created=false; draft.qbInvoiceNo=''; draft.qbOk=null; draft.paid=false; draft.amtRecd='';
-    goTab('order'); draftToForm(); toast('Copied — generate or type a new B/L number');
+    goTab('order'); draftToForm(); toast('Copied — new invoice number');
   }
   if(t.dataset.delo){
     const o=orders.find(x=>x.id===t.dataset.delo); if(!o) return;
