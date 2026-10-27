@@ -265,6 +265,18 @@ table.list tbody tr:hover{background:#fafcfd}
 .pill{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;padding:1px 7px;border-radius:99px;vertical-align:middle}
 .pill.paid{background:#E3F4E8;color:#177245}.pill.bal{background:#FDF3DF;color:#7A5104}
 .pill.ship{background:#E2EEF7;color:#0B5C8A}.pill.draft{background:#EEF0F3;color:var(--muted)}
+.pill.ocean{background:#E2EEF7;color:#0B5C8A}.pill.air{background:#FDF3DF;color:#B45309}.pill.unk{background:#FDE8E6;color:#C22B1E}
+/* parcels: the choose-ocean-or-air prompt and the list */
+.pachoice{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.pachoice button{padding:22px 10px;font-size:18px;line-height:1.25;border-radius:12px}
+.pachoice button small{display:block;font-size:12px;font-weight:400;opacity:.85;margin-top:4px}
+.pachoice .air{background:#B45309}
+.palist .trk{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:700;letter-spacing:.02em}
+.palist .code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:700;color:#B45309}
+.palist input.code{width:110px;text-transform:uppercase}
+.palist tr.new td{animation:blin .9s ease-out}
+.pactr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pactr .kgrp{cursor:default}.pactr .kgrp:hover{border-color:var(--rule);box-shadow:none}
 .modal{position:fixed;inset:0;background:rgba(17,19,24,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
 .modal .box{background:#fff;border-radius:10px;padding:20px 22px;width:min(560px,100%);max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
 .modal .box.wide{width:min(1100px,100%);height:88vh;display:flex;flex-direction:column}
@@ -432,6 +444,7 @@ table.list tbody tr:hover{background:#fafcfd}
       <button data-tab="customers">Quotes <span class="cnt" id="cCust">0</span></button>
       <button data-tab="order">Create</button>
       <button data-tab="pickups">Pickups <span class="cnt" id="cPick" hidden>0</span></button>
+      <button data-tab="parcels">Parcels <span class="cnt" id="cParcel" hidden>0</span></button>
       <button data-tab="ship">Shipments</button>
       <button data-tab="metrics">Metrics</button>
       <button data-tab="prev">Previous Activity</button>
@@ -602,6 +615,36 @@ table.list tbody tr:hover{background:#fafcfd}
       </div>
       <div class="card" id="pkSuggest" hidden style="margin-bottom:14px"></div>
       <div class="card" style="padding:6px 6px;overflow:auto"><div id="pkList"></div></div>
+    </section>
+    <!-- ===================== PARCELS ===================== -->
+    <section data-panel="parcels" hidden>
+      <div class="head">
+        <h1>Parcels</h1>
+        <p id="paSub">Scan every parcel that comes in. The label decides whether it's ocean or air cargo.</p>
+        <span class="grow"></span>
+        <input type="date" class="f" id="paDate" style="max-width:160px">
+        <button class="btn ghost" id="paPrev" title="Previous day">‹</button>
+        <button class="btn ghost" id="paNext" title="Next day">›</button>
+        <button class="btn ghost" id="paCsv" title="Download this day's scans as a spreadsheet">Export CSV</button>
+      </div>
+      <div class="rapidsplit">
+        <div>
+          <div class="card" style="padding:14px 16px">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+              <b style="font-size:13px">Scanning as</b>
+              <div class="seg" id="paMode"><button data-pamode="auto" class="on">Auto — read the label</button><button data-pamode="ocean">Everything is OCEAN</button><button data-pamode="air">Everything is AIR</button></div>
+              <span id="paModeHint" style="font-size:12px;color:var(--muted);flex:1;min-width:200px"></span>
+            </div>
+            <div class="rapid big" id="paScanBox">
+              <b style="font-size:13px">Scan the parcel label — or type the tracking number and press Enter</b>
+              <input class="f" id="paScan" placeholder="Scan here" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <span class="rmsg" id="paScanMsg" style="font-size:12.5px;color:var(--muted)">Ready. If the cursor isn't in this box, click it.</span>
+            </div>
+          </div>
+          <div class="card" style="padding:6px 6px;overflow:auto;margin-top:14px"><div id="paList"></div></div>
+        </div>
+        <div class="stickywrap"><div id="paCounter"></div></div>
+      </div>
     </section>
     <!-- ===================== SHIPMENTS ===================== -->
     <section data-panel="ship" hidden>
@@ -1754,7 +1797,7 @@ function dl(buf,name){
   document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
 }
 const thin={style:'thin'}; const B={top:thin,left:thin,bottom:thin,right:thin};
-async function buildMasterBL(ym,dest,hdr,osOverride){
+async function buildMasterBL(ym,dest,hdr,osOverride,adj){
   const rows=cargoRows(osOverride||monthOrders(ym,dest));
   const wb=new ExcelJS.Workbook();
   const ws=wb.addWorksheet((hdr.brokerName||'MASTER BL').slice(0,28));
@@ -1790,16 +1833,9 @@ async function buildMasterBL(ym,dest,hdr,osOverride){
   set('J28','CUBIC FT',{sz:7}); set('L28','MEASUREMENT',{sz:7});
   set('A29','(Marcas y Numeros)',{sz:7}); set('C29','(No. de Bultos)',{sz:7}); set('G29','(Contenido)',{sz:7}); set('L29','(Medidas)',{sz:7});
   set('A30','(18)',{sz:7}); set('C30','(19)',{sz:7}); set('G30','(20)',{sz:7}); set('J30','(21)',{sz:7}); set('L30','(22)',{sz:7});
-  /* aggregate barrels + bins first, like the paper */
+  /* aggregate barrels + bins first, like the paper — a hand count typed on the shipment wins over the B/L total */
   let r=31;
-  const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}};
-  const singles=[];
-  rows.forEach(x=>{
-    const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
-    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
-    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*20;}
-    else singles.push(x);
-  });
+  const { agg, singles } = masterAgg(rows, adj);
   if(agg.barrel.n){ set('C'+r,agg.barrel.n,{sz:9}); set('I'+r,'BARREL',{sz:9}); set('K'+r,agg.barrel.cu,{sz:9}); set('L'+r,'24X24X44',{sz:9}); r++; }
   if(agg.bin.n){ set('C'+r,agg.bin.n,{sz:9}); set('I'+r,'COMMERCIAL BINS',{sz:9}); set('K'+r,agg.bin.cu,{sz:9}); set('L'+r,'48X24X44',{sz:9}); r++; }
   singles.forEach(x=>{
@@ -1834,9 +1870,10 @@ async function buildMasterBL(ym,dest,hdr,osOverride){
   const buf=await wb.xlsx.writeBuffer();
   dl(buf, `MASTER BL - ${dest.toUpperCase()} - ${monthLabel(ym).toUpperCase()}.xlsx`);
 }
-async function buildManifestXlsx(ym,dest,osOverride){
+async function buildManifestXlsx(ym,dest,osOverride,adj){
   const os = (osOverride||monthOrders(ym,dest)).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
   if(!os.length){ toast('Nothing to manifest'); return; }
+  const loose = manifestLoose(os, adj);
   const M=V2.mbl;
   const wb=new ExcelJS.Workbook();
   const ws=wb.addWorksheet('Manifest');
@@ -1856,8 +1893,10 @@ async function buildManifestXlsx(ym,dest,osOverride){
   set('B22','CONTAINER #',1); set('E22',hdrBkg||'');
   set('B24','DESTINATION:',1); set('E24',(dest+', ST. LUCIA').toUpperCase());
   set('B26','ETA DATE:',1);
-  const totalPk = os.reduce((s,o)=>s+o.items.filter(it=>it.kind!=='product').reduce((x,it)=>x+(parseFloat(it.qty)||0),0),0);
-  const totalCu = os.reduce((s,o)=>s+o.items.filter(it=>it.kind!=='product').reduce((x,it)=>x+(parseFloat(it.cuft)||0),0),0);
+  const totalPk = os.reduce((s,o)=>s+o.items.filter(it=>it.kind!=='product').reduce((x,it)=>x+(parseFloat(it.qty)||0),0),0)
+                  + loose.reduce((s,l)=>s+l.n,0) - (adj?manifestShort(os,adj):0);
+  const totalCu = os.reduce((s,o)=>s+o.items.filter(it=>it.kind!=='product').reduce((x,it)=>x+(parseFloat(it.cuft)||0),0),0)
+                  + loose.reduce((s,l)=>s+l.cu,0) - (adj?manifestShortCu(os,adj):0);
   set('J27','TOTAL # PACKAGES',1); set('M27',totalPk,1);
   set('J28','TOTAL VOLUME',1); set('M28',Math.round(totalCu*10)/10,1);
   set('C32','B/L #',1); set('E32','Sender:',1); set('G32','Consignee:',1); set('I32','Contents:',1); set('K32','Vol-ft³',1);
@@ -1871,6 +1910,12 @@ async function buildManifestXlsx(ym,dest,osOverride){
     set('D'+(r+6),'tel#'); set('E'+(r+6),o.sh.phone||''); set('F'+(r+6),'tel#'); set('G'+(r+6),o.co.phone||'');
     if(orderBal(o)>0){ set('I'+(r+6),'HOLD',1,11); ws.getCell('I'+(r+6)).font={bold:true,color:{argb:'FFC00000'},size:11}; }
     r += Math.max(8, its.length+6); n++;
+  }
+  /* hand-counted barrels / bins that are not on any B/L — one block at the end so the totals match the master */
+  if(loose.length){
+    set('C'+(r+1),'HAND COUNT',1,11); set('D'+(r+1),'Name:'); set('E'+(r+1),'FCS SHIPPING — hand count'); set('G'+(r+1),'(not on a B/L)');
+    set('G'+(r+2),dest); set('G'+(r+3),'St. Lucia');
+    loose.forEach((l,i)=>{ set('H'+(r+i),l.n); set('I'+(r+i),l.desc+' S.T.C PERSONAL EFFECTS'); set('K'+(r+i),l.cu); });
   }
   const buf=await wb.xlsx.writeBuffer();
   dl(buf, `Manifest - ${dest.toUpperCase()} - ${monthLabel(ym).toUpperCase()}.xlsx`);
@@ -1958,42 +2003,77 @@ function defaultTab(){
   if(mfTo) return 'THRU '+tabLabel(mfTo);
   return tabLabel(todayISO());
 }
-function masterPayload(ym,dest,hdr,truck,osOverride){
+/* ---- the master's barrel / bin totals ----
+   Barrels and commercial bins print as ONE loose total each (like the paper), the rest line by line per B/L.
+   `adj` = the hand counts typed on the shipment ({barrels, bins}, null = use what the B/Ls add up to).
+   A hand count replaces the B/L total outright — that typed number is what the broker sees. */
+const BARREL_CU=15, BIN_CU=19;   /* the ship line rates a bin at 19 cu ft on the docs (order entry still charges 20) */
+function masterAgg(rows, adj){
+  const agg={barrel:{n:0,cu:0,bls:0},bin:{n:0,cu:0,bls:0}}; const singles=[];
+  rows.forEach(x=>{
+    const k=lineKind(x.it); const q=parseFloat(x.it.qty)||1;
+    if(k==='Barrels'){ agg.barrel.n+=q; agg.barrel.cu+=q*BARREL_CU; }
+    else if(k==='Commercial bins'){ agg.bin.n+=q; agg.bin.cu+=q*BIN_CU; }
+    else singles.push(x);
+  });
+  agg.barrel.bls=agg.barrel.n; agg.bin.bls=agg.bin.n;        /* what the B/Ls said, kept for the note */
+  if(adj && adj.barrels!=null){ agg.barrel.n=adj.barrels; agg.barrel.cu=adj.barrels*BARREL_CU; agg.barrel.hand=true; }
+  if(adj && adj.bins!=null){ agg.bin.n=adj.bins; agg.bin.cu=adj.bins*BIN_CU; agg.bin.hand=true; }
+  return { agg, singles };
+}
+function masterPayload(ym,dest,hdr,truck,osOverride,adj){
   truck = truck || defaultTab();
   /* the sheet carries exactly the cargo it is given (a shipment) — or the whole month */
-  let rows = cargoRows(osOverride||monthOrders(ym,dest));
-  const agg={barrel:{n:0,cu:0},bin:{n:0,cu:0}}; const lines=[];
-  rows.forEach(x=>{
-    const d=String(x.it.desc).toLowerCase(); const q=parseFloat(x.it.qty)||1;
-    if(d==='barrel'){agg.barrel.n+=q; agg.barrel.cu+=q*15;}
-    /* the ship line rates bins at 19 cu ft even though we charge 20 */
-    else if(d==='commercial bin'){agg.bin.n+=q; agg.bin.cu+=q*19;}
-    else lines.push([ 'BL#'+x.o.inv, q, String(x.it.desc).toUpperCase(),
-      parseFloat(x.it.cuft)||'', x.it.dims||'' ]);
-  });
+  const { agg, singles } = masterAgg(cargoRows(osOverride||monthOrders(ym,dest)), adj);
+  const lines = singles.map(x=>[ 'BL#'+x.o.inv, parseFloat(x.it.qty)||1, String(x.it.desc).toUpperCase(), parseFloat(x.it.cuft)||'', x.it.dims||'' ]);
+  const pieces = agg.barrel.n + agg.bin.n + lines.reduce((s,l)=>s+l[1],0);
+  const cu = agg.barrel.cu + agg.bin.cu + lines.reduce((s,l)=>s+(parseFloat(l[3])||0),0);
   return { action:'master', month:ym, dest, truck,
     template: /castries/i.test(dest)?'her':'ella',
-    header: hdr, barrels:agg.barrel, bins:agg.bin, lines };
+    header: hdr, barrels:agg.barrel, bins:agg.bin, lines,
+    totals:{ pieces, cu:Math.round(cu*10)/10 }, handCount:!!(agg.barrel.hand||agg.bin.hand) };
 }
-function manifestPayload(ym,dest,truck,x,osOverride){
+function manifestPayload(ym,dest,truck,x,osOverride,adj){
   truck = truck || defaultTab(); x = x || {};
   /* the sheet carries exactly the cargo it is given (a shipment) — or the whole month */
   let os=(osOverride||monthOrders(ym,dest)).filter(o=>o.items.some(it=>it.kind!=='product'&&it.desc));
-  return { action:'manifest', month:ym, dest, truck,
-    date: x.date||'', container: x.container||'',
-    from:{ name:V2.mbl.manFrom, addr:V2.mbl.manFromAddr, city:V2.mbl.manFromCity,
-      state:V2.mbl.manFromState, zip:V2.mbl.manFromZip, tel:V2.mbl.manFromTel },
-    to:{ name:x.brokerName||hdrBrokerName||'', addr:x.brokerAddr||hdrBrokerAddr||'', tel:V2.mbl.relTel||'' },
-    blocks: os.map(o=>({ bl:o.inv, sender:o.sh.name||'', senderAddr:o.sh.street||'',
+  const blocks = os.map(o=>({ bl:o.inv, sender:o.sh.name||'', senderAddr:o.sh.street||'',
       senderCity:[o.sh.city,o.sh.state].filter(Boolean).join(', '), senderTel:o.sh.phone||'',
       consignee:o.co.name||'', dest:o.co.city||'', consTel:o.co.phone||'',
       hold: orderBal(o)>0,
       lines:o.items.filter(it=>it.kind!=='product'&&it.desc).map(it=>{
         const q=parseFloat(it.qty)||1;
-        const cu = /commercial bin/i.test(it.desc) ? 19*q : (parseFloat(it.cuft)||'');
+        const cu = /commercial bin/i.test(it.desc) ? BIN_CU*q : (parseFloat(it.cuft)||'');
         return [ q, String(it.desc).toUpperCase()+' S.T.C PERSONAL EFFECTS', cu, itemAmount(it) ];
-      }) })) };
+      }) }));
+  /* hand counts: barrels/bins beyond what the B/Ls carry go on as one extra block so the manifest total matches the master */
+  const loose = manifestLoose(os, adj);
+  loose.forEach(l=>blocks.push({ bl:'HAND COUNT', sender:'FCS SHIPPING — hand count', senderAddr:'', senderCity:'', senderTel:'',
+      consignee:'(not on a B/L)', dest, consTel:'', hold:false, loose:true, lines:[[ l.n, l.desc+' S.T.C PERSONAL EFFECTS', l.cu, 0 ]] }));
+  const pieces = blocks.reduce((s,b)=>s+b.lines.reduce((s2,l)=>s2+(parseFloat(l[0])||0),0),0) - (adj?manifestShort(os,adj):0);
+  const cu = blocks.reduce((s,b)=>s+b.lines.reduce((s2,l)=>s2+(parseFloat(l[2])||0),0),0) - (adj?manifestShortCu(os,adj):0);
+  return { action:'manifest', month:ym, dest, truck,
+    date: x.date||'', container: x.container||'',
+    from:{ name:V2.mbl.manFrom, addr:V2.mbl.manFromAddr, city:V2.mbl.manFromCity,
+      state:V2.mbl.manFromState, zip:V2.mbl.manFromZip, tel:V2.mbl.manFromTel },
+    to:{ name:x.brokerName||hdrBrokerName||'', addr:x.brokerAddr||hdrBrokerAddr||'', tel:V2.mbl.relTel||'' },
+    blocks, totals:{ pieces, cu:Math.round(cu*10)/10 }, handCount:!!(adj&&(adj.barrels!=null||adj.bins!=null)) };
 }
+/* barrels / bins the hand count has OVER the B/Ls (printed as a loose block) … */
+function manifestLoose(os, adj){
+  if(!adj) return [];
+  const g=groupCargo(os); const out=[];
+  if(adj.barrels!=null && adj.barrels>g['Barrels'].n) out.push({ desc:'BARREL', n:adj.barrels-g['Barrels'].n, cu:(adj.barrels-g['Barrels'].n)*BARREL_CU });
+  if(adj.bins!=null && adj.bins>g['Commercial bins'].n) out.push({ desc:'COMMERCIAL BIN', n:adj.bins-g['Commercial bins'].n, cu:(adj.bins-g['Commercial bins'].n)*BIN_CU });
+  return out;
+}
+/* … and UNDER the B/Ls (only the totals come down; the B/L lines stay as written) */
+function manifestShort(os, adj){ const g=groupCargo(os); let s=0;
+  if(adj.barrels!=null && adj.barrels<g['Barrels'].n) s+=g['Barrels'].n-adj.barrels;
+  if(adj.bins!=null && adj.bins<g['Commercial bins'].n) s+=g['Commercial bins'].n-adj.bins; return s; }
+function manifestShortCu(os, adj){ const g=groupCargo(os); let s=0;
+  if(adj.barrels!=null && adj.barrels<g['Barrels'].n) s+=(g['Barrels'].n-adj.barrels)*BARREL_CU;
+  if(adj.bins!=null && adj.bins<g['Commercial bins'].n) s+=(g['Commercial bins'].n-adj.bins)*BIN_CU; return s; }
 /* master B/L header confirm flow */
 let hdrBrokerName='', hdrBrokerAddr='', hdrVessel='', hdrBkg='';
 function tabNameHTML(k, val){
@@ -2172,6 +2252,191 @@ $('#pkSave').addEventListener('click',async()=>{ clearTimeout(PK_T); if(await sa
 $('#pkPrint').addEventListener('click',()=>printDoc(pickupSheetHTML(pkDate, PICKUPS[pkDate]||[]), true));
 
 /* ============================================================
+   11c². PARCELS — inbound parcel scanning.
+   A USB barcode scanner is a keyboard: it types what it read and presses Enter. The label decides where a parcel goes:
+     • an air-cargo mailbox code — 3 letters + 5 digits (BJL10000) — anywhere in the scan  → AIR  (wins: air customers are
+       addressed to FCS Shipping too, so the code has to be checked first)
+     • otherwise "FCS SHIPPING", "BLDG 4" or "STE 4" in the scan                           → OCEAN
+     • neither — a plain 1D tracking barcode carries no address at all                      → the user picks (O / A keys)
+   Records live in Supabase under fcs:parcels:YYYY-MM, one list per month, merged by id on every write so two desks
+   scanning at once never wipe each other out.
+   ============================================================ */
+let PARCELS={}, PAR_OK={}, PAR_DEL=new Set(), paDate=todayISO(), paMode='auto', paBuf='', paT=null, paPrompt=null, paLast='', paLastId='';
+const parKey = d => 'fcs:parcels:'+String(d).slice(0,7);
+const PAR_AIR_RE=/\b([A-Z]{3}\d{5})\b/;
+const PAR_OCEAN_RE=/FCS\s*SHIPPING|\bBLDG\.?\s*#?\s*4\b|\bBUILDING\s*#?\s*4\b|\bSTE\.?\s*#?\s*4\b|\bSUITE\s*#?\s*4\b/;
+/* scanners send control characters between 2D-barcode fields — treat each one as a line break */
+function parClean(raw){ return String(raw||'').replace(/[\x00-\x1f\x7f]+/g,'\n').replace(/\n{2,}/g,'\n').trim(); }
+function parClassify(raw){
+  const t=parClean(raw).toUpperCase();
+  const a=t.match(PAR_AIR_RE); if(a) return { kind:'air', code:a[1], why:'mailbox code '+a[1]+' on the label' };
+  const o=t.match(PAR_OCEAN_RE); if(o) return { kind:'ocean', code:'', why:'label says "'+o[0].replace(/\s+/g,' ')+'"' };
+  return { kind:'', code:'', why:'' };
+}
+/* best guess at the tracking number + carrier from whatever the scanner read */
+function parTracking(raw){
+  const t=parClean(raw).toUpperCase(); let m;
+  if((m=t.match(/\b1Z[A-Z0-9]{16}\b/))) return { tracking:m[0], carrier:'UPS' };
+  if((m=t.match(/\bTBA\d{12}\b/))) return { tracking:m[0], carrier:'Amazon' };
+  if((m=t.match(/\bJD\d{18}\b/))) return { tracking:m[0], carrier:'DHL' };
+  for(const r of (t.match(/\d{10,}/g)||[])){
+    let s=r;
+    if(/^420\d{9}9[1-5]\d{20}$/.test(s)) s=s.slice(12); else if(/^420\d{5}9[1-5]\d{20}$/.test(s)) s=s.slice(8);   /* USPS routing prefix */
+    if(/^9[0-5]\d{19,21}$/.test(s)) return { tracking:s, carrier:'USPS' };
+    if(s.length===34||s.length===32) return { tracking:s, carrier:'FedEx', short:s.slice(-12) };   /* 1D FedEx barcode — the 12 at the end is the number on the label */
+    if(s.length===12||s.length===15||s.length===20) return { tracking:s, carrier:'FedEx' };
+    if(s.length===10) return { tracking:s, carrier:'DHL' };
+  }
+  const run=(t.match(/\d{10,}/)||[])[0]; if(run) return { tracking:run.slice(0,40), carrier:'' };   /* some long number — keep it, no carrier guess */
+  const first=(t.split(/\s+/)[0]||t).slice(0,40);
+  return { tracking:first, carrier:'' };
+}
+async function loadParcels(d){
+  const k=parKey(d); if(PAR_OK[k]) return;
+  try{ const v=(await DB.strict(k)).value; PARCELS[k]=Array.isArray(v)?v:[]; PAR_OK[k]=true; }
+  catch(e){ PARCELS[k]=PARCELS[k]||[]; PAR_OK[k]=false; }
+}
+function parMonth(d){ const k=parKey(d); if(!Array.isArray(PARCELS[k])) PARCELS[k]=[]; return PARCELS[k]; }
+function parDay(d){ return parMonth(d).filter(p=>p.date===d).sort((a,b)=>String(b.at).localeCompare(String(a.at))); }
+async function saveParcels(d){
+  const k=parKey(d);
+  if(!PAR_OK[k]){ toast('Parcels for this month could not be read — reload the page before scanning.'); return false; }
+  const mine=parMonth(d);
+  const v=await saveKeyCAS(k, remote=>{ remote=Array.isArray(remote)?remote:[]; const ids=new Set(mine.map(p=>p.id));
+    return remote.filter(p=>p&&p.id&&!ids.has(p.id)&&!PAR_DEL.has(p.id)).concat(mine).sort((a,b)=>String(a.at).localeCompare(String(b.at))); }, []);
+  if(v){ PARCELS[k]=v; return true; }
+  toast('NOT SAVED — the database refused the parcel list. Try again.'); return false;
+}
+function updateParcelBadge(){ const b=$('#cParcel'); if(!b) return; const n=parDay(todayISO()).length; b.textContent=n; b.hidden=!n; }
+function paMsg(html){ paLast=html; const m=$('#paScanMsg'); if(m) m.innerHTML=html; }
+function paFocus(){ const i=$('#paScan'); if(i && !paPrompt) i.focus(); }
+/* one scan has landed (the whole thing, control characters and all) */
+function parcelScanned(raw){
+  if(paPrompt && document.body.contains(paPrompt)) return;   /* a choice is still on screen — finish that first */
+  paPrompt=null;
+  const tr=parTracking(raw), cls=parClassify(raw);
+  const today=todayISO(); if(paDate!==today){ paDate=today; }
+  const dup=parMonth(today).find(p=>p.tracking===tr.tracking);
+  if(dup){
+    paMsg('<b style="color:#B45309">Already scanned</b> '+esc(usDate(dup.date))+' '+esc(new Date(dup.at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}))+' as <span class="pill '+(dup.kind||'unk')+'">'+esc((dup.kind||'unassigned').toUpperCase())+'</span> · <b>'+esc(tr.tracking)+'</b>'
+      +' <button type="button" class="btn ghost sm" id="paDupAdd">Add it again anyway</button>');
+    const b=$('#paDupAdd'); if(b) b.addEventListener('click',()=>parcelRecord(raw, tr, cls, true));
+    renderParcels(); return;
+  }
+  parcelRecord(raw, tr, cls, false);
+}
+function parcelRecord(raw, tr, cls, force){
+  const rec={ id:uid(), at:new Date().toISOString(), date:todayISO(), raw:parClean(raw).slice(0,2000), tracking:tr.tracking, carrier:tr.carrier||'', short:tr.short||'',
+    kind:'', code:cls.code||'', how:'', by:userName||'admin' };
+  if(paMode==='ocean'){ rec.kind='ocean'; rec.how='mode'; }
+  else if(paMode==='air'){ rec.kind='air'; rec.how='mode'; }
+  else if(cls.kind){ rec.kind=cls.kind; rec.how='label'; }
+  if(rec.kind){ parcelCommit(rec, cls.why); return; }
+  parcelAsk(rec);
+}
+async function parcelCommit(rec, why){
+  parMonth(rec.date).push(rec);
+  paMsg('<b style="color:#177245">✓ '+esc(rec.tracking)+'</b>'+(rec.carrier?' · '+esc(rec.carrier):'')+' → <span class="pill '+rec.kind+'">'+rec.kind.toUpperCase()+'</span>'
+    +(rec.code?' · <b>'+esc(rec.code)+'</b>':'')+' · '+esc(why||(rec.how==='mode'?'everything is '+rec.kind.toUpperCase()+' right now':'you chose')));
+  paLastId=rec.id; renderParcels(); paFocus();
+  await saveParcels(rec.date);
+}
+/* the label said nothing — ask, with the keyboard still usable: O = ocean, A = air, Esc = skip */
+function parcelAsk(rec){
+  const m=modal(`<h3>Which way is this parcel going?</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0">The label didn't say. <b style="font-size:15px;color:var(--ink)">${esc(rec.short||rec.tracking)}</b>${rec.carrier?' · '+esc(rec.carrier):''}</p>
+    <div class="pachoice"><button class="btn" id="paPickO">🚢 OCEAN cargo<small>press O</small></button><button class="btn air" id="paPickA">✈ AIR cargo<small>press A</small></button></div>
+    <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div style="flex:1"><label class="f">Air mailbox code, if you can read one on the box (optional)</label><input class="f" id="paCode" placeholder="BJL10000" style="text-transform:uppercase" autocomplete="off"></div></div>
+    <details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">What the scanner read</summary><pre style="font-size:11px;white-space:pre-wrap;word-break:break-all;background:#F4F6F8;padding:8px;border-radius:6px">${esc(rec.raw)}</pre></details>
+    <div style="display:flex;gap:8px;justify-content:end;margin-top:12px"><button class="btn ghost" id="paSkip">Skip this parcel <span style="opacity:.7">(Esc)</span></button></div>`);
+  paPrompt=m;
+  const done=(kind)=>{
+    const c=String(($('#paCode')||{}).value||'').toUpperCase().replace(/\s+/g,'');   /* read the code box BEFORE the modal goes away */
+    document.removeEventListener('keydown',onKey,true); m.remove(); paPrompt=null;
+    if(!kind){ paMsg('<b style="color:#B45309">Skipped</b> '+esc(rec.tracking)+' — not recorded'); paFocus(); return; }
+    rec.kind=kind; rec.how='manual'; if(c) rec.code=c;
+    parcelCommit(rec, 'you chose');
+  };
+  /* a scanner types at machine speed: keys 20 ms apart are a barcode, not a choice — and an O or A only counts if nothing follows it for 80 ms */
+  let pick=null, lastKey=0;
+  const onKey=e=>{
+    const now=Date.now(), burst=(now-lastKey)<20; lastKey=now;   /* a scanner types every 1–10 ms; nobody's fingers do */
+    const inCode=document.activeElement && document.activeElement.id==='paCode';
+    if(pick){ clearTimeout(pick); pick=null; paMsg('<b style="color:#C22B1E">Answer the question on screen first</b> — that scan was ignored'); }
+    if(burst) return;
+    if(e.key==='Escape'){ e.preventDefault(); done(''); return; }
+    if(inCode && e.key!=='Enter') return;                 /* typing the code — let the letters through */
+    let kind=''; if(e.key==='o'||e.key==='O') kind='ocean'; else if(e.key==='a'||e.key==='A'||(e.key==='Enter'&&inCode)) kind='air';
+    if(!kind) return;
+    e.preventDefault(); pick=setTimeout(()=>{ pick=null; done(kind); }, 80);
+  };
+  document.addEventListener('keydown',onKey,true);
+  $('#paPickO').addEventListener('click',()=>done('ocean')); $('#paPickA').addEventListener('click',()=>done('air')); $('#paSkip').addEventListener('click',()=>done(''));
+  m.addEventListener('click',e=>{ if(e.target===m) setTimeout(()=>{ if(!document.body.contains(m)){ document.removeEventListener('keydown',onKey,true); paPrompt=null; paMsg('<b style="color:#B45309">Skipped</b> '+esc(rec.tracking)+' — not recorded'); paFocus(); } },0); });
+}
+const PA_HINT={ auto:'Reads the label: mailbox code (BJL10000) → AIR · "FCS Shipping", "BLDG 4" or "STE 4" → OCEAN · neither → you choose. Plain tracking barcodes say nothing about the address, so expect the question on those.',
+  ocean:'Every scan goes down as OCEAN until you switch back to Auto.', air:'Every scan goes down as AIR until you switch back to Auto.' };
+function renderParcels(){
+  $('#paDate').value=paDate;
+  const rows=parDay(paDate), k=parKey(paDate), month=parMonth(paDate);
+  const n=x=>rows.filter(p=>p.kind===x).length, nu=rows.filter(p=>!p.kind).length;
+  $('#paSub').textContent=usDate(paDate)+' · '+rows.length+' parcel'+(rows.length===1?'':'s')+(PAR_OK[k]?'':' — this month could not be read from the database; reload before scanning');
+  $$('#paMode [data-pamode]').forEach(b=>b.classList.toggle('on', b.dataset.pamode===paMode));
+  $('#paModeHint').textContent=PA_HINT[paMode];
+  const msg=$('#paScanMsg'); if(msg && paLast) msg.innerHTML=paLast;
+  $('#paCounter').innerHTML=`<div class="card" style="padding:16px 18px"><div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0">${esc(usDate(paDate))}</h2><span style="flex:1"></span><span style="font-size:11.5px;color:var(--muted)">${paDate===todayISO()?'today':''}</span></div>
+      <div class="pactr" style="margin-top:10px">
+        <div class="kgrp"><div class="ic">🚢</div><div class="n" style="color:#0B5C8A">${n('ocean')}</div><div class="l">Ocean</div><div class="m">${rows.filter(p=>p.kind==='ocean'&&p.how==='label').length} read off the label</div></div>
+        <div class="kgrp"><div class="ic">✈</div><div class="n" style="color:#B45309">${n('air')}</div><div class="l">Air</div><div class="m">${rows.filter(p=>p.kind==='air'&&p.code).length} with a mailbox code</div></div>
+        <div class="kgrp"><div class="ic">?</div><div class="n"${nu?' style="color:#C22B1E"':''}>${nu}</div><div class="l">Unassigned</div><div class="m">${nu?'tap the pill in the list to set':'—'}</div></div>
+        <div class="kgrp"><div class="ic">Σ</div><div class="n">${rows.length}</div><div class="l">Today</div><div class="m">${month.length} this month</div></div>
+      </div></div>`;
+  $('#paList').innerHTML = rows.length ? `<table class="list palist"><thead><tr>
+      <th style="width:70px">Time</th><th style="width:90px">Cargo</th><th>Tracking</th><th style="width:80px">Carrier</th><th style="width:130px">Mailbox code</th><th style="width:120px">How</th><th style="width:34px"></th>
+    </tr></thead><tbody>${rows.map(p=>`<tr${p.id===paLastId?' class="new"':''}>
+      <td style="color:var(--muted)">${esc(new Date(p.at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}))}</td>
+      <td><button type="button" class="pill ${p.kind||'unk'}" data-pakind="${p.id}" title="Click to change" style="border:0;cursor:pointer;font-size:11px;padding:3px 9px">${esc((p.kind||'choose').toUpperCase())}</button></td>
+      <td><span class="trk">${esc(p.short||p.tracking)}</span>${p.short?`<div style="font-size:10.5px;color:var(--muted)">${esc(p.tracking)}</div>`:''}</td>
+      <td style="color:var(--muted)">${esc(p.carrier||'')}</td>
+      <td>${p.kind==='air'?`<input class="f code" data-pacode="${p.id}" value="${esc(p.code||'')}" placeholder="BJL10000">`:(p.code?'<span class="code">'+esc(p.code)+'</span>':'')}</td>
+      <td style="font-size:12px;color:var(--muted)">${p.how==='label'?'read off the label':p.how==='mode'?'mode was '+esc((p.kind||'').toUpperCase()):p.how==='manual'?'chosen by '+esc(p.by||''):''}</td>
+      <td><button class="x" data-padel="${p.id}" title="Remove this scan">×</button></td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty"><b>No parcels scanned ${paDate===todayISO()?'yet today':'on this day'}.</b> ${paDate===todayISO()?'Point the scanner at the label.':''}</div>`;
+  $$('#paList [data-pakind]').forEach(b=>b.addEventListener('click',async()=>{ const p=parMonth(paDate).find(x=>x.id===b.dataset.pakind); if(!p) return;
+    p.kind = p.kind==='ocean'?'air':(p.kind==='air'?'ocean':'ocean'); p.how='manual'; p.by=userName||'admin'; renderParcels(); await saveParcels(paDate); paFocus(); }));
+  $$('#paList [data-pacode]').forEach(i=>{ let t=null; i.addEventListener('input',()=>{ const p=parMonth(paDate).find(x=>x.id===i.dataset.pacode); if(!p) return; p.code=i.value.toUpperCase().replace(/\s+/g,''); clearTimeout(t); t=setTimeout(()=>saveParcels(paDate),800); });
+    i.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); i.blur(); paFocus(); } }); });
+  $$('#paList [data-padel]').forEach(b=>b.addEventListener('click',async()=>{ const p=parMonth(paDate).find(x=>x.id===b.dataset.padel); if(!p) return;
+    if(!confirm('Remove the scan of '+(p.short||p.tracking)+'?')) return;
+    PAR_DEL.add(p.id); PARCELS[parKey(paDate)]=parMonth(paDate).filter(x=>x.id!==p.id); renderParcels(); if(await saveParcels(paDate)) logEvent('parcel removed', '', (p.short||p.tracking)+' · '+(p.kind||'unassigned')); paFocus(); }));
+  updateParcelBadge();
+}
+async function openParcels(){ await loadParcels(paDate); if(paDate!==todayISO()) await loadParcels(todayISO()); renderParcels(); paFocus(); }
+/* the scan box: Enter (or Tab) ends a scan — unless more characters follow within 160 ms, which means a 2D label with line breaks inside */
+(function wireParcelScan(){
+  const inp=$('#paScan'); if(!inp) return;
+  const finish=()=>{ clearTimeout(paT); paT=null; const v=paBuf+inp.value; paBuf=''; inp.value=''; if(v.trim()) parcelScanned(v); };
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key==='Tab'){ e.preventDefault(); paBuf+=inp.value+'\n'; inp.value=''; clearTimeout(paT); paT=setTimeout(finish,160); }
+  });
+  inp.addEventListener('input',()=>{ if(paT){ clearTimeout(paT); paT=setTimeout(finish,160); } });
+  /* keep the cursor in the box: a click on empty space in the panel, or coming back to the window, puts it back */
+  const panel=$('[data-panel="parcels"]');
+  panel.addEventListener('click',e=>{ if(!e.target.closest('input,button,select,textarea,a,details,summary,label')) paFocus(); });
+  window.addEventListener('focus',()=>{ if(!panel.hidden) paFocus(); });
+  $$('#paMode [data-pamode]').forEach(b=>b.addEventListener('click',()=>{ paMode=b.dataset.pamode; paMsg(''); renderParcels(); paFocus(); }));
+  $('#paDate').addEventListener('change',async()=>{ paDate=$('#paDate').value||todayISO(); await openParcels(); });
+  $('#paPrev').addEventListener('click',async()=>{ const d=new Date(paDate+'T12:00:00'); d.setDate(d.getDate()-1); paDate=d.toISOString().slice(0,10); await openParcels(); });
+  $('#paNext').addEventListener('click',async()=>{ const d=new Date(paDate+'T12:00:00'); d.setDate(d.getDate()+1); paDate=d.toISOString().slice(0,10); await openParcels(); });
+  $('#paCsv').addEventListener('click',()=>{
+    const rows=parDay(paDate).slice().reverse(); if(!rows.length){ toast('Nothing to export for this day'); return; }
+    const q=s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
+    const csv=[['date','time','cargo','tracking','carrier','mailbox code','how','by'].map(q).join(',')].concat(rows.map(p=>[p.date, new Date(p.at).toLocaleTimeString(), p.kind||'unassigned', p.tracking, p.carrier, p.code, p.how, p.by].map(q).join(','))).join('\r\n');
+    const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv); a.download='parcels-'+paDate+'.csv'; a.click();
+  });
+})();
+
+/* ============================================================
    11d. SHIPMENTS — every sailing by date → destination → documents
    ============================================================ */
 let WIZ=null, WIZ_T=null;
@@ -2215,7 +2480,7 @@ function renderShipments(){
       </div>
       ${sh.archive?'':`<div style="margin-top:10px;display:grid;gap:6px">${(sh.dests||[]).map(d=>{ const n=((sh.cargo||{})[d]||[]).length; const docs=((sh.docs||{})[d])||{};
         return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;border:1px solid var(--rule);border-radius:8px;background:#fff">
-          <b style="min-width:150px">→ ${esc(d)}</b><span style="color:var(--muted);font-size:12.5px;min-width:60px">${n} B/L${n===1?'':'s'}</span>
+          <b style="min-width:150px">→ ${esc(d)}</b><span style="color:var(--muted);font-size:12.5px;min-width:60px">${n} B/L${n===1?'':'s'}</span>${(()=>{ const a=shipAdj(sh,d); const p=[]; if(a.barrels!=null) p.push(a.barrels+' barrels'); if(a.bins!=null) p.push(a.bins+' bins'); return p.length?`<span style="font-size:11.5px;color:#B45309;font-weight:700">hand count: ${p.join(' · ')}</span>`:''; })()}
           <button class="btn ghost sm" data-shtally="${sh.id}" data-dest="${esc(d)}">Tally sheet</button>
           <button class="btn ${docs.master?'ghost':''} sm" data-shdoc="master" data-sh="${sh.id}" data-dest="${esc(d)}">${docs.master?'Master B/L ✓':'Master B/L — generate'}</button>
           <button class="btn ${docs.manifest?'ghost':''} sm" data-shdoc="manifest" data-sh="${sh.id}" data-dest="${esc(d)}">${docs.manifest?'Manifest ✓':'Manifest — generate'}</button>
@@ -2284,6 +2549,16 @@ function stepsHTML(s){ return `<div class="steps">${['Cargo','Tally','Documents'
    (sh.adj[dest][kind]). Once set, that number stands: B/Ls added or removed afterwards never overwrite it.
    Clearing the box goes back to the B/L count. The tally sheet and count sheet print the hand-set number. */
 const ADJ_KINDS=['Barrels','Commercial bins'];
+/* the hand counts of one destination, in the shape the documents take (null = use the B/Ls) */
+function shipAdj(sh, dest){ return { barrels:adjRaw(sh,dest,'Barrels'), bins:adjRaw(sh,dest,'Commercial bins') }; }
+/* one line saying exactly what the master will print for a destination */
+function masterPreview(sh, dest, os){
+  const { agg, singles } = masterAgg(cargoRows(os), shipAdj(sh,dest));
+  const n = agg.barrel.n + agg.bin.n + singles.reduce((s,x)=>s+(parseFloat(x.it.qty)||1),0);
+  const cu = agg.barrel.cu + agg.bin.cu + singles.reduce((s,x)=>s+(parseFloat(x.it.cuft)||0),0);
+  const part=(a,label)=>`<b>${a.n}</b> ${label}${a.hand?' <span style="color:#B45309;font-weight:700">(hand count — B/Ls say '+a.bls+')</span>':''}`;
+  return `${part(agg.barrel,'barrels')} · ${part(agg.bin,'commercial bins')} · <b>${singles.length}</b> other lines · <b>${n}</b> pieces · <b>${Math.round(cu*10)/10}</b> cu ft`;
+}
 function adjRaw(sh, dest, k){ const a=sh&&sh.adj&&sh.adj[dest]; const v=a?a[k]:null; return (v==null||v===''||!isFinite(+v)) ? null : Math.max(0,+v); }
 function adjN(sh, dest, k, g){ const v=adjRaw(sh,dest,k); return v==null ? g[k].n : v; }
 function adjCu(sh, dest, k, g){ const v=adjRaw(sh,dest,k); if(v==null) return g[k].cu; const per=g[k].n ? g[k].cu/g[k].n : (k==='Commercial bins'?19:(k==='Barrels'?15:0)); return per*v; }
@@ -2332,19 +2607,38 @@ function rapidHTML(id, big){ return `<div class="rapid${big?' big':''}">
     <b style="font-size:13px">${big?'Type a B/L number and press Enter — keep going':'Add by number'}</b>
     <input class="f" id="${id}" placeholder="B/L number → Enter" inputmode="numeric" autocomplete="off" style="max-width:200px;font-size:16px;font-weight:700;letter-spacing:.04em">
     <span class="rmsg" id="${id}Msg" style="font-size:12.5px;color:var(--muted);flex:1;min-width:200px">${WIZ&&WIZ.msg ? WIZ.msg : 'Type the number, press Enter, keep going.'}</span></div>`; }
+/* B/L numbers compare with spaces and case ignored ("16708 " on an old receipt still matches 16708) */
+const invKey = s => String(s||'').toUpperCase().replace(/\s+/g,'');
+/* B/Ls that share the typed number with a suffix: 18024 → 18024-CAS, 16595 → 16595A, 16605 → 16605-13 */
+function invSiblings(v){ return orders.filter(x=>{ const k=invKey(x.inv); return k!==v && k.startsWith(v) && /^[-A-Z]/.test(k.slice(v.length)); }); }
+function rapidCandidate(o, on){ return `<button type="button" class="btn ${on?'ghost':''} sm" data-pick="${o.id}"${on?' disabled':''}><b>${esc(o.inv)}</b> · ${esc(o.sh.name||'')} → ${esc(o.co.name||'')} · ${esc(o.co.city||'')} · ${esc(cargoSummary(o)||'no cargo lines')}${on?' · already on':''}</button>`; }
 function wireRapid(id, onAdded){
   const inp=$('#'+id), msg=$('#'+id+'Msg'); if(!inp) return;
-  inp.addEventListener('keydown',e=>{
-    if(e.key!=='Enter') return; e.preventDefault();
-    const v=inp.value.trim(); if(!v) return;
-    const o=orders.find(x=>String(x.inv).toUpperCase()===v.toUpperCase());
-    if(!o){ WIZ.msg='<b style="color:#C22B1E">No cargo with B/L '+esc(v)+'</b>'; msg.innerHTML=WIZ.msg; inp.select(); return; }
-    if(wizAllSelected().has(o.id)){ WIZ.msg='<b style="color:#B45309">'+esc(o.inv)+' is already on this shipment</b>'; msg.innerHTML=WIZ.msg; inp.value=''; return; }
+  const take=o=>{
     const d=wizAdd(o);
     WIZ.msg='<b style="color:#177245">✓ '+esc(o.inv)+'</b> '+esc(o.sh.name||'')+' → '+esc(o.co.name||'')+' · '+esc(cargoSummary(o)||'no cargo lines')+' · under '+esc(d)+(shippedIds().has(o.id)?' <span class="pill ship">WAS SHIPPED</span>':'');
     msg.innerHTML=WIZ.msg; WIZ.lastAdded=o.id;
     inp.value=''; if(onAdded) onAdded();
+  };
+  const wirePicks=()=>$$('#'+id+'Msg [data-pick]').forEach(b=>b.addEventListener('click',()=>{ const o=orders.find(x=>x.id===b.dataset.pick); if(o) take(o); }));
+  inp.addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return; e.preventDefault();
+    const v=invKey(inp.value); if(!v) return;
+    const exact=orders.filter(x=>invKey(x.inv)===v), sibs=invSiblings(v);
+    const on=wizAllSelected();
+    if(exact.length===1 && !sibs.length){
+      const o=exact[0];
+      if(on.has(o.id)){ WIZ.msg='<b style="color:#B45309">'+esc(o.inv)+' is already on this shipment</b>'; msg.innerHTML=WIZ.msg; inp.value=''; return; }
+      take(o); return;
+    }
+    if(!exact.length && !sibs.length){ WIZ.msg='<b style="color:#C22B1E">No cargo with B/L '+esc(inp.value.trim())+'</b>'; msg.innerHTML=WIZ.msg; inp.select(); return; }
+    /* more than one B/L answers to this number (18024 and 18024-CAS, or two receipts with the same number) — never guess, make them pick */
+    const all=exact.concat(sibs);
+    WIZ.msg='<b style="color:#B45309">'+(exact.length?esc(inp.value.trim())+' matches '+all.length+' B/Ls — which one?':'No B/L '+esc(inp.value.trim())+' — did you mean:')+'</b>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">'+all.map(o=>rapidCandidate(o, on.has(o.id))).join('')+'</div>';
+    msg.innerHTML=WIZ.msg; wirePicks(); inp.select();
   });
+  wirePicks();
   inp.focus();
 }
 function renderWizard(){
@@ -2429,13 +2723,14 @@ function renderWizard(){
       <div style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         ${WIZ.status==='confirmed'?'':'<button class="btn ghost" id="wzBack3">‹ Back to cargo</button>'}
         <span style="flex:1"></span>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600"><input type="checkbox" id="wzNoShip"${WIZ.noShip?' checked':''}> Don't mark this cargo as shipped (keep it active)</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600"><input type="checkbox" id="wzNoShip"${WIZ.noShip?' checked':''}> Keep this cargo ACTIVE after confirming <span style="font-weight:400;color:var(--muted)">(tick only if it did not actually leave)</span></label>
         <button class="btn" id="wzConfirm">${WIZ.status==='confirmed'?'Documents ›':'Confirm shipment ›'}</button>
       </div>`;
   } else if(s===4){
     html+=`<p class="hint">Tick the documents to create. Each one is filled from this shipment's cargo and lands in your Google Sheets; the links are kept on the shipment.</p>
-      ${WIZ.dests.map((d,i)=>{ const docs=(WIZ.docs||{})[d]||{}; const n=(WIZ.sel[d]||new Set()).size;
+      ${WIZ.dests.map((d,i)=>{ const docs=(WIZ.docs||{})[d]||{}; const n=(WIZ.sel[d]||new Set()).size; const os4=orders.filter(o=>(WIZ.sel[d]||new Set()).has(o.id));
         return `<div class="card" style="margin-top:12px"><h2>→ ${esc(d)} <span style="color:var(--muted);font-weight:400;font-size:12px">${n} B/L${n===1?'':'s'}</span></h2>
+          <div style="font-size:12.5px;color:var(--muted);margin:4px 0 8px">The master will print: ${masterPreview(WIZ, d, os4)}</div>
           <div style="display:flex;gap:18px;flex-wrap:wrap;margin:8px 0 10px">
             <label style="font-weight:600;display:flex;gap:6px;align-items:center"><input type="checkbox" data-wzdoc="master" data-dest="${esc(d)}"${docs.master?'':' checked'}> Master B/L${docs.master?' <span class="pill ship">DONE</span>':''}</label>
             <label style="font-weight:600;display:flex;gap:6px;align-items:center"><input type="checkbox" data-wzdoc="manifest" data-dest="${esc(d)}"${docs.manifest?'':' checked'}> Manifest${docs.manifest?' <span class="pill ship">DONE</span>':''}</label>
@@ -2518,7 +2813,7 @@ function renderWizard(){
           hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr; hdrVessel=vals.vessel; hdrBkg=vals.bkg;
           const hdr={...vals, brokerName:broker.name, consignee:broker.name+'\n'+broker.addr};
           WIZ.hdr[d]=Object.assign(WIZ.hdr[d]||{}, {master:vals});
-          const url=await gsSync(masterPayload(monthKey(WIZ.date), d, hdr, vals.truck||tabLabel(WIZ.date), os), ()=>buildMasterBL(monthKey(WIZ.date), d, hdr, os));
+          const url=await gsSync(masterPayload(monthKey(WIZ.date), d, hdr, vals.truck||tabLabel(WIZ.date), os, shipAdj(WIZ,d)), ()=>buildMasterBL(monthKey(WIZ.date), d, hdr, os, shipAdj(WIZ,d)));
           if(url) WIZ.docs[d].master={url:typeof url==='string'?url:'', at:new Date().toISOString()};
         }
         if(wantN){
@@ -2526,7 +2821,7 @@ function renderWizard(){
           const broker=V2.brokers.find(b=>b.name===vals.brokerName)||brokerFor(d);
           hdrBrokerName=broker.name; hdrBrokerAddr=broker.addr;
           WIZ.hdr[d]=Object.assign(WIZ.hdr[d]||{}, {manifest:vals});
-          const url=await gsSync(manifestPayload(monthKey(WIZ.date), d, vals.truck||tabLabel(WIZ.date), { date:vals.date?usDate(vals.date):usDate(WIZ.date), container:vals.container||'', brokerName:broker.name, brokerAddr:broker.addr }, os), ()=>buildManifestXlsx(monthKey(WIZ.date), d, os));
+          const url=await gsSync(manifestPayload(monthKey(WIZ.date), d, vals.truck||tabLabel(WIZ.date), { date:vals.date?usDate(vals.date):usDate(WIZ.date), container:vals.container||'', brokerName:broker.name, brokerAddr:broker.addr }, os, shipAdj(WIZ,d)), ()=>buildManifestXlsx(monthKey(WIZ.date), d, os, shipAdj(WIZ,d)));
           if(url) WIZ.docs[d].manifest={url:typeof url==='string'?url:'', at:new Date().toISOString()};
         }
       }
@@ -2672,7 +2967,7 @@ $('#mxRange').addEventListener('change',renderMetrics);
    11f. BACKUPS — nightly snapshots (Netlify job) + manual snapshot + restore
    ============================================================ */
 function snapshotObject(){
-  return { at:new Date().toISOString(), by:userName||'admin', settings:S, v2:V2, customers, orders, gone:GONE, shipments:SHIPMENTS, pickups:PICKUPS };
+  return { at:new Date().toISOString(), by:userName||'admin', settings:S, v2:V2, customers, orders, gone:GONE, shipments:SHIPMENTS, pickups:PICKUPS, parcels:PARCELS };
 }
 async function listBackups(){
   const box=$('#bkList'); if(!box||!SBC) return;
@@ -2846,6 +3141,7 @@ $$('.rail nav button').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.tab==='orders') renderOrders();
   if(b.dataset.tab==='customers') loadQuotes();
   if(b.dataset.tab==='pickups') renderPickups();
+  if(b.dataset.tab==='parcels') openParcels();
   if(b.dataset.tab==='ship') renderShipments();
   if(b.dataset.tab==='metrics') renderMetrics();
   if(b.dataset.tab==='prev') renderPrev();
@@ -3213,7 +3509,7 @@ async function startApp(){
   boot();
   /* (no write at boot — a page that only looked should never touch the database) */
   if(!CREATE_ONLY) await loadQuotes();
-  if(!CREATE_ONLY){ loadShipData(); setTimeout(balanceReminders, 2500); }   /* shipments + pickups (strict reads); one reminder toast per load */
+  if(!CREATE_ONLY){ loadShipData(); setTimeout(balanceReminders, 2500); loadParcels(todayISO()).then(updateParcelBadge); }   /* shipments + pickups (strict reads); one reminder toast per load */
   qbCheck();
   /* if the page auto-refreshed while an order was half-typed, bring it back */
   try{
